@@ -18,7 +18,7 @@
   - Extreme Programming (XP) practices: TDD, CI/CD, pair programming, YAGNI
 
 - **Frontend**: React.js SPA (mobile-first responsive design)  
-- **Backend**: Node.js with Express.js (RESTful API), using TypeScript  
+- **Backend**: Node.js with Express.js (RESTful API)
 - **Authentication**: Passport.js (JWT + Local strategy)  
 - **Database**: PostgreSQL with Prisma ORM (repository pattern in domain layer)  
 - **File Storage**: File system or cloud storage (e.g., S3), with URL references in DB  
