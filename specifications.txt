@@ -1,0 +1,247 @@
+# Learning Management System (LMS) – Specification (v1.0)
+
+---
+
+## 1. Introduction
+
+- **Purpose**: A robust platform for managing educational content delivery, learner engagement, and academic operations across institutions.  
+- **Scope**: The system enables course management, assignment workflows, collaboration, learning analytics, and role-specific access.  
+- **Target Users**: Admins, Instructors, Students  
+
+---
+
+## 2. Architecture Overview
+
+- **Architecture Style**:  
+  - Layered Architecture (Presentation, Application, Domain, Infrastructure)  
+  - Domain-Driven Design (DDD) principles: bounded contexts, aggregates, repositories  
+  - Extreme Programming (XP) practices: TDD, CI/CD, pair programming, YAGNI
+
+- **Frontend**: React.js SPA (mobile-first responsive design)  
+- **Backend**: Node.js with Express.js (RESTful API), using TypeScript  
+- **Authentication**: Passport.js (JWT + Local strategy)  
+- **Database**: PostgreSQL with Prisma ORM (repository pattern in domain layer)  
+- **File Storage**: File system or cloud storage (e.g., S3), with URL references in DB  
+- **Deployment**: Dockerized for scalable deployment (local, VPS, or cloud)  
+- **CI/CD**: GitHub Actions or GitLab CI (optional but encouraged)  
+
+---
+
+## 3. User Roles & Permissions
+
+### Admin
+- Full platform control (users, courses, reports, settings)  
+- Manages organizations, roles, policies, and system logs  
+
+### Instructor
+- Creates/manages courses, assignments, materials  
+- Evaluates learners, tracks progress, sends communication  
+
+### Student
+- Enrolls in courses, accesses materials, submits work  
+- Receives grades, feedback, and progress reports  
+
+---
+
+## 4. Functional Modules (Domain-Oriented)
+
+### FR1 – Identity & Access Management (IAM)
+
+- User registration & login/logout  
+- Roles & permission management (via RBAC policies)  
+- JWT-based stateless session handling  
+- Password hashing (bcrypt), reset via secure token  
+- Audit logging of authentication events  
+
+### FR2 – Course Management
+
+- Admins/instructors create, edit, archive courses  
+- Courses are domain aggregates with: syllabus, outline, credits, prerequisites  
+- Course publishing workflow (draft → published)  
+- Tags and categorization (value objects)  
+
+### FR3 – Enrollment & Scheduling
+
+- Students enroll in open/published courses  
+- Instructors approve/reject enrollments if required  
+- Time-based scheduling (support for live sessions and self-paced learning)  
+- Notification of new schedule entries  
+
+### FR4 – Learning Content (Materials)
+
+- Materials grouped by module/topic/unit (nested content)  
+- Types: PDFs, links, videos, embedded tools (e.g., quizzes)  
+- Content versioning (Domain: `Material` Aggregate Root)  
+- Controlled visibility (draft → visible → archived)  
+
+### FR5 – Assignments & Grading
+
+- Assignment types: file upload, text-based, external links  
+- Due dates, late submission policies  
+- Instructor reviews, comments, and grades  
+- Students view submission history, feedback, and grades  
+- Rubrics (optional: scoring criteria stored as value objects)  
+
+### FR6 – Collaboration & Communication
+
+- Messaging between instructors ↔ students  
+- Class-wide announcements (email, in-app notifications)  
+- Discussion threads on assignments or lessons  
+- Comment moderation by instructors  
+
+### FR7 – Progress & Analytics
+
+- Student dashboards with progress bars, grade averages  
+- Instructors see completion rates, activity logs  
+- Course-level reports: submissions, engagement, attendance  
+- Admin analytics: active users, most viewed content, drop-off rates  
+
+### FR8 – Platform & Organization Settings
+
+- Branding (logo, name, theme colors)  
+- Customizable policies: grading, attendance, deadlines  
+- Admin portal for managing users, institutions, roles  
+- System-wide logs and health monitoring  
+
+---
+
+## 5. Use Case Summary
+
+| ID   | Use Case                        | Description |
+|------|---------------------------------|-------------|
+| UC1  | Register New Student            | Student signs up with email/password |
+| UC2  | Instructor Onboarding           | Admin creates instructor account |
+| UC3  | Role Assignment                 | Admin assigns roles to users |
+| UC4  | Login & Logout                  | Secure session management |
+| UC5  | Create/Edit Course              | Instructor builds course |
+| UC6  | Publish Course                  | Instructor makes course available |
+| UC7  | Enroll in Course                | Student joins course |
+| UC8  | View Enrolled Courses           | Student dashboard access |
+| UC9  | Upload Learning Materials       | Instructors attach files or links |
+| UC10 | Access Learning Materials       | Students read/view content |
+| UC11 | Post Assignment                 | Instructor publishes assignment |
+| UC12 | Submit Assignment               | Student submits work |
+| UC13 | Grade Assignment                | Instructor gives feedback and marks |
+| UC14 | View Feedback                   | Student sees feedback and grade |
+| UC15 | Send Message                    | Instructor sends direct/class message |
+| UC16 | Participate in Discussions      | Students engage in class threads |
+| UC17 | Track Progress                  | Student sees overall performance |
+| UC18 | View Course Analytics           | Instructor views student stats |
+| UC19 | Admin Settings                  | Admin customizes system |
+| UC20 | System Audit Logs               | Admin reviews system-wide actions |
+
+---
+
+## 6. Domain Model (Simplified)
+
+### Aggregates & Entities
+
+- `User` → Admin, Instructor, Student  
+- `Course` → Includes `Modules`, `Lessons`, `Schedule`  
+- `Enrollment` → Links users to courses  
+- `Material` → Lesson content (files, links, videos)  
+- `Assignment` → Associated with lessons or modules  
+- `Submission` → Assignment work by students  
+- `Grade` → Associated with submission  
+- `Message` → Direct or class-wide messages  
+- `Notification` → System-generated events  
+- `AuditLog` → IAM and system activity log  
+
+### Value Objects
+
+- `Email`, `Password`, `Role`, `GradeScale`, `Rubric`, `CourseTag`  
+
+### Bounded Contexts
+
+- Identity Management  
+- Course Lifecycle  
+- Learning Content Delivery  
+- Assessment & Feedback  
+- Collaboration & Messaging  
+- Analytics & Reporting  
+
+---
+
+## 7. API Specification (RESTful)
+
+### Auth
+
+- `POST /auth/register` – Register (students only)  
+- `POST /auth/login` – Login  
+- `POST /auth/logout` – Logout  
+- `POST /auth/reset-password` – Request reset  
+
+### Users
+
+- `GET /users/:id` – Get profile  
+- `PUT /users/:id` – Update profile (self or admin)  
+- `DELETE /users/:id` – Admin deactivates user  
+
+### Courses
+
+- `GET /courses` – List available courses  
+- `POST /courses` – Create course (instructor/admin)  
+- `PUT /courses/:id` – Update course  
+- `POST /courses/:id/publish` – Publish course  
+- `GET /courses/:id/enrollments` – View course roster  
+
+### Enrollments
+
+- `POST /courses/:id/enroll` – Student enrolls  
+- `POST /courses/:id/approve/:studentId` – Instructor approves  
+
+### Materials
+
+- `POST /materials` – Upload material  
+- `GET /materials/:courseId` – Get materials by course  
+
+### Assignments
+
+- `POST /assignments`  
+- `GET /assignments/:courseId`  
+- `POST /submissions`  
+- `GET /submissions/:assignmentId`  
+- `PUT /submissions/:id/grade`  
+
+### Messaging
+
+- `POST /messages`  
+- `GET /messages/thread/:id`  
+
+### Analytics
+
+- `GET /analytics/course/:id` – Instructor view  
+- `GET /analytics/student/:id` – Student view  
+
+### Admin
+
+- `GET /admin/settings`  
+- `PUT /admin/settings`  
+- `GET /admin/logs`  
+
+---
+
+## 8. Non-Functional Requirements
+
+- **Security**: JWT + role checks + hashed credentials  
+- **Scalability**: Layered architecture, stateless APIs  
+- **Maintainability**: Domain separation, reusable services  
+- **Testing**: 90%+ backend test coverage (Jest + Supertest)  
+- **CI/CD**: Auto-deployment to staging (GitHub Actions)  
+- **Logging**: Request/response + user action logs  
+- **Monitoring**: Health checks, service status endpoints  
+- **Validation**: Zod/Yup on both frontend and backend  
+
+---
+
+## 9. Extreme Programming (XP) Practices
+
+- **Test-Driven Development (TDD)**: Every feature starts with tests  
+- **Pair Programming**: Encouraged during core logic and domain modeling  
+- **Simple Design**: Prioritize clarity, avoid premature optimization  
+- **Continuous Integration**: Push → test → build pipeline  
+- **Small Releases**: Weekly iterations, deploy incrementally  
+- **Customer Feedback Loop**: Regular demo/review sessions  
+- **Refactoring**: Part of every sprint cycle  
+- **Collective Code Ownership**: Anyone can improve any module  
+- **Coding Standards**: Linting + Prettier + Shared style guides  
