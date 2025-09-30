@@ -10,7 +10,9 @@ A project for UIT SE214
 - Run `install_dependencies.bat` file to install the dependencies
 - Use `dev.bat` to start developing
 - Access the client at [http://localhost:5173](http://localhost:5173)
+
 ### !!! IMPORTANT !!!
+
 - Shut down the client and server properly by `Ctrl-C` instead of clicking the close button. You won't be able to start again due to the port being already in use.
 - In case that happened, open the Task Manager and kill all Node processes.
 
@@ -27,5 +29,10 @@ A project for UIT SE214
 - After developing, run `docker compose down` to stop and remove the containers.
 - Use `docker system prune -a --volumes` to remove all Docker-related data (containers, images, volumes).
 
+# Prisma
+
+- Use `npx prisma migrate dev` when the schema has been changed. Else, `npx prisma migrate dev --name init`
+
 # Notes
+
 - `.env` needs to be outside of `/src`
