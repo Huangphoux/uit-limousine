@@ -26,3 +26,6 @@ A project for UIT SE214
 - Use `docker compose up --build` rebuild the containers.
 - After developing, run `docker compose down` to stop and remove the containers.
 - Use `docker system prune -a --volumes` to remove all Docker-related data (containers, images, volumes).
+
+# Notes
+- `.env` needs to be outside of `/src`
