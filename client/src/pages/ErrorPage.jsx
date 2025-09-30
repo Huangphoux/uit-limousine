@@ -1,11 +1,14 @@
 import { Link } from "react-router";
+import Button from "react-bootstrap/Button";
+import Container from "react-bootstrap/Container";
 
 const ErrorPage = () => {
   return (
-    <div>
+    <Container>
       <h1>Oh no, this route doesn't exist!</h1>
-      <Link to="/">You can go back to the home page by clicking here, though!</Link>
-    </div>
+      <p>You can go back to the home page by clicking the button below.</p>
+      <Button as={Link} to="/">Home</Button>
+    </Container>
   );
 };
 
