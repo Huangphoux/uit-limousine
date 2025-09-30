@@ -39,9 +39,7 @@ export default function Signup() {
         throw new Error(data.message || "Signup failed");
       }
 
-      console.log("Signup successful");
-      // Navigate to login page after successful signup
-      navigate("/login", { replace: true });
+      navigate("/login");
     } catch (error) {
       console.error("Error:", error);
       // You might want to show this error to the user in the UI
@@ -105,7 +103,7 @@ export default function Signup() {
                       aria-hidden="true"
                       className="me-2"
                     />
-                    Signing up...
+                    <span className="visually-hidden">Signing up...</span>
                   </>
                 ) : (
                   "Sign Up"
