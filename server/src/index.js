@@ -1,23 +1,28 @@
 import express from "express";
 import dotenv from "dotenv";
-import authorRouter from "./routes/authorRouter.js";  // Note: added .js extension
+import passport from "passport"
+import session from "express-session"
+import cors from "cors";
+import signUpRouter from "./routes/signUpRouter.js";
 
-const app = express();
 dotenv.config();
 const PORT = process.env.PORT || 3000;
+const app = express();
 
-// const bookRouter = require("./routes/bookRouter");
-// const indexRouter = require("./routes/indexRouter");
+app.use(cors());
+app.use(express.json());
+app.use(session({ secret: "cats", resave: false, saveUninitialized: false }));
+app.use(passport.session());
+app.use(express.urlencoded({ extended: false }));
 
-app.use("/authors", authorRouter);
-// app.use("/books", bookRouter);
-// app.use("/", indexRouter);
+app.use("/", signUpRouter);
 
 app.listen(PORT, (error) => {
   if (error) {
     throw error;
   }
-
-  console.log(`My first Express app - listening port ${PORT}!`);
+  console.log(`Listening to http://localhost:${PORT}`);
 });
+
+
 
