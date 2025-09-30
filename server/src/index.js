@@ -3,13 +3,13 @@ import dotenv from "dotenv";
 import authorRouter from "./routes/authorRouter.js";
 // const bookRouter = require("./routes/bookRouter");
 // const indexRouter = require("./routes/indexRouter");
-// import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 
 dotenv.config();
 
 const PORT = process.env.PORT || 3000;
 const app = express();
-// const prisma = new PrismaClient();
+const prisma = new PrismaClient();
 
 app.use("/authors", authorRouter);
 // app.use("/books", bookRouter);
@@ -22,9 +22,8 @@ app.listen(PORT, (error) => {
   console.log(`Listening to http://localhost:${PORT}`);
 });
 
-/*
-
 app.get('/', async (req, res) => {
+  /*
   await prisma.user.create({
     data: {
       name: 'Alice',
@@ -37,6 +36,7 @@ app.get('/', async (req, res) => {
       },
     },
   })
+  */
 
   const allUsers = await prisma.user.findMany({
     include: {
@@ -45,14 +45,14 @@ app.get('/', async (req, res) => {
     },
   });
 
+  /*
   await prisma.post.update({
     where: { id: 2 },
     data: { published: true },
   })
-
+  */
 
   res.json(allUsers);
 });
 
-*/
 

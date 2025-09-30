@@ -1,12 +1,16 @@
+/*
+
 export async function getAuthorById(req, res) {
-    // const { authorId } = req.params;
+    const { authorId } = req.params;
 
-    // const author = await db.getAuthorById(+authorId);
+    const author = await db.getAuthorById(+authorId);
 
-    // if (!author) {
-    //     res.status(404).send("Author not found");
-    //     return;
-    // }
+    if (!author) {
+        res.status(404).send("Author not found");
+        return;
+    }
 
-    // res.send(`Author Name: ${author.name}`);
+    res.send(`Author Name: ${author.name}`);
 }
+
+*/
