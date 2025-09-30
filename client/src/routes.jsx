@@ -1,16 +1,27 @@
 import App from "./pages/App";
-import Profile from "./pages/Profile";
 import ErrorPage from "./pages/ErrorPage";
+import Login from "./components/Login";
+import Signup from "./components/Signup";
 
 const routes = [
   {
     path: "/",
     element: <App />,
     errorElement: <ErrorPage />,
-  },
-  {
-    path: "profile/:name",
-    element: <Profile />,
+    children: [
+      {
+        path: "",
+        element: <App />,
+      },
+      {
+        path: "login",
+        element: <Login />,
+      },
+      {
+        path: "sign-up",
+        element: <Signup />,
+      },
+    ],
   },
 ];
 
