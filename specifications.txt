@@ -23,7 +23,8 @@
 - **Database**: PostgreSQL with Prisma ORM (repository pattern in domain layer)  
 - **File Storage**: File system or cloud storage (e.g., S3), with URL references in DB  
 - **Deployment**: Dockerized for scalable deployment (local, VPS, or cloud)  
-- **CI/CD**: GitHub Actions or GitLab CI (optional but encouraged)  
+- **CI/CD**: GitHub Actions or GitLab CI (optional but encouraged)
+- **UI Library**: React Bootstrap
 
 ---
 

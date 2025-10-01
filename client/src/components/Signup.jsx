@@ -25,7 +25,7 @@ export default function Signup() {
 
     try {
       // server PORT, not Vite's PORT
-      const response = await fetch("http://localhost:4000/sign-up", {
+      const response = await fetch("http://localhost:4000/api/sign-up", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
