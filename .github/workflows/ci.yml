@@ -14,20 +14,9 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
-    services:
-      postgres:
-        image: postgres:latest
-        env:
-          POSTGRES_USER: me
-          POSTGRES_PASSWORD: password
-          POSTGRES_DB: client
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      PORT: 4000
 
     strategy:
       matrix:
@@ -51,17 +40,17 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run linting & formatting
-        run: |
-          npm run lint
-          npm run format
+      - name: Run linting
+        run: npm run lint
+
+      - name: Generate Prisma Client
+        if: matrix.app == 'server'
+        run: npx prisma generate
 
       - name: Run tests
         run: npm test
         env:
           CI: true
-          NODE_ENV: ${{ matrix.app == 'server' && 'test' || 'development' }}
-          POSTGRES_USER: ${{ matrix.app == 'server' && 'me' || '' }}
-          POSTGRES_PASSWORD: ${{ matrix.app == 'server' && 'password' || '' }}
-          POSTGRES_DB: ${{ matrix.app == 'server' && 'client' || '' }}
-          POSTGRES_HOST: ${{ matrix.app == 'server' && 'localhost' || '' }}
+      # - name: Deploy to production
+      #   run: |
+      #     # Add your deployment commands
