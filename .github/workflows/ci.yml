@@ -42,7 +42,6 @@ jobs:
 
       - name: Run linting
         run: npm run lint
-        if: matrix.app == 'server'
 
       - name: Generate Prisma Client
         if: matrix.app == 'server'
