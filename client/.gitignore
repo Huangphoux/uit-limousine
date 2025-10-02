@@ -1,3 +1,9 @@
+# Environment files
+.env
+
+# But keep environment config files
+!.env.*
+
 # Logs
 logs
 *.log

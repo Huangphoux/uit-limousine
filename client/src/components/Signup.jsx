@@ -2,6 +2,8 @@ import { Form, Button, Container, Row, Col, Spinner } from "react-bootstrap";
 import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 export default function Signup() {
   const navigate = useNavigate();
 
@@ -24,8 +26,7 @@ export default function Signup() {
     setIsLoading(true);
 
     try {
-      // server PORT, not Vite's PORT
-      const response = await fetch("http://localhost:4000/api/sign-up", {
+      const response = await fetch(`${API_URL}/api/sign-up`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
