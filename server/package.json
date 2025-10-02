@@ -13,7 +13,8 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
-    "migrate": "npx prisma migrate dev"
+    "migrate": "npx prisma migrate dev",
+    "postinstall": "prisma generate"
   },
   "keywords": [],
   "author": "",

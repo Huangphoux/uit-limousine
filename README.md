@@ -10,9 +10,12 @@ Build a Learning Management System, with a Layered architecture and a Domain-Dri
 - Back-End: Express, Passport.JS, Prisma ORM
 - Database: PostgreSQL
 - Hosting Services
-  - Front-End: [Netlify](https://uit-limousine.netlify.app/), [Vercel](https://ui-limousine.vercel.app/)
-  - Back-End: [Railway](https://limousine.onrender.com), [Vercel](https://uit-limousine-server.vercel.app/)
+  - Front-End: Netlify, Vercel
+  - Back-End: Railway, Vercel
   - Database: Neon
+- Architecture: serverless
+- DevOps, CI: GitHub Actions
+- Progress Tracking, Backlog: GitHub Project
 
 # Contribution Guidelines
 
