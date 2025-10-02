@@ -5,7 +5,7 @@
   "main": "src/index.js",
   "scripts": {
     "start": "nodemon",
-    "start:generate": "npx prisma generate & nodemon",
+    "start:generate": "npx prisma generate && nodemon",
     "dev": "nodemon",
     "generate": "npx prisma generate",
     "test": "jest --verbose --runInBand",
