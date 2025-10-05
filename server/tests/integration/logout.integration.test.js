@@ -14,8 +14,12 @@ describe('Logout Integration Test', () => {
     let tokenRepo;
     let useCase;
     let mockToken = 'fake.jwt.token';
-    let testEmail = "test@gmail.com";
     let testUser;
+
+    let testUsername = "testuser";
+    let testEmail = 'test@example.com';
+    let testPassword = "secret";
+
 
     beforeAll(async () => {
         prisma = new PrismaClient();
@@ -23,9 +27,9 @@ describe('Logout Integration Test', () => {
 
         testUser = await prisma.user.create({
             data: {
-                username: "test",
+                username: testUsername,
                 email: testEmail,
-                password: "test"
+                password: testPassword
             }
         });
 
@@ -48,7 +52,7 @@ describe('Logout Integration Test', () => {
 
     afterAll(async () => {
         await prisma.token.deleteMany({ where: { token: mockToken } });
-        await prisma.user.deleteMany({ where: {id: testUser.id } });
+        await prisma.user.deleteMany({ where: { email: testEmail } });
         await prisma.$disconnect();
     });
 

@@ -17,6 +17,7 @@ describe('Login Integration Test', () => {
     let useCase;
     let jwtSecret = 'testsecret';
     let jwtExpiry = '1h';
+    let testUsername = "testuser";
     let testEmail = 'test@example.com';
     let testPassword = "secret";
 
@@ -26,7 +27,7 @@ describe('Login Integration Test', () => {
 
         await prisma.user.create({
             data: {
-                username: 'testuser',
+                username: testUsername,
                 email: testEmail,
                 password: testPassword
             }
@@ -43,7 +44,7 @@ describe('Login Integration Test', () => {
 
     afterEach(async () => {
         await prisma.user.update({
-            where: { email: testEmail},
+            where: { email: testEmail },
             data: { tokens: { deleteMany: {} } },
         })
     })
