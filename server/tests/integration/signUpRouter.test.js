@@ -1,4 +1,4 @@
-import signUpRouter from "../signUpRouter";
+import signUpRouter from '../../src/presentation_layer/routes/signUpRouter';
 import request from "supertest";
 import express from "express";
 const app = express();
