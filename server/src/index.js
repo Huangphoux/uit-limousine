@@ -2,8 +2,8 @@ import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
 
-import { TokenRepositoryPostgree } from './infrustructure_layer/token.repository.postgree.js';
-import { UserRepositoryPostgree } from './infrustructure_layer/user.repository.postgree.js';
+import { TokenRepositoryPostgree } from './infrastructure_layer/token.repository.postgree.js';
+import { UserRepositoryPostgree } from './infrastructure_layer/user.repository.postgree.js';
 import { LoginUseCase } from './application_layer/login.usecase.js';
 import { createLoginRouter } from './presentation_layer/routes/login.route.js';
 
