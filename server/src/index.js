@@ -12,7 +12,7 @@ const PORT = process.env.PORT || 3000;
 const app = express();
 
 app.use(cors({
-  origin: ['https://uit-limousine.netlify.app/', 'http://localhost:5173']
+  origin: ['https://uit-limousine.netlify.app', 'http://localhost:5173']
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
