@@ -32,7 +32,7 @@ Mục này bao gồm kế hoạch thực hiện theo từng Sprint
 
 Mục này gồm các use case của hệ thống.
 
-#include "product_backlog.md"
+#include "product_backlog.typ"
 
 
 = Tổ chức nhóm
@@ -57,6 +57,6 @@ Zalo, Discord
 
 = Hình ảnh
 
-#image("hoi_thay_7_thang_10.jpg")
-#image("minh_chung_zalo_7_thang_10.png")
-#image("minh_chung_discord_7_thang_10.png")
+#image("minh_chung/hoi_thay_7_thang_10.jpg")
+#image("minh_chung/minh_chung_zalo_7_thang_10.png")
+#image("minh_chung/minh_chung_discord_7_thang_10.png")
