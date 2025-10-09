@@ -1,0 +1,83 @@
+#show link: underline
+
+= Mẫu
+- Thời gian: 2025/10/09, 13:11
+- Issue: #link("https://github.com/Huangphoux/uit-limousine/issues/14")
+- Thành viên tham gia: Huy, Hào
+- Công việc: Làm màn hình đăng nhập
+- Hình ảnh minh chứng: #image("pair_programming_pics/Screenshot 2025-10-09 130620.png")
+
+= Sprint 1
+== Front-End Team
+- Thời gian:
+- Issue: #link("https://github.com/Huangphoux/uit-limousine/issues/")
+- Thành viên tham gia:
+- Công việc:
+- Hình ảnh minh chứng: #image("pair_programming_pics/Screenshot 2025-10-09 130620.png")
+
+== Back-End Team
+- Thời gian:
+- Issue: #link("https://github.com/Huangphoux/uit-limousine/issues/")
+- Thành viên tham gia:
+- Công việc:
+- Hình ảnh minh chứng: #image("pair_programming_pics/Screenshot 2025-10-09 130620.png")
+
+= Sprint 2
+== Front-End Team
+- Thời gian:
+- Issue: #link("https://github.com/Huangphoux/uit-limousine/issues/")
+- Thành viên tham gia:
+- Công việc:
+- Hình ảnh minh chứng: #image("pair_programming_pics/Screenshot 2025-10-09 130620.png")
+
+== Back-End Team
+- Thời gian:
+- Issue: #link("https://github.com/Huangphoux/uit-limousine/issues/")
+- Thành viên tham gia:
+- Công việc:
+- Hình ảnh minh chứng: #image("pair_programming_pics/Screenshot 2025-10-09 130620.png")
+
+= Sprint 3
+== Front-End Team
+- Thời gian:
+- Issue: #link("https://github.com/Huangphoux/uit-limousine/issues/")
+- Thành viên tham gia:
+- Công việc:
+- Hình ảnh minh chứng: #image("pair_programming_pics/Screenshot 2025-10-09 130620.png")
+
+== Back-End Team
+- Thời gian:
+- Issue: #link("https://github.com/Huangphoux/uit-limousine/issues/")
+- Thành viên tham gia:
+- Công việc:
+- Hình ảnh minh chứng: #image("pair_programming_pics/Screenshot 2025-10-09 130620.png")
+
+= Sprint 4
+== Front-End Team
+- Thời gian:
+- Issue: #link("https://github.com/Huangphoux/uit-limousine/issues/")
+- Thành viên tham gia:
+- Công việc:
+- Hình ảnh minh chứng: #image("pair_programming_pics/Screenshot 2025-10-09 130620.png")
+
+== Back-End Team
+- Thời gian:
+- Issue: #link("https://github.com/Huangphoux/uit-limousine/issues/")
+- Thành viên tham gia:
+- Công việc:
+- Hình ảnh minh chứng: #image("pair_programming_pics/Screenshot 2025-10-09 130620.png")
+
+= Sprint 5
+== Front-End Team
+- Thời gian:
+- Issue: #link("https://github.com/Huangphoux/uit-limousine/issues/")
+- Thành viên tham gia:
+- Công việc:
+- Hình ảnh minh chứng: #image("pair_programming_pics/Screenshot 2025-10-09 130620.png")
+
+== Back-End Team
+- Thời gian:
+- Issue: #link("https://github.com/Huangphoux/uit-limousine/issues/")
+- Thành viên tham gia:
+- Công việc:
+- Hình ảnh minh chứng: #image("pair_programming_pics/Screenshot 2025-10-09 130620.png")
