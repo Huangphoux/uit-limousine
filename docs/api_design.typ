@@ -16,9 +16,9 @@ Tài liệu này mô tả thiết kế API RESTful cho hệ thống Learning Man
 
 - Tạo khóa học và trở thành Instructor:
     + Người dùng đăng ký tài khoản (role mặc định: LEARNER)
-    + Người dùng tạo phiếu yêu cầu khóa học (`POST /course-requests`)
-    + Admin xem xét phiếu yêu cầu (`GET /admin/course-requests`)
-    + Admin phê duyệt (`PUT /admin/course-requests/:id/approve`):
+    + Người dùng nộp đơn xin trở thành instructor (`POST /instructor-applications`)
+    + Admin xem xét đơn (`GET /admin/instructor-applications`)
+    + Admin phê duyệt (`PUT /admin/instructor-applications/:id/approve`):
         - Hệ thống tự động tạo khóa học
         - Hệ thống thăng cấp người yêu cầu lên INSTRUCTOR
         - Hệ thống gán người đó làm giảng viên của khóa học
@@ -229,19 +229,22 @@ Response 200 OK:
   "data": {
     "id": "uuid",
     "title": "Introduction to Node.js",
-    "description": "Complete course description",
-    "syllabus": "Course syllabus here",
+    "slug": "introduction-to-nodejs",
+    "shortDesc": "Learn Node.js from scratch",
+    "description": "Complete course description with detailed curriculum",
+    "level": "BEGINNER",
+    "language": "vi",
     "instructor": {
       "id": "uuid",
       "fullName": "Tran Van C",
-      "avatar": "url",
+      "avatarUrl": "https://cdn.example.com/avatars/instructor.jpg",
       "bio": "Experienced developer"
     },
     "modules": [
       {
         "id": "uuid",
         "title": "Module 1: Basics",
-        "order": 1,
+        "position": 1,
         "lessons": [...]
       }
     ],
@@ -249,109 +252,112 @@ Response 200 OK:
     "reviewCount": 45,
     "enrollmentCount": 120,
     "price": 500000,
-    "status": "PUBLISHED",
+    "published": true,
+    "publishDate": "2025-01-01T00:00:00Z",
     "createdAt": "2025-01-01T00:00:00Z"
   }
 }
 ```
 
-=== 4.3. Request Course Creation (UC-08, UC-11)
+=== 4.3. Apply to Become Instructor (UC-08, UC-11)
 
 Quy trình: 
-1. Người dùng tạo phiếu yêu cầu tạo khóa học
+1. Người dùng tạo đơn xin trở thành instructor (InstructorApplication)
 2. Admin xem xét và phê duyệt
 3. Nếu được chấp thuận, Admin tạo khóa học và thêm người yêu cầu làm giảng viên
 4. Người yêu cầu được cập nhật role thành INSTRUCTOR
 
 ```http
-POST /course-requests
+POST /instructor-applications
 Authorization: Bearer {learner_token}
 Content-Type: application/json
 
 {
-  "title": "Advanced React Development",
-  "description": "Master React with advanced concepts",
-  "syllabus": "Week 1: Hooks, Week 2: Context...",
-  "targetAudience": "Developers with JavaScript experience",
-  "estimatedDuration": "8 weeks",
-  "justification": "I have 5 years of React experience..."
+  "requestedCourseTitle": "Advanced React Development",
+  "requestedCourseSummary": "Master React with advanced concepts including hooks, context, and performance optimization",
+  "portfolioUrl": "https://github.com/username/react-projects"
 }
 
 Response 201 Created:
 {
   "success": true,
   "data": {
-    "requestId": "uuid",
-    "title": "Advanced React Development",
+    "id": "uuid",
+    "requestedCourseTitle": "Advanced React Development",
     "status": "PENDING",
-    "submittedAt": "2025-10-14T10:00:00Z"
+    "appliedAt": "2025-10-14T10:00:00Z"
   }
 }
 ```
 
-=== 4.4. Admin Review Course Request (UC-08)
+=== 4.4. Admin Review Instructor Application (UC-08)
 
 ```http
-GET /admin/course-requests?status=PENDING&page=1&limit=20
+GET /admin/instructor-applications?status=PENDING&page=1&limit=20
 Authorization: Bearer {admin_token}
 
 Response 200 OK:
 {
   "success": true,
   "data": {
-    "requests": [
+    "applications": [
       {
         "id": "uuid",
-        "title": "Advanced React Development",
-        "requester": {
+        "requestedCourseTitle": "Advanced React Development",
+        "requestedCourseSummary": "Master React with advanced concepts",
+        "portfolioUrl": "https://github.com/username/react-projects",
+        "applicant": {
           "id": "uuid",
-          "fullName": "Nguyen Van A",
+          "name": "Nguyen Van A",
           "email": "user@example.com"
         },
-        "description": "Master React with advanced concepts",
         "status": "PENDING",
-        "submittedAt": "2025-10-14T10:00:00Z"
+        "appliedAt": "2025-10-14T10:00:00Z"
       }
     ],
     "total": 5
   }
 }
 
-PUT /admin/course-requests/:requestId/approve
+PUT /admin/instructor-applications/:applicationId/approve
 Authorization: Bearer {admin_token}
 Content-Type: application/json
 
 {
-  "notes": "Approved. Good course proposal."
+  "note": "Approved. Good course proposal.",
+  "courseTitle": "Advanced React Development",
+  "courseSlug": "advanced-react-development",
+  "shortDesc": "Master React with advanced concepts",
+  "description": "Complete course description here",
+  "price": 800000
 }
 
 Response 200 OK:
 {
   "success": true,
   "data": {
-    "requestId": "uuid",
+    "applicationId": "uuid",
     "status": "APPROVED",
     "courseId": "uuid",
     "instructorId": "uuid",
     "reviewedAt": "2025-10-15T10:00:00Z"
   },
-  "message": "Course request approved. User promoted to INSTRUCTOR and assigned to course."
+  "message": "Application approved. User promoted to INSTRUCTOR and course created."
 }
 
-PUT /admin/course-requests/:requestId/reject
+PUT /admin/instructor-applications/:applicationId/reject
 Authorization: Bearer {admin_token}
 Content-Type: application/json
 
 {
-  "reason": "Insufficient detail in syllabus",
-  "notes": "Please provide more details about course structure"
+  "note": "Insufficient detail in course proposal. Please provide more information about course structure and content."
 }
 
 Response 200 OK:
 {
   "success": true,
   "data": {
-    "requestId": "uuid",
+    "applicationId": "uuid",
     "status": "REJECTED",
     "reviewedAt": "2025-10-15T10:00:00Z"
   }
@@ -369,11 +375,14 @@ Content-Type: application/json
 
 {
   "title": "Advanced React Development",
-  "description": "Master React with advanced concepts",
-  "syllabus": "Week 1: Hooks, Week 2: Context...",
+  "slug": "advanced-react-development",
+  "shortDesc": "Master React with advanced concepts",
+  "description": "Complete description with detailed curriculum and learning outcomes",
+  "level": "INTERMEDIATE",
+  "language": "vi",
   "instructorId": "uuid",
   "price": 800000,
-  "status": "DRAFT"
+  "published": false
 }
 
 Response 201 Created:
@@ -382,12 +391,16 @@ Response 201 Created:
   "data": {
     "id": "uuid",
     "title": "Advanced React Development",
+    "slug": "advanced-react-development",
+    "shortDesc": "Master React with advanced concepts",
+    "level": "INTERMEDIATE",
     "instructor": {
       "id": "uuid",
       "fullName": "Nguyen Van A",
       "role": "INSTRUCTOR"
     },
-    "status": "DRAFT",
+    "published": false,
+    "price": 800000,
     "createdAt": "2025-10-14T10:00:00Z"
   }
 }
@@ -428,8 +441,8 @@ Response 200 OK:
   "success": true,
   "data": {
     "id": "uuid",
-    "status": "PUBLISHED",
-    "publishedAt": "2025-10-14T12:00:00Z"
+    "published": true,
+    "publishDate": "2025-10-14T12:00:00Z"
   }
 }
 ```
@@ -966,44 +979,45 @@ Content-Disposition: attachment; filename="course-report.csv"
 [CSV data]
 ```
 
-== 11. Course Request Management
+== 11. Instructor Application Management
 
 Lưu ý quan trọng:
-- Không có quy trình "Apply for Instructor" riêng biệt
 - Người dùng chỉ được thăng cấp lên INSTRUCTOR khi:
-  + Họ tạo phiếu yêu cầu khóa học (Course Request)
-  + Admin phê duyệt phiếu yêu cầu đó
+  + Họ nộp đơn xin trở thành instructor (InstructorApplication)
+  + Admin phê duyệt đơn đó
   + Admin tạo khóa học và gán họ làm giảng viên
-- Một người có thể tạo nhiều phiếu yêu cầu khóa học
+- Một người có thể nộp nhiều đơn xin instructor (ví dụ để tạo nhiều khóa học khác nhau)
 
-=== 11.1. Get My Course Requests
+=== 11.1. Get My Instructor Applications
 
 ```http
-GET /course-requests/my-requests?status=PENDING&page=1&limit=10
+GET /instructor-applications/my-applications?status=PENDING&page=1&limit=10
 Authorization: Bearer {token}
 
 Response 200 OK:
 {
   "success": true,
   "data": {
-    "requests": [
+    "applications": [
       {
         "id": "uuid",
-        "title": "Advanced React Development",
-        "description": "Master React with advanced concepts",
+        "requestedCourseTitle": "Advanced React Development",
+        "requestedCourseSummary": "Master React with advanced concepts",
+        "portfolioUrl": "https://github.com/username/react-projects",
         "status": "PENDING",
-        "submittedAt": "2025-10-14T10:00:00Z",
+        "appliedAt": "2025-10-14T10:00:00Z",
         "reviewedAt": null,
-        "adminNotes": null
+        "note": null
       },
       {
         "id": "uuid",
-        "title": "Python for Data Science",
-        "description": "Complete Python data science course",
+        "requestedCourseTitle": "Python for Data Science",
+        "requestedCourseSummary": "Complete Python data science course",
+        "portfolioUrl": "https://github.com/username/python-projects",
         "status": "APPROVED",
-        "submittedAt": "2025-09-01T10:00:00Z",
+        "appliedAt": "2025-09-01T10:00:00Z",
         "reviewedAt": "2025-09-05T14:00:00Z",
-        "adminNotes": "Approved. Great proposal.",
+        "note": "Approved. Great proposal.",
         "courseId": "uuid"
       }
     ],
@@ -1012,26 +1026,26 @@ Response 200 OK:
 }
 ```
 
-=== 11.2. Update Course Request (Before Approval)
+=== 11.2. Update Instructor Application (Before Approval)
 
 ```http
-PUT /course-requests/:requestId
+PUT /instructor-applications/:applicationId
 Authorization: Bearer {token}
 Content-Type: application/json
 
 {
-  "title": "Advanced React Development - Updated",
-  "description": "Updated description with more details",
-  "syllabus": "Updated syllabus..."
+  "requestedCourseTitle": "Advanced React Development - Updated",
+  "requestedCourseSummary": "Updated description with more details about hooks, context, and performance",
+  "portfolioUrl": "https://github.com/username/react-advanced-projects"
 }
 
 Response 200 OK:
 {
   "success": true,
   "data": {
-    "requestId": "uuid",
-    "title": "Advanced React Development - Updated",
-    "updatedAt": "2025-10-14T11:00:00Z"
+    "id": "uuid",
+    "requestedCourseTitle": "Advanced React Development - Updated",
+    "appliedAt": "2025-10-14T10:00:00Z"
   }
 }
 
@@ -1039,22 +1053,22 @@ Response 400 Bad Request (if already reviewed):
 {
   "success": false,
   "error": {
-    "code": "REQUEST_ALREADY_REVIEWED",
-    "message": "Cannot update request after admin review"
+    "code": "APPLICATION_ALREADY_REVIEWED",
+    "message": "Cannot update application after admin review"
   }
 }
 ```
 
-=== 11.3. Cancel Course Request
+=== 11.3. Cancel Instructor Application
 
 ```http
-DELETE /course-requests/:requestId
+DELETE /instructor-applications/:applicationId
 Authorization: Bearer {token}
 
 Response 200 OK:
 {
   "success": true,
-  "message": "Course request cancelled successfully"
+  "message": "Instructor application cancelled successfully"
 }
 ```
 
@@ -1343,11 +1357,11 @@ Tất cả các API endpoint đều sử dụng format lỗi chuẩn:
 ```
 
 Error Codes:
-- `400 Bad Request`: VALIDATION_ERROR, INVALID_INPUT, REQUEST_ALREADY_REVIEWED
+- `400 Bad Request`: VALIDATION_ERROR, INVALID_INPUT, APPLICATION_ALREADY_REVIEWED
 - `401 Unauthorized`: UNAUTHORIZED, TOKEN_EXPIRED
 - `403 Forbidden`: FORBIDDEN, INSUFFICIENT_PERMISSIONS, NOT_INSTRUCTOR
 - `404 Not Found`: NOT_FOUND, RESOURCE_NOT_FOUND
-- `409 Conflict`: DUPLICATE_ENTRY, ALREADY_EXISTS, DUPLICATE_COURSE_REQUEST
+- `409 Conflict`: DUPLICATE_ENTRY, ALREADY_EXISTS, DUPLICATE_APPLICATION
 - `500 Internal Server Error`: INTERNAL_ERROR, DATABASE_ERROR
 
 == 17. Rate Limiting
