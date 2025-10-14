@@ -4,7 +4,7 @@ Tài liệu này mô tả thiết kế API RESTful cho hệ thống Learning Man
 
 == 1. Tổng quan
 
-- Base URL: `https://api.lms.example.com/v1`
+- Base URL: `https://uit-limousine.netlify.app/`
 
 - Authentication: JWT Bearer Token
 
