@@ -483,7 +483,7 @@ Response 201 Created:
 }
 ```
 
-=== 5.2. Get Enrolled Courses (UC-08)
+=== 5.2. Get Enrolled Courses
 
 ```http
 GET /enrollments/my-courses?status=ACTIVE&page=1&limit=10
@@ -558,7 +558,7 @@ Response 200 OK:
 }
 ```
 
-=== 6.2. Upload Material (UC-09)
+=== 6.2. Upload Material (UC-11)
 
 ```http
 POST /materials
@@ -657,7 +657,7 @@ Response 201 Created:
 }
 ```
 
-=== 7.3. Submit Assignment (UC-06, UC-12)
+=== 7.3. Submit Assignment (UC-06)
 
 ```http
 POST /assignments/:assignmentId/submit
@@ -742,7 +742,7 @@ Response 200 OK:
 }
 ```
 
-=== 7.6. View Feedback (UC-14)
+=== 7.6. View Feedback (UC-06)
 
 ```http
 GET /submissions/:submissionId
@@ -773,7 +773,7 @@ Response 200 OK:
 
 == 8. Messaging & Communication
 
-=== 8.1. Send Message (UC-10, UC-15)
+=== 8.1. Send Message (UC-10)
 
 ```http
 POST /messages
@@ -825,7 +825,7 @@ Response 200 OK:
 }
 ```
 
-=== 8.3. Get Thread Messages (UC-16)
+=== 8.3. Get Thread Messages (UC-10)
 
 ```http
 GET /messages/thread/:threadId
@@ -1237,7 +1237,7 @@ Response 200 OK:
 
 == 15. Admin & System
 
-=== 15.1. System Logs (UC-18, UC-20)
+=== 15.1. System Logs (UC-18)
 
 ```http
 GET /admin/logs?type=AUTH&startDate=2025-10-01&endDate=2025-10-14&page=1&limit=50
@@ -1266,7 +1266,7 @@ Response 200 OK:
 }
 ```
 
-=== 15.2. System Settings (UC-19)
+=== 15.2. System Settings (UC-18)
 
 ```http
 GET /admin/settings
