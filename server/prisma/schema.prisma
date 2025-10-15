@@ -1,3 +1,7 @@
+// Prisma schema for LMS platform (based on product_backlog.md)
+// Adjusted to enforce: anyone can register; users request instructor approval when they want to create a course;
+// Admin creates the course and assigns the requester as instructor on approval.
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -7,25 +11,320 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// Enums
+enum EnrollmentStatus {
+  PENDING
+  ENROLLED
+  COMPLETED
+  CANCELLED
+}
+
+enum SubmissionStatus {
+  SUBMITTED
+  LATE
+  NEEDS_RESUBMIT
+  GRADED
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  REFUNDED
+}
+
+enum NotificationChannel {
+  IN_APP
+  EMAIL
+}
+
+// Status for instructor application: users explicitly request to become instructor when they want to create a course
+enum InstructorApplicationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+// Core models
 model User {
+  id            String       @id @default(uuid())
+  email         String       @unique
+  username      String?      @unique
+  name          String?
+  passwordHash  String?      // nullable for OAuth-only accounts
+  bio           String?
+  avatarUrl     String?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  // relations
+  roles         UserRole[]
+  courses       Course[]     @relation("InstructorCourses")
+  enrollments   Enrollment[]
+  submissions   Submission[] @relation("studentSubmissions")
+  gradedSubmits Submission[] @relation("graderSubmissions")
+  notifications Notification[]
+  messages      Message[]
+  reviews       Review[]
+  payments      Payment[]
+  certificates  Certificate[]
+
+  // Instructor application relations (split into submitted / reviewed)
+  applicationsSubmitted InstructorApplication[] @relation("ApplicantApplications")
+  applicationsReviewed  InstructorApplication[] @relation("ReviewerApplications")
+
+  auditLogs     AuditLog[]   @relation("actorLogs")
+}
+
+model Role {
+  id    Int     @id @default(autoincrement())
+  name  String  @unique
+  desc  String?
+
+  users UserRole[]
+}
+
+model UserRole {
+  id     Int    @id @default(autoincrement())
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+  role   Role   @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  roleId Int
+
+  @@unique([userId, roleId])
+}
+
+// Courses are created by Admins. instructorId is nullable until assigned by admin.
+model Course {
+  id           String        @id @default(uuid())
+  title        String
+  slug         String        @unique
+  shortDesc    String?
+  description  String?
+  language     String?       @default("en")
+  level        String?       // e.g., Beginner / Intermediate / Advanced
+  price        Float?        @default(0)
+  published    Boolean       @default(false)
+  publishDate  DateTime?
+  coverImage   String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  // relations
+  instructor   User?         @relation("InstructorCourses", fields: [instructorId], references: [id], onDelete: SetNull)
+  instructorId String?
+  modules      Module[]
+  enrollments  Enrollment[]
+  assignments  Assignment[]
+  reviews      Review[]
+  payments     Payment[]
+  certificates Certificate[]
+  threads      Thread[]      // <-- opposite side for Thread.course relation
+
+  @@index([title])
+}
+
+model Module {
   id        String   @id @default(uuid())
-  username  String
-  password  String
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  courseId  String
+  title     String
+  position  Int      @default(0)
   createdAt DateTime @default(now())
-  role      Role     @default(USER)
-  email     String   @unique
-  updatedAt DateTime @updatedAt
-  tokens    Token[]
+  lessons   Lesson[]
+
+  @@index([courseId, position])
 }
 
-model Token {
-  id        Int       @id @default(autoincrement())
-  token     String    @unique
-  user      User      @relation(fields: [userId], references: [id])
-  userId    String  
+model Lesson {
+  id          String   @id @default(uuid())
+  module      Module   @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  moduleId    String
+  title       String
+  content     String?  // markdown or rich text
+  mediaUrl    String?  // optional video/file url
+  contentType String?  // "video" | "article" | "file"
+  durationSec Int?     // for video lessons
+  position    Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  @@index([moduleId, position])
 }
 
-enum Role {
-  USER
-  ADMIN
+model Enrollment {
+  id         String           @id @default(uuid())
+  user       User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     String
+  course     Course           @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  courseId   String
+  status     EnrollmentStatus @default(ENROLLED)
+  isPaid     Boolean          @default(false)
+  enrolledAt DateTime         @default(now())
+  completedAt DateTime?
+
+  @@unique([userId, courseId])
+  @@index([courseId])
 }
+
+model Assignment {
+  id          String    @id @default(uuid())
+  course      Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  courseId    String
+  title       String
+  description String?
+  dueDate     DateTime?
+  maxPoints   Int?      @default(100)
+  createdAt   DateTime  @default(now())
+  submissions Submission[]
+}
+
+model Submission {
+  id           String           @id @default(uuid())
+  assignment   Assignment       @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  assignmentId String
+  student      User             @relation("studentSubmissions", fields: [studentId], references: [id], onDelete: Cascade)
+  studentId    String
+  content      String?          // comments or text
+  fileUrl      String?
+  status       SubmissionStatus @default(SUBMITTED)
+  grade        Float?
+  feedback     String?
+  submittedAt  DateTime         @default(now())
+  gradedAt     DateTime?
+  grader       User?            @relation("graderSubmissions", fields: [graderId], references: [id], onDelete: SetNull)
+  graderId     String?
+
+  @@index([assignmentId, studentId])
+}
+
+model Notification {
+  id         String              @id @default(uuid())
+  user       User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     String
+  channel    NotificationChannel @default(IN_APP)
+  title      String
+  body       String
+  data       Json?
+  read       Boolean             @default(false)
+  createdAt  DateTime            @default(now())
+
+  @@index([userId, read])
+}
+
+model Thread {
+  id        String    @id @default(uuid())
+  course    Course?   @relation(fields: [courseId], references: [id], onDelete: SetNull)
+  courseId  String?
+  subject   String?
+  messages  Message[]
+  createdAt DateTime  @default(now())
+}
+
+model Message {
+  id        String   @id @default(uuid())
+  thread    Thread   @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  threadId  String
+  sender    User     @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  senderId  String
+  content   String
+  fileUrl   String?
+  createdAt DateTime @default(now())
+
+  @@index([threadId, createdAt])
+}
+
+model Review {
+  id        String   @id @default(uuid())
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  courseId  String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  rating    Int      @default(5)
+  comment   String?
+  createdAt DateTime @default(now())
+
+  @@unique([courseId, userId])
+}
+
+model Payment {
+  id             String        @id @default(uuid())
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId         String
+  course         Course?       @relation(fields: [courseId], references: [id], onDelete: SetNull)
+  courseId       String?
+  amount         Float
+  currency       String        @default("USD")
+  provider       String?
+  providerTxnId  String?       @unique
+  status         PaymentStatus @default(PENDING)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+}
+
+model Certificate {
+  id              String   @id @default(uuid())
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId          String
+  course          Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  courseId        String
+  issuedAt        DateTime @default(now())
+  certificateUrl  String
+  verificationCode String  @unique
+}
+
+// Users explicitly create an InstructorApplication only when they want to become an instructor
+// (i.e., to create a course). Admins review and approve/reject. On approval: Admin creates the course and
+// assigns the applicant as the instructor (by creating a UserRole linking to the Instructor role and
+// setting course.instructorId = applicantId).
+model InstructorApplication {
+  id                     String                        @id @default(uuid())
+  applicant              User                          @relation("ApplicantApplications", fields: [applicantId], references: [id], onDelete: Cascade)
+  applicantId            String
+
+  // optional fields to help admin decide — often users will include a sample course idea
+  requestedCourseTitle   String?
+  requestedCourseSummary String?
+  portfolioUrl           String?
+
+  status                 InstructorApplicationStatus  @default(PENDING)
+  note                   String?
+  appliedAt              DateTime                      @default(now())
+  reviewedAt             DateTime?
+  reviewer               User?                         @relation("ReviewerApplications", fields: [reviewerId], references: [id], onDelete: SetNull)
+  reviewerId             String?
+
+  @@index([applicantId, status])
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  actor     User?    @relation("actorLogs", fields: [actorId], references: [id], onDelete: SetNull)
+  actorId   String?
+  action    String
+  resource  String?
+  resourceId String?
+  data      Json?
+  createdAt DateTime @default(now())
+
+  @@index([actorId, createdAt])
+}
+
+// Utility
+model FileMeta {
+  id        String   @id @default(uuid())
+  url       String
+  filename  String?
+  size      Int?
+  mimeType  String?
+  createdAt DateTime @default(now())
+}
+
+// Notes:
+// - Enforcement of the rule "only admin creates courses and assigns instructors" is an application-level policy.
+//   DB design supports this flow by keeping course.instructorId nullable and by storing InstructorApplication records.
+// - Typical flow to implement in server code:
+//   1. User registers (default role: Learner).
+//   2. If user wants to create a course -> POST /instructor-applications with requestedCourseTitle.
+//   3. Admin reviews application. If APPROVED -> admin creates Course and assigns instructorId to applicant's id +
+//      creates a UserRole entry linking user to the Instructor role.
+//   4. If REJECTED -> application.status = REJECTED and optionally notify applicant.
