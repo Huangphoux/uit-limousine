@@ -1,6 +1,10 @@
-// Prisma schema for LMS platform (based on product_backlog.md)
-// Adjusted to enforce: anyone can register; users request instructor approval when they want to create a course;
-// Admin creates the course and assigns the requester as instructor on approval.
+// Prisma schema for LMS platform (based on product_backlog.typ UC-01 and UC-08)
+// Key workflow: 
+// 1. Anyone can register (UC-01) - default role is typically LEARNER
+// 2. Users who want to create a course submit a "Request to Create Course" (UC-08: InstructorApplication)
+// 3. Admin reviews and approves/rejects the request
+// 4. On approval: Admin creates the course AND assigns the requester as instructor for that course
+// 5. Approval as instructor is tied to course creation intent (not a general automatic upgrade)
 
 generator client {
   provider = "prisma-client-js"
@@ -38,7 +42,8 @@ enum NotificationChannel {
   EMAIL
 }
 
-// Status for instructor application: users explicitly request to become instructor when they want to create a course
+// Status for course creation request: users explicitly request to create a course (which grants instructor privileges upon approval)
+// Per UC-08: "Request to Create Course & Instructor Approval" - approval is tied to the course creation intent
 enum InstructorApplicationStatus {
   PENDING
   APPROVED
@@ -94,7 +99,8 @@ model UserRole {
   @@unique([userId, roleId])
 }
 
-// Courses are created by Admins. instructorId is nullable until assigned by admin.
+// Courses are created by Admins only (per UC-11). 
+// instructorId is assigned when Admin approves a course creation request and assigns the requester as instructor.
 model Course {
   id           String        @id @default(uuid())
   title        String
@@ -272,19 +278,25 @@ model Certificate {
   verificationCode String  @unique
 }
 
-// Users explicitly create an InstructorApplication only when they want to become an instructor
-// (i.e., to create a course). Admins review and approve/reject. On approval: Admin creates the course and
-// assigns the applicant as the instructor (by creating a UserRole linking to the Instructor role and
-// setting course.instructorId = applicantId).
+// Per UC-08: "Request to Create Course & Instructor Approval"
+// Users create an InstructorApplication when they want to create a course (not a general instructor upgrade).
+// Workflow:
+// 1. User submits request with proposed course details
+// 2. Admin reviews and approves/rejects
+// 3. On approval:
+//    - Admin creates the Course record
+//    - Admin assigns applicant as instructor for that course (sets course.instructorId = applicantId)
+//    - Admin optionally grants course-level or global instructor role (creates UserRole entry)
+// 4. On rejection: applicant notified with reason
 model InstructorApplication {
   id                     String                        @id @default(uuid())
   applicant              User                          @relation("ApplicantApplications", fields: [applicantId], references: [id], onDelete: Cascade)
   applicantId            String
 
-  // optional fields to help admin decide — often users will include a sample course idea
-  requestedCourseTitle   String?
-  requestedCourseSummary String?
-  portfolioUrl           String?
+  // Course proposal details (per UC-08: user proposes course metadata)
+  requestedCourseTitle   String?  // Proposed course title
+  requestedCourseSummary String?  // Short outline/description of proposed course
+  portfolioUrl           String?  // Optional: link to portfolio or sample content
 
   status                 InstructorApplicationStatus  @default(PENDING)
   note                   String?
@@ -319,12 +331,15 @@ model FileMeta {
   createdAt DateTime @default(now())
 }
 
-// Notes:
-// - Enforcement of the rule "only admin creates courses and assigns instructors" is an application-level policy.
-//   DB design supports this flow by keeping course.instructorId nullable and by storing InstructorApplication records.
-// - Typical flow to implement in server code:
-//   1. User registers (default role: Learner).
-//   2. If user wants to create a course -> POST /instructor-applications with requestedCourseTitle.
-//   3. Admin reviews application. If APPROVED -> admin creates Course and assigns instructorId to applicant's id +
-//      creates a UserRole entry linking user to the Instructor role.
-//   4. If REJECTED -> application.status = REJECTED and optionally notify applicant.
+// Implementation Notes (per UC-01, UC-08, UC-11, UC-17):
+// - Anyone can register (UC-01): POST /auth/register creates User with default LEARNER role (or no role initially)
+// - "Only admin creates courses" (UC-11): Course records can only be created via Admin actions
+// - Course creation request workflow (UC-08):
+//   1. User wants to create a course -> POST /instructor-applications with requestedCourseTitle, requestedCourseSummary, portfolioUrl
+//   2. Admin reviews -> GET /admin/instructor-applications?status=PENDING
+//   3. Admin approves -> PUT /admin/instructor-applications/:id/approve
+//      - Backend creates Course record with course.instructorId = applicantId
+//      - Backend creates/updates UserRole to grant Instructor privileges (course-level or global per policy)
+//      - Backend sets application.status = APPROVED, application.reviewerId = adminId, application.reviewedAt = now()
+//   4. Admin rejects -> PUT /admin/instructor-applications/:id/reject (sets status = REJECTED, notify applicant)
+// - User & Course assignment (UC-17): Admin can also manually assign instructor roles and course-level permissions via /admin/users endpoints

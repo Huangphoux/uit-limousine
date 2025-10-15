@@ -14,21 +14,21 @@ Tài liệu này mô tả thiết kế API RESTful cho hệ thống Learning Man
 
 - Quy trình đặc biệt:
 
-- Tạo khóa học và trở thành Instructor:
-    + Người dùng đăng ký tài khoản (role mặc định: LEARNER)
-    + Người dùng nộp đơn xin trở thành instructor (`POST /instructor-applications`)
-    + Admin xem xét đơn (`GET /admin/instructor-applications`)
+- Quy trình tạo khóa học (Course Creation via Request):
+    + Bất kỳ ai cũng có thể đăng ký tài khoản (`POST /auth/register`) - role mặc định: LEARNER
+    + Người dùng muốn tạo khóa học → nộp "Request to Create Course" (`POST /instructor-applications`)
+    + Admin xem xét đơn yêu cầu (`GET /admin/instructor-applications?status=PENDING`)
     + Admin phê duyệt (`PUT /admin/instructor-applications/:id/approve`):
-        - Hệ thống tự động tạo khóa học
-        - Hệ thống thăng cấp người yêu cầu lên INSTRUCTOR
-        - Hệ thống gán người đó làm giảng viên của khóa học
-    + Instructor có thể chỉnh sửa và xuất bản khóa học
+        - Admin tạo khóa học (`POST /admin/courses`)
+        - Hệ thống gán người yêu cầu làm instructor cho khóa học đó
+        - Hệ thống cấp instructor privileges (course-level hoặc global tùy policy)
+    + Instructor có thể chỉnh sửa (`PUT /courses/:id`) và xuất bản (`POST /courses/:id/publish`) khóa học
 
 == 2. Authentication & Authorization
 
 === 2.1. Register (UC-01)
 
-- Lưu ý: Bất kỳ ai cũng có thể đăng ký tài khoản. Tất cả tài khoản mới mặc định có role là LEARNER.
+- Lưu ý: Anyone can register an account. All new accounts default to LEARNER role. Email verification may be required before account becomes active.
 
 ```http
 POST /auth/register
@@ -48,8 +48,10 @@ Response 201 Created:
     "email": "user@example.com",
     "fullName": "Nguyen Van A",
     "role": "LEARNER",
+    "emailVerified": false,
     "createdAt": "2025-10-14T10:00:00Z"
-  }
+  },
+  "message": "Registration successful. Please check your email to verify your account."
 }
 ```
 
@@ -259,13 +261,16 @@ Response 200 OK:
 }
 ```
 
-=== 4.3. Apply to Become Instructor (UC-08, UC-11)
+=== 4.3. Request to Create Course & Instructor Approval (UC-08, UC-11)
 
 Quy trình: 
-1. Người dùng tạo đơn xin trở thành instructor (InstructorApplication)
-2. Admin xem xét và phê duyệt
-3. Nếu được chấp thuận, Admin tạo khóa học và thêm người yêu cầu làm giảng viên
-4. Người yêu cầu được cập nhật role thành INSTRUCTOR
+1. Người dùng đã đăng ký muốn tạo khóa học → nộp "Request to Create Course" (InstructorApplication)
+2. Admin xem xét đơn yêu cầu
+3. Nếu được chấp thuận:
+   - Admin tạo khóa học
+   - Admin gán người yêu cầu làm instructor cho khóa học đó
+   - Người yêu cầu được cấp quyền instructor (course-level hoặc global tùy policy)
+4. Nếu bị từ chối → thông báo cho người yêu cầu kèm lý do
 
 ```http
 POST /instructor-applications
@@ -290,7 +295,7 @@ Response 201 Created:
 }
 ```
 
-=== 4.4. Admin Review Instructor Application (UC-08)
+=== 4.4. Admin Review Course Creation Request (UC-08)
 
 ```http
 GET /admin/instructor-applications?status=PENDING&page=1&limit=20
@@ -342,7 +347,7 @@ Response 200 OK:
     "instructorId": "uuid",
     "reviewedAt": "2025-10-15T10:00:00Z"
   },
-  "message": "Application approved. User promoted to INSTRUCTOR and course created."
+  "message": "Course creation request approved. Course created and user assigned as instructor."
 }
 
 PUT /admin/instructor-applications/:applicationId/reject
@@ -364,9 +369,9 @@ Response 200 OK:
 }
 ```
 
-=== 4.5. Admin Create Course (After Approval)
+=== 4.5. Admin Create Course (After Approval) (UC-11)
 
-Lưu ý: Chỉ Admin mới có thể tạo khóa học trực tiếp. Endpoint này được gọi tự động khi Admin approve course request.
+Lưu ý: Chỉ Admin mới có thể tạo khóa học trực tiếp. Endpoint này được gọi tự động khi Admin approve course creation request. Admin assigns the requester as the course instructor.
 
 ```http
 POST /admin/courses
@@ -979,16 +984,20 @@ Content-Disposition: attachment; filename="course-report.csv"
 [CSV data]
 ```
 
-== 11. Instructor Application Management
+== 11. Course Creation Request Management (UC-08)
 
 Lưu ý quan trọng:
-- Người dùng chỉ được thăng cấp lên INSTRUCTOR khi:
-  + Họ nộp đơn xin trở thành instructor (InstructorApplication)
-  + Admin phê duyệt đơn đó
-  + Admin tạo khóa học và gán họ làm giảng viên
-- Một người có thể nộp nhiều đơn xin instructor (ví dụ để tạo nhiều khóa học khác nhau)
+- Approval as instructor is tied to course creation intent (not a general automatic upgrade)
+- Quy trình:
+  + Người dùng muốn tạo khóa học → nộp "Request to Create Course"
+  + Admin xem xét và phê duyệt/từ chối
+  + Nếu được chấp thuận:
+    * Admin tạo khóa học
+    * Admin gán người yêu cầu làm instructor cho khóa học đó
+    * Người yêu cầu được cấp instructor privileges (course-level hoặc global tùy policy)
+- Một người có thể nộp nhiều course creation requests (để tạo nhiều khóa học khác nhau)
 
-=== 11.1. Get My Instructor Applications
+=== 11.1. Get My Course Creation Requests
 
 ```http
 GET /instructor-applications/my-applications?status=PENDING&page=1&limit=10
@@ -1026,7 +1035,7 @@ Response 200 OK:
 }
 ```
 
-=== 11.2. Update Instructor Application (Before Approval)
+=== 11.2. Update Course Creation Request (Before Approval)
 
 ```http
 PUT /instructor-applications/:applicationId
@@ -1059,7 +1068,7 @@ Response 400 Bad Request (if already reviewed):
 }
 ```
 
-=== 11.3. Cancel Instructor Application
+=== 11.3. Cancel Course Creation Request
 
 ```http
 DELETE /instructor-applications/:applicationId
@@ -1068,7 +1077,7 @@ Authorization: Bearer {token}
 Response 200 OK:
 {
   "success": true,
-  "message": "Instructor application cancelled successfully"
+  "message": "Course creation request cancelled successfully"
 }
 ```
 
