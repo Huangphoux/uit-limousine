@@ -1,0 +1,8 @@
+<svg width="600" height="200" xmlns="http://www.w3.org/2000/svg">
+  <rect width="600" height="200" fill="#2a2a2a"/>
+  <g fill="#ffffff" font-family="Arial, sans-serif" font-size="24" text-anchor="middle">
+    <text x="300" y="90">📚</text>
+    <text x="300" y="120" font-size="18">Course Image</text>
+    <text x="300" y="145" font-size="14" fill="#b0b0b0">Loading...</text>
+  </g>
+</svg>
