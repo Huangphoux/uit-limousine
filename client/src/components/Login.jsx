@@ -1,3 +1,4 @@
+
 import { Form, Button, Container, Row, Col, Spinner } from "react-bootstrap";
 import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
@@ -9,11 +10,11 @@ export default function Login() {
 
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
-    email: "test@test.com", // Dữ liệu có sẵn để khỏi phải nhập thủ công
-    password: "test123", // Dữ liệu có sẵn để khỏi phải nhập thủ công
+    email: "test@test.com", // Default test data to avoid manual input
+    password: "test123", // Default test data to avoid manual input
   });
 
-  // handleChange: đặt dữ liệu vào miền tương ứng
+  // handleChange: update input field values
   const handleChange = (e) => {
     setFormData({
       ...formData,
@@ -21,10 +22,10 @@ export default function Login() {
     });
   };
 
-  // handleSubmit: xử lí dữ liệu khi người dùng bấm vào nút với API Render
+  // handleSubmit: process data when the user clicks the button and call API
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setIsLoading(true); // Loading: Hiện Spinner trên nút Login
+    setIsLoading(true); // Show spinner on login button
 
     try {
       const response = await fetch(`${API_URL}/api/login`, {
@@ -41,21 +42,21 @@ export default function Login() {
         throw new Error(data.message || "Login failed");
       }
 
-      // Lưu thông tin user và token vào localStorage
+      // Save user info and token to localStorage
       localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
 
-      // Navigate: chuyển hướng sang trang hiện thông tin người dùng
+      // Navigate to user info page
       navigate("/user-info");
     } catch (error) {
       console.error("Error:", error);
       if (error.message.includes("fetch")) {
-        alert("Không thể kết nối đến server. Vui lòng kiểm tra kết nối internet.");
+        alert("Unable to connect to the server. Please check your internet connection.");
       } else {
-        alert("Đăng nhập thất bại: " + error.message);
+        alert("Login failed: " + error.message);
       }
     } finally {
-      setIsLoading(false); // Tắt loading
+      setIsLoading(false); // Disable loading state
     }
   };
 
@@ -106,8 +107,8 @@ export default function Login() {
                       aria-hidden="true"
                       className="me-2"
                     />
-                    <span className="visually-hidden">Đang đăng nhập...</span>
-                    Đang đăng nhập...
+                    <span className="visually-hidden">Signing in...</span>
+                    Signing in...
                   </>
                 ) : (
                   "Sign In"

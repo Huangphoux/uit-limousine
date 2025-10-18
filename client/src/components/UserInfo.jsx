@@ -1,3 +1,4 @@
+
 import { Container, Navbar } from "react-bootstrap";
 import { useEffect, useState } from "react";
 
@@ -5,10 +6,10 @@ export default function UserInfo() {
   const [userInfo, setUserInfo] = useState(null);
 
   useEffect(() => {
-    // Lấy thông tin user từ localStorage
+    // Retrieve user information from localStorage
     let userData = localStorage.getItem("user");
 
-    // DEBUG MODE: Nếu không có user data, tạo fake data để debug
+    // DEBUG MODE: If no user data exists, create fake data for debugging
     if (!userData) {
       const fakeUser = {
         username: "admin",
@@ -26,7 +27,7 @@ export default function UserInfo() {
       <>
         <Navbar expand="lg" fixed="top" className="bg-body-tertiary">
           <Container>
-            <Navbar.Brand>Limousine !</Navbar.Brand>
+            <Navbar.Brand>Limousine!</Navbar.Brand>
           </Container>
         </Navbar>
         <Container className="mt-5 pt-5">Loading...</Container>
@@ -36,10 +37,10 @@ export default function UserInfo() {
 
   return (
     <>
-      {/* Custom header with only app name */}
+      {/* Custom header with only the app name */}
       <Navbar expand="lg" fixed="top" className="bg-body-tertiary">
         <Container>
-          <Navbar.Brand>Limousine !</Navbar.Brand>
+          <Navbar.Brand>Limousine!</Navbar.Brand>
         </Container>
       </Navbar>
 
