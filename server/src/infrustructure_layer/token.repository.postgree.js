@@ -1,17 +1,15 @@
-import { PrismaClient} from '@prisma/client';
-const Prisma = new PrismaClient();
+export class TokenRepositoryPostgree {
+    constructor(tokenModel) {
+        this.tokenModel = tokenModel;
+    }
 
-export class TokenRepositoryPostgree
-{
-    async add(token)
-    {
-        return await Prisma.token.create({
+    async add(token) {
+        return await this.tokenModel.create({
             data: { token: token.token, userId: token.userId }
         });
     }
 
-    async remove(tokenString)
-    {
-        return await Prisma.token.delete({ where: { token: tokenString } });
+    async remove(tokenString) {
+        return await this.tokenModel.delete({ where: { token: tokenString } });
     }
 }

@@ -1,27 +1,22 @@
 import jwt from "jsonwebtoken";
+import { ERROR_CATALOG } from "../../constants/errors.js";
 import { TokenEntity } from "../domain_layer/token.entity.js";
 
-export class LoginUseCase
-{
-    static get LOGIN_ERROR_MESSAGE() { return "Invalid email or password"; }
-
-    constructor(userRepository, tokenRepository, jwtSecret, jwtExpiry = '1h')
-    {
+export class LoginUseCase {
+    constructor(userRepository, tokenRepository, jwtConfig) {
         this.userRepository = userRepository;
         this.tokenRepository = tokenRepository;
-        this.jwtSecret = jwtSecret;
-        this.jwtExpiry = jwtExpiry;
+        this.jwtConfig = jwtConfig;
     }
 
-    async execute({ email, password})
-    {
+    async execute({ email, password }) {
         const user = await this.userRepository.findByEmail(email);
-        if (!user) throw new Error(LoginUseCase.LOGIN_ERROR_MESSAGE);
-        
-        const isPasswordValid = user.matchPassword(password);
-        if (!isPasswordValid) throw new Error(LoginUseCase.LOGIN_ERROR_MESSAGE);
+        if (!user) throw new Error(ERROR_CATALOG.LOGIN.message);
 
-        const jwtToken = jwt.sign({ userId: user.id, email: user.email }, this.jwtSecret, { expiresIn: this.jwtExpiry });
+        const isPasswordValid = user.matchPassword(password);
+        if (!isPasswordValid) throw new Error(ERROR_CATALOG.LOGIN.message);
+
+        const jwtToken = jwt.sign({ sub: user.id }, this.jwtConfig.secret, { expiresIn: this.jwtConfig.expiry });
         const token = new TokenEntity(jwtToken, user.id);
         await this.tokenRepository.add(token);
 

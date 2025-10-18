@@ -1,17 +1,17 @@
-export class LoginController {
-    static get LOGIN_MESSAGE() { return 'Login successful'; }
+import { ERROR_CATALOG } from "../../../constants/errors";
 
+export class LoginController {
     constructor(loginUseCase) {
         this.loginUseCase = loginUseCase;
     }
 
-    async login(req, res) {
+    async execute(req, res) {
         try {
             const result = await this.loginUseCase.execute(req.body);
             res.json({ token: result });
         }
         catch (error) {
-            res.status(401).json({ message: error.message });
+            res.status(ERROR_CATALOG.LOGIN.status).json({ message: error.message });
         }
     }
 }
