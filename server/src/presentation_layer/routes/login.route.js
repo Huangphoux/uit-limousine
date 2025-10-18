@@ -1,4 +1,4 @@
-import express from "express";
+import { Router } from "express";
 import { LoginController } from "../controllers/login.controller.js";
 
 export function createLoginRouter(loginUseCase) {
@@ -9,3 +9,7 @@ export function createLoginRouter(loginUseCase) {
   });
   return router;
 }
+
+const router = Router()
+
+export default router;
