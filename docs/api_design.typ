@@ -47,7 +47,7 @@ Response 201 Created:
     "id": "uuid",
     "email": "user@example.com",
     "fullName": "Nguyen Van A",
-    "role": "LEARNER",
+    "roles": ["LEARNER"],
     "emailVerified": false,
     "createdAt": "2025-10-14T10:00:00Z"
   },
