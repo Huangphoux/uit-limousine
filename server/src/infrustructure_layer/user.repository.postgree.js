@@ -7,8 +7,23 @@ export class UserRepositoryPostgree {
 
     async findByEmail(email) {
         const row = await this.userModel.findUnique({
-            where: { email: email }
+            where: { email: email },
+            select: {
+                id: true,
+                email: true,
+                password: true,
+                name: true,
+                roles: true,
+            }
         });
-        return row ? new UserEntity(row.id, row.email, row.password) : null;
+
+        if (row == null)
+            return row;
+
+        let user = new UserEntity(row.id, row.email);
+        user.password = row.password;
+        user.name = row.name;
+        user.roles = row.role;
+        return user;
     }
 }

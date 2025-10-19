@@ -1,8 +1,6 @@
-import jwt from 'jsonwebtoken';
 import request from 'supertest';
 import app from '../../src/app.js';
 import { prisma } from '../../src/composition-root.js';
-import { config } from '../../src/config.js';
 import { ERROR_CATALOG } from '../../constants/errors.js';
 
 jest.setTimeout(20000);
@@ -40,13 +38,19 @@ describe('Login Integration Test', () => {
 
         expect(res.status).toBe(200);
 
-        const decoded = jwt.verify(res.body.token, config.jwt.secret);
-        expect(decoded).toHaveProperty('sub');
-
-        const savedToken = await prisma.token.findUnique({
-            where: { token: res.body.token },
+        const accessToken = await prisma.token.findUnique({
+            where: { token: res.body.data.accessToken },
+            select: { id: true },
         });
-        expect(savedToken).not.toBeNull();
+        expect(accessToken).not.toBeNull();
+
+        const refreshToken = await prisma.token.findUnique({
+            where: { token: res.body.data.refreshToken },
+            select: { id: true },
+        });
+        expect(refreshToken).not.toBeNull();
+
+        expect(res.body.data.user.email).toBe(testEmail);
     });
 
     test(`should return status code ${ERROR_CATALOG.LOGIN.status} and error message on wrong password`, async () => {

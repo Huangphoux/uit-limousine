@@ -1,63 +1,52 @@
-import jwt from "jsonwebtoken";
 import { LoginUseCase } from "../../../src/application_layer/login.usecase";
-import { UserEntity } from "../../../src/domain_layer/user.entity";
+import { config } from "../../../src/config.js"
+import { ERROR_CATALOG } from "../../../constants/errors";
 
 jest.mock('jsonwebtoken', () => ({
     sign: jest.fn(),
 }));
 
-describe.only("LoginUseCase", () => {
-    let testEmail = "test@gmail.com";
-    let testPassword = "test";
-    let mockUser;    
-    let mockUserRepo;
-    let mockTokenRepo;
-    let loginUseCase;
-    let jwtSecret = 'secret';
-    let jwtExpiry = '1h';
+describe.only("Login use case", () => {
+    const testEmail = "test@gmail.com";
+    const testPassword = "test";
+    const mockUser = { matchPassword: jest.fn() };
+
+    const mockUserRepo = { findByEmail: jest.fn() };
+    const mockTokenRepo = { add: jest.fn() };
+    const loginUseCase = new LoginUseCase(mockUserRepo, mockTokenRepo, config.jwt);
 
     beforeEach(() => {
-        mockUser = new UserEntity(1, testEmail, testPassword)
-        mockUserRepo = {
-            findByEmail: jest.fn(),
-        };
-        mockTokenRepo = {
-            add: jest.fn(),
-        };
-        loginUseCase = new LoginUseCase(mockUserRepo, mockTokenRepo, jwtSecret, jwtExpiry);
         jest.clearAllMocks();
     })
 
-    test("throws error if user not found",
+    test("should throw error on unexisting email",
         async () => {
             mockUserRepo.findByEmail.mockResolvedValue(null);
+
             await expect(loginUseCase.execute({ email: testEmail, password: testPassword }))
-                        .rejects.toThrow(LoginUseCase.LOGIN_ERROR_MESSAGE)
+                .rejects.toThrow(ERROR_CATALOG.LOGIN.message)
         }
     )
 
-    test("throws error if password is invalid",
+    test("should throw error on invalid password",
         async () => {
             mockUserRepo.findByEmail.mockResolvedValue(mockUser);
-            await expect(loginUseCase.execute({ email: testEmail, password: "not_test" }))
-                        .rejects.toThrow(LoginUseCase.LOGIN_ERROR_MESSAGE);
+            mockUser.matchPassword.mockReturnValue(false);
+
+            await expect(loginUseCase.execute({ email: testEmail, password: testPassword }))
+                .rejects.toThrow(ERROR_CATALOG.LOGIN.message);
         }
     )
 
-    test("return jwt token and save token if email and password are valid", 
+    test("should return jwt token and user on valid credentials",
         async () => {
             mockUserRepo.findByEmail.mockResolvedValue(mockUser);
-            const mockJwt = 'fake.jwt.token';
-            jwt.sign.mockReturnValue(mockJwt);
-            
+            mockUser.matchPassword.mockReturnValue(true);
+
             const result = await loginUseCase.execute({ email: testEmail, password: testPassword });
-            expect(result).toBe(mockJwt);
-            expect(jwt.sign).toHaveBeenCalledWith(
-                { userId: mockUser.id, email: mockUser.email },
-                jwtSecret,
-                { expiresIn: jwtExpiry }
-            );
-            expect(mockTokenRepo.add).toHaveBeenCalled();
+            expect(result.token).toHaveProperty('access');
+            expect(result.token).toHaveProperty('refresh');
+            expect(result).toHaveProperty('user', mockUser);
         }
     )
 })

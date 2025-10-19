@@ -16,10 +16,19 @@ export class LoginUseCase {
         const isPasswordValid = user.matchPassword(password);
         if (!isPasswordValid) throw new Error(ERROR_CATALOG.LOGIN.message);
 
-        const jwtToken = jwt.sign({ sub: user.id }, this.jwtConfig.secret, { expiresIn: this.jwtConfig.expiry });
-        const token = new TokenEntity(jwtToken, user.id);
-        await this.tokenRepository.add(token);
+        const accessTokenString = jwt.sign({ sub: user.id }, this.jwtConfig.secret, { expiresIn: this.jwtConfig.accessExpiry });
+        const refreshTokenString = jwt.sign({ sub: user.id }, this.jwtConfig.secret, { expiresIn: this.jwtConfig.refreshExpiry });
+        const accessToken = new TokenEntity(accessTokenString, user.id);
+        const refreshToken = new TokenEntity(refreshTokenString, user.id);
+        await this.tokenRepository.add(accessToken);
+        await this.tokenRepository.add(refreshToken);
 
-        return jwtToken;
+        return {
+            token: {
+                access: accessTokenString,
+                refresh: refreshTokenString,
+            },
+            user: user,
+        };
     }
 }
