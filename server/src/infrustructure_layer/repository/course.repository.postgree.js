@@ -7,7 +7,7 @@ export class CourseRepository {
         this.#courseModel = courseModel;
     }
 
-    async findByFilter({ title, page, limit }) {
+    async findByFilter({ title }) {
         const result = await this.#courseModel.findMany({
             where: {
                 title: title,

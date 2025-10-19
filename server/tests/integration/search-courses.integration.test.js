@@ -83,7 +83,7 @@ describe('Search Courses Integration Test', () => {
                 },
             });
         }
-        const courses = await prisma.course.createMany({
+        await prisma.course.createMany({
             data: [{
                 title: "Introduction to Node.js",
                 slug: "introduction-to-nodejs",

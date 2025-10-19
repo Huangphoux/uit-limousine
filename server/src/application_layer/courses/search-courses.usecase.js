@@ -7,7 +7,7 @@ export class SearchCoursesUseCase {
         this.#courseRepository = courseRepository;
     }
 
-    async execute({ search, category, page, limit }) {
+    async execute({ search }) {
         const result = await this.#courseRepository.findByFilter({ title: search });
         return {
             courses: result.map(courseEntity => ({
