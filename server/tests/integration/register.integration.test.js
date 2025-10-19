@@ -6,10 +6,10 @@ import { ERROR_CATALOG } from '../../constants/errors.js';
 
 jest.setTimeout(20000);
 
-describe.only('Register integration test', () => {
+describe.only('Register Integration Test', () => {
     const path = '/auth/register';
 
-    const testEmail = "user@example.com";
+    const testEmail = "register@example.com";
     const testPassword = "securePassword123";
     const testName = "Nguyen Van A";
     const sentData = { email: testEmail, password: testPassword, fullname: testName };

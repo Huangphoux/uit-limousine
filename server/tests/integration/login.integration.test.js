@@ -7,9 +7,9 @@ jest.setTimeout(20000);
 
 describe('Login Integration Test', () => {
     let path = '/auth/login';
-    let testUsername = "testuser";
-    let testEmail = 'test@example.com';
-    let testPassword = "secret";
+    let testUsername = "login";
+    let testEmail = 'login@example.com';
+    let testPassword = "login";
     let sentData = { email: testEmail, password: testPassword, fullname: testUsername };
 
     beforeAll(async () => {

@@ -10,9 +10,9 @@ describe('Logout Integration Test', () => {
     let mockToken = 'fake.jwt.token';
     let testUser;
 
-    let testUsername = "testuser";
-    let testEmail = 'test@example.com';
-    let testPassword = "secret";
+    let testUsername = "logout";
+    let testEmail = 'logout@example.com';
+    let testPassword = "logout";
 
 
     beforeAll(async () => {
