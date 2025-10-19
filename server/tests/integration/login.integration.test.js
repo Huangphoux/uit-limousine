@@ -1,6 +1,6 @@
 import jwt from 'jsonwebtoken';
 import request from 'supertest';
-import app from '../../src/index.js';
+import app from '../../src/app.js';
 import { prisma } from '../../src/composition-root.js';
 import { config } from '../../src/config.js';
 import { ERROR_CATALOG } from '../../constants/errors.js';
@@ -33,7 +33,7 @@ describe('Login Integration Test', () => {
         await prisma.$disconnect();
     });
 
-    test('Sucessful logging in test case', async () => {
+    test('should return status code 200 and create access token', async () => {
         const res = await request(app)
             .post(path)
             .send({ email: testEmail, password: testPassword });
@@ -49,7 +49,7 @@ describe('Login Integration Test', () => {
         expect(savedToken).not.toBeNull();
     });
 
-    test('Wrong password logging in test case', async () => {
+    test(`should return status code ${ERROR_CATALOG.LOGIN.status} and error message on wrong password`, async () => {
         const res = await request(app)
             .post(path)
             .send({ email: 'test@example.com', password: 'wrong' });
@@ -58,7 +58,7 @@ describe('Login Integration Test', () => {
         expect(res.body.message).toBe(ERROR_CATALOG.LOGIN.message);
     });
 
-    test('Wrong email logging in test case', async () => {
+    test(`should return status code ${ERROR_CATALOG.LOGIN.status} and error message on wrong email`, async () => {
         const res = await request(app)
             .post(path)
             .send({ email: 'no@example.com', password: 'secret' });

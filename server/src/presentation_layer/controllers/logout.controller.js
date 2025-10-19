@@ -1,22 +1,18 @@
-export class LogoutController
-{
-    static get LOGOUT_MESSAGE() { return 'Logout successfully'; }
+import { SUCCESS_CATALOG } from '../../../constants/messages.js'
+import { ERROR_CATALOG } from '../../../constants/errors.js';
 
-    constructor(logoutUseCase)
-    {
+export class LogoutController {
+    constructor(logoutUseCase) {
         this.logoutUseCase = logoutUseCase;
     }
 
-    async logout(req, res)
-    {
-        try
-        {
+    async execute(req, res) {
+        try {
             await this.logoutUseCase.execute(req.body);
-            res.json({ message: LogoutController.LOGOUT_MESSAGE });            
+            res.json({ message: SUCCESS_CATALOG.LOGOUT.message });
         }
-        catch (error)
-        {
-            res.status(401).json({ message: error.message });
+        catch (error) {
+            res.status(ERROR_CATALOG.LOGOUT.status).json({ message: error.message });
         }
     }
 }

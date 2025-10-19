@@ -1,18 +1,12 @@
-import express from 'express';
 import request from 'supertest';
-import { PrismaClient } from '@prisma/client';
-import { createLogoutRouter } from '../../src/presentation_layer/routes/logout.route.js';
-import { TokenRepositoryPostgree } from '../../src/infrustructure_layer/token.repository.postgree.js';
-import { LogoutUseCase } from '../../src/application_layer/logout.usecase.js';
-import { LogoutController } from '../../src/presentation_layer/controllers/logout.controller.js';
+import { prisma } from '../../src/composition-root.js';
+import { SUCCESS_CATALOG } from '../../constants/messages.js';
+import app from '../../src/app.js'
 
 jest.setTimeout(20000);
 
 describe('Logout Integration Test', () => {
-    let app;
-    let prisma;
-    let tokenRepo;
-    let useCase;
+    let path = '/auth/logout';
     let mockToken = 'fake.jwt.token';
     let testUser;
 
@@ -22,7 +16,6 @@ describe('Logout Integration Test', () => {
 
 
     beforeAll(async () => {
-        prisma = new PrismaClient();
         await prisma.$connect();
 
         testUser = await prisma.user.create({
@@ -32,13 +25,6 @@ describe('Logout Integration Test', () => {
                 password: testPassword
             }
         });
-
-        tokenRepo = new TokenRepositoryPostgree();
-        useCase = new LogoutUseCase(tokenRepo);
-
-        app = express();
-        app.use(express.json());
-        app.use(createLogoutRouter(useCase));
     });
 
     beforeEach(async () => {
@@ -56,29 +42,22 @@ describe('Logout Integration Test', () => {
         await prisma.$disconnect();
     });
 
-    test('POST /logout returns 200', async () => {
+    test('should return success message and delete the created access token', async () => {
         const res = await request(app)
-            .post('/logout')
+            .post(path)
             .send({ token: mockToken });
 
-        expect(res.status).toBe(200);
-        expect(res.body.message).toBe(LogoutController.LOGOUT_MESSAGE);
-    });
-
-    test('POST /logout DB delete', async () => {
-        await request(app)
-            .post('/logout')
-            .send({ token: mockToken });
+        expect(res.body.message).toBe(SUCCESS_CATALOG.LOGOUT.message);
 
         const token = await prisma.token.findUnique({ where: { token: mockToken } });
         expect(token).toBeNull();
     });
 
-    test('POST /logout 401 if wrong token', async () => {
+    test('should return status code 200', async () => {
         const res = await request(app)
-            .post('/logout')
+            .post(path)
             .send({ token: "mockToken" });
 
-        expect(res.status).toBe(401);
+        expect(res.status).toBe(SUCCESS_CATALOG.LOGOUT.status);
     });
 });

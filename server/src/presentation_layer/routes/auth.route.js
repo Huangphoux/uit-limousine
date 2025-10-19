@@ -1,8 +1,9 @@
 import { Router } from "express";
-import { loginController } from "../../composition-root.js";
+import { loginController, logoutController } from "../../composition-root.js";
 
 const router = Router();
 
 router.post('/login', async (req, res) => { await loginController.execute(req, res); });
+router.post('/logout', async (req, res) => { await logoutController.execute(req, res) });
 
 export default router;
