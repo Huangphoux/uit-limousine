@@ -1,4 +1,4 @@
-import { ERROR_CATALOG } from '../../../constants/errors.js';
+import { ERROR_CATALOG } from '../../../../constants/errors.js';
 
 export class LoginController {
     constructor(loginUseCase) {

@@ -1,4 +1,4 @@
-import { LogoutUseCase } from "../../../src/application_layer/logout.usecase";
+import { LogoutUseCase } from "../../../src/application_layer/authentication/logout.usecase";
 
 describe.only("LogoutUseCase", () => {
     let mockTokenRepo;
@@ -12,11 +12,11 @@ describe.only("LogoutUseCase", () => {
         jest.clearAllMocks();
     })
 
-    test("calls tokenRepository.remove with jwtToken and returns true", 
+    test("calls tokenRepository.remove with jwtToken and returns true",
         async () => {
             const mockToken = 'fake.jwt.token';
             const result = await logoutUseCase.execute({ token: mockToken });
-            
+
             expect(result).toBe(true);
             expect(mockTokenRepo.remove).toHaveBeenCalledWith(mockToken);
         }

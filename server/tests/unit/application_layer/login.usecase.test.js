@@ -1,6 +1,6 @@
-import { LoginUseCase } from "../../../src/application_layer/login.usecase";
+import { LoginUseCase } from "../../../src/application_layer/authentication/login.usecase.js";
 import { config } from "../../../src/config.js"
-import { ERROR_CATALOG } from "../../../constants/errors";
+import { ERROR_CATALOG } from "../../../constants/errors.js";
 
 jest.mock('jsonwebtoken', () => ({
     sign: jest.fn(),

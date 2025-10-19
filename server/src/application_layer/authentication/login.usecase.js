@@ -1,6 +1,6 @@
 import jwt from "jsonwebtoken";
-import { ERROR_CATALOG } from "../../constants/errors.js";
-import { TokenEntity } from "../domain_layer/token.entity.js";
+import { ERROR_CATALOG } from "../../../constants/errors.js";
+import { TokenEntity } from "../../domain_layer/token.entity.js";
 
 export class LoginUseCase {
     constructor(userRepository, tokenRepository, jwtConfig) {

@@ -1,26 +1,38 @@
 export class UserEntity {
-    #id;
-    #email;
+    #id = null;
+    #email = null;
     #name = null;
     #password = null;
-    #roles = null;
-
-    constructor(id, email) {
-        this.#id = id;
-        this.#email = email;
-    }
+    #createdAt = null;
+    #roles = [];
 
     get id() { return this.#id; }
     get email() { return this.#email; }
     get name() { return this.#name; }
     get password() { return this.#password; }
+    get createdAt() { return this.#createdAt; }
     get roles() { return this.#roles; }
 
+    set id(value) { this.#id = value; }
+    set email(value) { this.#email = value; }
     set name(value) { this.#name = value; }
     set password(value) { this.#password = value; }
+    set createdAt(value) { this.#createdAt = value; }
     set roles(value) { this.#roles = value; }
 
     matchPassword(password) {
         return this.#password === password;
+    }
+
+    addRole(role) {
+        this.#roles.push(role);
+    }
+
+    static create(email, password, name) {
+        let user = new UserEntity();
+        user.email = email;
+        user.password = password;
+        user.name = name;
+        return user;
     }
 }

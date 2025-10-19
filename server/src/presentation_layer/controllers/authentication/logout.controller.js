@@ -1,5 +1,5 @@
-import { SUCCESS_CATALOG } from '../../../constants/messages.js'
-import { ERROR_CATALOG } from '../../../constants/errors.js';
+import { SUCCESS_CATALOG } from '../../../../constants/messages.js'
+import { ERROR_CATALOG } from '../../../../constants/errors.js';
 
 export class LogoutController {
     constructor(logoutUseCase) {
