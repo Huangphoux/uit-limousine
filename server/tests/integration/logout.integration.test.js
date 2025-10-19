@@ -47,6 +47,7 @@ describe('Logout Integration Test', () => {
             .post(path)
             .send({ token: mockToken });
 
+        expect(res.status).toBe(200);
         expect(res.body.message).toBe(SUCCESS_CATALOG.LOGOUT.message);
 
         const token = await prisma.token.findUnique({ where: { token: mockToken } });
