@@ -31,12 +31,19 @@ describe.only('Register integration test', () => {
             expect(res.status).toBe(SUCCESS_CATALOG.REGISTER.status);
             expect(res.body.message).toEqual(SUCCESS_CATALOG.REGISTER.message);
 
-            expect(res.body.data).toHaveProperty('id');
-            expect(res.body.data).toHaveProperty('email', testEmail);
-            expect(res.body.data).toHaveProperty('fullName', testName);
-            expect(res.body.data).toHaveProperty('roles', ['LEARNER']);
-            expect(res.body.data).toHaveProperty('emailVerified');
-            expect(res.body.data).toHaveProperty('createdAt');
+            const data = res.body.data
+            expect(data.id).not.toBeNull();
+            expect(data.email).toEqual(testEmail);
+            expect(data.fullName).toEqual(testName);
+            expect(data.roles).toContain('LEARNER');
+            expect(data).toHaveProperty('emailVerified');
+            expect(data.createdAt).not.toBeNull();
+            expect(data).not.toHaveProperty('password');
+
+            const user = await prisma.user.findUnique({
+                where: { email: testEmail },
+            });
+            expect(user.password).not.toBe(testPassword);
         });
 
     test('should throw error on registered email',

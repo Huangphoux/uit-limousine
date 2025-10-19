@@ -19,6 +19,7 @@ export class RegisterController {
             });
         }
         catch (error) {
+            console.error(error.code, error.message);
             res.status(ERROR_CATALOG.REGISTER.status).json({ message: error.message });
         }
     }

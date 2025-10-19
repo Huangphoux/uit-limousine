@@ -24,5 +24,5 @@ const logoutUseCase = new LogoutUseCase(tokenRepository);
 export const logoutController = new LogoutController(logoutUseCase);
 
 const roleRepository = new RoleRepositoryPostgree(prisma.role);
-const registerUseCase = new RegisterUseCase(userRepository, roleRepository);
+const registerUseCase = new RegisterUseCase(userRepository, roleRepository, config.bcrypt);
 export const registerController = new RegisterController(registerUseCase);

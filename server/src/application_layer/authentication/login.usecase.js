@@ -1,4 +1,5 @@
 import jwt from "jsonwebtoken";
+import bcrypt from "bcrypt";
 import { ERROR_CATALOG } from "../../../constants/errors.js";
 import { TokenEntity } from "../../domain_layer/token.entity.js";
 
@@ -13,7 +14,7 @@ export class LoginUseCase {
         const user = await this.userRepository.findByEmail(email);
         if (!user) throw new Error(ERROR_CATALOG.LOGIN.message);
 
-        const isPasswordValid = user.matchPassword(password);
+        const isPasswordValid = await bcrypt.compare(password, user.password);
         if (!isPasswordValid) throw new Error(ERROR_CATALOG.LOGIN.message);
 
         const accessTokenString = jwt.sign({ sub: user.id }, this.jwtConfig.secret, { expiresIn: this.jwtConfig.accessExpiry });

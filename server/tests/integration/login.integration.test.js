@@ -10,17 +10,10 @@ describe('Login Integration Test', () => {
     let testUsername = "testuser";
     let testEmail = 'test@example.com';
     let testPassword = "secret";
+    let sentData = { email: testEmail, password: testPassword, fullname: testUsername };
 
     beforeAll(async () => {
-        await prisma.$connect();
-
-        await prisma.user.create({
-            data: {
-                username: testUsername,
-                email: testEmail,
-                password: testPassword
-            }
-        });
+        await request(app).post('/auth/register').send(sentData);
     });
 
     afterAll(async () => {
