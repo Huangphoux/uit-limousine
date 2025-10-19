@@ -13,7 +13,10 @@ describe('Login Integration Test', () => {
     let sentData = { email: testEmail, password: testPassword, fullname: testUsername };
 
     beforeAll(async () => {
-        await request(app).post('/auth/register').send(sentData);
+        const res = await request(app).post('/auth/register').send(sentData);
+        if (res.status !== 201) {
+            console.error('User registration failed in beforeAll:', res.body);
+        }
     });
 
     afterAll(async () => {
