@@ -189,7 +189,7 @@ Content-Type: application/json
 === 4.1. List Courses (UC-02)
 
 ```http
-GET /courses?search=nodejs&category=programming&page=1&limit=10
+GET /courses?search=nodejs&category=programming&level=BEGINNER&page=1&limit=10
 Authorization: Bearer {token} (optional for guests)
 
 Response 200 OK:
@@ -383,6 +383,7 @@ Content-Type: application/json
   "slug": "advanced-react-development",
   "shortDesc": "Master React with advanced concepts",
   "description": "Complete description with detailed curriculum and learning outcomes",
+  "category": "Programming",
   "level": "INTERMEDIATE",
   "language": "vi",
   "instructorId": "uuid",
@@ -398,6 +399,7 @@ Response 201 Created:
     "title": "Advanced React Development",
     "slug": "advanced-react-development",
     "shortDesc": "Master React with advanced concepts",
+    "category": "Programming",
     "level": "INTERMEDIATE",
     "instructor": {
       "id": "uuid",

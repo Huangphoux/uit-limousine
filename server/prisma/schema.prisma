@@ -50,6 +50,7 @@ enum InstructorApplicationStatus {
   REJECTED
 }
 
+
 // Core models
 model User {
   id        String   @id @default(uuid())
@@ -64,10 +65,10 @@ model User {
 
   // relations
   roles         UserRole[]
-  courses       Course[]       @relation("InstructorCourses")
+  courses       Course[]     @relation("InstructorCourses")
   enrollments   Enrollment[]
-  submissions   Submission[]   @relation("studentSubmissions")
-  gradedSubmits Submission[]   @relation("graderSubmissions")
+  submissions   Submission[] @relation("studentSubmissions")
+  gradedSubmits Submission[] @relation("graderSubmissions")
   notifications Notification[]
   tokens        Token[]
   messages      Message[]
@@ -79,7 +80,7 @@ model User {
   applicationsSubmitted InstructorApplication[] @relation("ApplicantApplications")
   applicationsReviewed  InstructorApplication[] @relation("ReviewerApplications")
 
-  auditLogs AuditLog[] @relation("actorLogs")
+  auditLogs     AuditLog[]   @relation("actorLogs")
 }
 
 model Token {
@@ -90,9 +91,9 @@ model Token {
 }
 
 model Role {
-  id   Int     @id @default(autoincrement())
-  name String  @unique
-  desc String?
+  id    Int     @id @default(autoincrement())
+  name  String  @unique
+  desc  String?
 
   users UserRole[]
 }
@@ -110,19 +111,20 @@ model UserRole {
 // Courses are created by Admins only (per UC-11). 
 // instructorId is assigned when Admin approves a course creation request and assigns the requester as instructor.
 model Course {
-  id          String    @id @default(uuid())
-  title       String
-  slug        String    @unique
-  shortDesc   String?
-  description String?
-  language    String?   @default("en")
-  level       String? // e.g., Beginner / Intermediate / Advanced
-  price       Float?    @default(0)
-  published   Boolean   @default(false)
-  publishDate DateTime?
-  coverImage  String?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id           String        @id @default(uuid())
+  title        String
+  slug         String        @unique
+  shortDesc    String?
+  description  String?
+  category     String? // e.g., Programming, Design, Business, etc.
+  language     String?       @default("en")
+  level        String?       // e.g., Beginner / Intermediate / Advanced
+  price        Float?        @default(0)
+  published    Boolean       @default(false)
+  publishDate  DateTime?
+  coverImage   String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
 
   // relations
   instructor   User?         @relation("InstructorCourses", fields: [instructorId], references: [id], onDelete: SetNull)
@@ -133,7 +135,7 @@ model Course {
   reviews      Review[]
   payments     Payment[]
   certificates Certificate[]
-  threads      Thread[] // <-- opposite side for Thread.course relation
+  threads      Thread[]      // <-- opposite side for Thread.course relation
 
   @@index([title])
 }
@@ -155,10 +157,10 @@ model Lesson {
   module      Module   @relation(fields: [moduleId], references: [id], onDelete: Cascade)
   moduleId    String
   title       String
-  content     String? // markdown or rich text
-  mediaUrl    String? // optional video/file url
-  contentType String? // "video" | "article" | "file"
-  durationSec Int? // for video lessons
+  content     String?  // markdown or rich text
+  mediaUrl    String?  // optional video/file url
+  contentType String?  // "video" | "article" | "file"
+  durationSec Int?     // for video lessons
   position    Int      @default(0)
   createdAt   DateTime @default(now())
 
@@ -166,14 +168,14 @@ model Lesson {
 }
 
 model Enrollment {
-  id          String           @id @default(uuid())
-  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId      String
-  course      Course           @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  courseId    String
-  status      EnrollmentStatus @default(ENROLLED)
-  isPaid      Boolean          @default(false)
-  enrolledAt  DateTime         @default(now())
+  id         String           @id @default(uuid())
+  user       User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     String
+  course     Course           @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  courseId   String
+  status     EnrollmentStatus @default(ENROLLED)
+  isPaid     Boolean          @default(false)
+  enrolledAt DateTime         @default(now())
   completedAt DateTime?
 
   @@unique([userId, courseId])
@@ -181,14 +183,14 @@ model Enrollment {
 }
 
 model Assignment {
-  id          String       @id @default(uuid())
-  course      Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  id          String    @id @default(uuid())
+  course      Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
   courseId    String
   title       String
   description String?
   dueDate     DateTime?
-  maxPoints   Int?         @default(100)
-  createdAt   DateTime     @default(now())
+  maxPoints   Int?      @default(100)
+  createdAt   DateTime  @default(now())
   submissions Submission[]
 }
 
@@ -198,7 +200,7 @@ model Submission {
   assignmentId String
   student      User             @relation("studentSubmissions", fields: [studentId], references: [id], onDelete: Cascade)
   studentId    String
-  content      String? // comments or text
+  content      String?          // comments or text
   fileUrl      String?
   status       SubmissionStatus @default(SUBMITTED)
   grade        Float?
@@ -212,15 +214,15 @@ model Submission {
 }
 
 model Notification {
-  id        String              @id @default(uuid())
-  user      User                @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId    String
-  channel   NotificationChannel @default(IN_APP)
-  title     String
-  body      String
-  data      Json?
-  read      Boolean             @default(false)
-  createdAt DateTime            @default(now())
+  id         String              @id @default(uuid())
+  user       User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     String
+  channel    NotificationChannel @default(IN_APP)
+  title      String
+  body       String
+  data       Json?
+  read       Boolean             @default(false)
+  createdAt  DateTime            @default(now())
 
   @@index([userId, read])
 }
@@ -261,29 +263,29 @@ model Review {
 }
 
 model Payment {
-  id            String        @id @default(uuid())
-  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId        String
-  course        Course?       @relation(fields: [courseId], references: [id], onDelete: SetNull)
-  courseId      String?
-  amount        Float
-  currency      String        @default("USD")
-  provider      String?
-  providerTxnId String?       @unique
-  status        PaymentStatus @default(PENDING)
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  id             String        @id @default(uuid())
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId         String
+  course         Course?       @relation(fields: [courseId], references: [id], onDelete: SetNull)
+  courseId       String?
+  amount         Float
+  currency       String        @default("USD")
+  provider       String?
+  providerTxnId  String?       @unique
+  status         PaymentStatus @default(PENDING)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
 }
 
 model Certificate {
-  id               String   @id @default(uuid())
-  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId           String
-  course           Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  courseId         String
-  issuedAt         DateTime @default(now())
-  certificateUrl   String
-  verificationCode String   @unique
+  id              String   @id @default(uuid())
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId          String
+  course          Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  courseId        String
+  issuedAt        DateTime @default(now())
+  certificateUrl  String
+  verificationCode String  @unique
 }
 
 // Per UC-08: "Request to Create Course & Instructor Approval"
@@ -297,34 +299,34 @@ model Certificate {
 //    - Admin optionally grants course-level or global instructor role (creates UserRole entry)
 // 4. On rejection: applicant notified with reason
 model InstructorApplication {
-  id          String @id @default(uuid())
-  applicant   User   @relation("ApplicantApplications", fields: [applicantId], references: [id], onDelete: Cascade)
-  applicantId String
+  id                     String                        @id @default(uuid())
+  applicant              User                          @relation("ApplicantApplications", fields: [applicantId], references: [id], onDelete: Cascade)
+  applicantId            String
 
   // Course proposal details (per UC-08: user proposes course metadata)
-  requestedCourseTitle   String? // Proposed course title
-  requestedCourseSummary String? // Short outline/description of proposed course
-  portfolioUrl           String? // Optional: link to portfolio or sample content
+  requestedCourseTitle   String?  // Proposed course title
+  requestedCourseSummary String?  // Short outline/description of proposed course
+  portfolioUrl           String?  // Optional: link to portfolio or sample content
 
-  status     InstructorApplicationStatus @default(PENDING)
-  note       String?
-  appliedAt  DateTime                    @default(now())
-  reviewedAt DateTime?
-  reviewer   User?                       @relation("ReviewerApplications", fields: [reviewerId], references: [id], onDelete: SetNull)
-  reviewerId String?
+  status                 InstructorApplicationStatus  @default(PENDING)
+  note                   String?
+  appliedAt              DateTime                      @default(now())
+  reviewedAt             DateTime?
+  reviewer               User?                         @relation("ReviewerApplications", fields: [reviewerId], references: [id], onDelete: SetNull)
+  reviewerId             String?
 
   @@index([applicantId, status])
 }
 
 model AuditLog {
-  id         String   @id @default(uuid())
-  actor      User?    @relation("actorLogs", fields: [actorId], references: [id], onDelete: SetNull)
-  actorId    String?
-  action     String
-  resource   String?
+  id        String   @id @default(uuid())
+  actor     User?    @relation("actorLogs", fields: [actorId], references: [id], onDelete: SetNull)
+  actorId   String?
+  action    String
+  resource  String?
   resourceId String?
-  data       Json?
-  createdAt  DateTime @default(now())
+  data      Json?
+  createdAt DateTime @default(now())
 
   @@index([actorId, createdAt])
 }
