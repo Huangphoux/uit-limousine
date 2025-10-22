@@ -14,14 +14,15 @@
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
     "migrate": "npx prisma migrate dev",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "seed": "npx prisma db seed"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "@prisma/client": "^6.16.2",
+    "@prisma/client": "^6.17.1",
     "bcryptjs": "^3.0.2",
     "cors": "^2.8.5",
     "dotenv": "^17.2.2",
@@ -47,6 +48,9 @@
     "prettier": "3.6.2",
     "prisma": "^6.16.2",
     "supertest": "^7.1.4"
+  },
+  "prisma": {
+    "seed": "node prisma/seed.js"
   },
   "jest": {
     "testEnvironment": "node",
