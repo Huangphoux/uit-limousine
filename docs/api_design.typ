@@ -44,12 +44,13 @@ Response 201 Created:
 {
   "success": true,
   "data": {
-    "id": "uuid",
-    "email": "user@example.com",
-    "fullName": "Nguyen Van A",
-    "role": "LEARNER",
-    "emailVerified": false,
-    "createdAt": "2025-10-14T10:00:00Z"
+    "accessToken": "jwt_token_here",
+    "user": {
+      "id": "uuid",
+      "email": "user@example.com",
+      "fullName": "Nguyen Van A",
+      "role": "LEARNER"
+    }
   },
   "message": "Registration successful. Please check your email to verify your account."
 }
@@ -71,7 +72,6 @@ Response 200 OK:
   "success": true,
   "data": {
     "accessToken": "jwt_token_here",
-    "refreshToken": "refresh_token_here",
     "user": {
       "id": "uuid",
       "email": "student@example.com",

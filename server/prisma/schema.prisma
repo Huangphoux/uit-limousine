@@ -113,7 +113,6 @@ model UserRole {
 model Course {
   id           String        @id @default(uuid())
   title        String
-  slug         String        @unique
   shortDesc    String?
   description  String?
   category     String? // e.g., Programming, Design, Business, etc.
