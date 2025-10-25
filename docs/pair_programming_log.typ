@@ -9,11 +9,11 @@
 
 = Sprint 1
 == Front-End Team
-- Thời gian:
+- Thời gian: 2025/10/10, 21:49
 - Issue: #link("https://github.com/Huangphoux/uit-limousine/issues/")
 - Thành viên tham gia:
 - Công việc:
-- Hình ảnh minh chứng: #image("pair_programming_pics/Screenshot 2025-10-09 130620.png")
+- Hình ảnh minh chứng: #image("pair_programming_pics/fe_sprint1.png")
 
 == Back-End Team
 - Thời gian:
@@ -24,11 +24,11 @@
 
 = Sprint 2
 == Front-End Team
-- Thời gian:
+- Thời gian: 2025/10/23, 20:20
 - Issue: #link("https://github.com/Huangphoux/uit-limousine/issues/")
 - Thành viên tham gia:
 - Công việc:
-- Hình ảnh minh chứng: #image("pair_programming_pics/Screenshot 2025-10-09 130620.png")
+- Hình ảnh minh chứng: #image("pair_programming_pics/fe_sprint2.png")
 
 == Back-End Team
 - Thời gian:
