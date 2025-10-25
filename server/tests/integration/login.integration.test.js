@@ -2,13 +2,14 @@ import request from 'supertest';
 import app from '../../src/app.js';
 import { prisma } from '../../src/composition-root.js';
 import { ERROR_CATALOG } from '../../constants/errors.js';
-import { createUserData, userSignInData } from './login.test-data.js';
+import { createUserData, email, password } from './login.test-data.js';
 import { SUCCESS_CATALOG } from '../../constants/messages.js';
 
 jest.setTimeout(40000);
 
 describe('Login integration test', () => {
     let createdUserData;
+    let input
     let output;
 
     beforeAll(async () => {
@@ -25,71 +26,86 @@ describe('Login integration test', () => {
         ]);
     })
 
-    describe('Login successfully', () => {
+    describe('Normal case', () => {
         beforeAll(async () => {
-            output = await request(app).post('/auth/login').send(userSignInData);
+            input = { email: email, password: password };
+            output = await request(app).post('/auth/login').send(input);
         });
 
-        it('Should return 201', () => {
+        it(`Should return status ${SUCCESS_CATALOG.LOGIN.status}`, () => {
             expect(output.status).toBe(SUCCESS_CATALOG.LOGIN.status);
         });
-    })
 
+        it('Should return access token', () => {
+            expect(output.body.data).toHaveProperty("accessToken")
+        });
 
-    // let path = '/auth/login';
+        it('Should return correct email', () => {
+            expect(output.body.data.user).toHaveProperty("email", createdUserData.email);
+        });
+    });
 
-    // beforeAll(async () => {
-    //     const res = await request(app).post('/auth/register').send(sentData);
-    //     if (res.status !== 201) {
-    //         console.error('User registration failed in beforeAll:', res.body);
-    //     }
-    // });
+    describe('Abnormal case', () => {
+        let error;
 
-    // afterAll(async () => {
-    //     await prisma.$transaction([
-    //         prisma.token.deleteMany({ where: { user: { email: testEmail } } }),
-    //         prisma.user.deleteMany({ where: { email: testEmail } }),
-    //     ]);
-    //     await prisma.$disconnect();
-    // });
+        describe('Wrong email case', () => {
+            beforeAll(async () => {
+                input = { email: 'fail', password: password };
+                output = await request(app).post('/auth/login').send(input);
+                error = output.body;
+            });
 
-    // test('should return status code 200 and create access token', async () => {
-    //     const res = await request(app)
-    //         .post(path)
-    //         .send({ email: testEmail, password: testPassword });
+            it(`Should return error message ${ERROR_CATALOG.LOGIN.message}`, () => {
+                expect(error.message).toEqual(ERROR_CATALOG.LOGIN.message);
+            });
+        });
 
-    //     expect(res.status).toBe(200);
+        describe('Empty email case', () => {
+            beforeAll(async () => {
+                input = { email: '', password: password };
+                output = await request(app).post('/auth/login').send(input);
+                error = output.body;
+            });
 
-    //     const accessToken = await prisma.token.findUnique({
-    //         where: { token: res.body.data.accessToken },
-    //         select: { id: true },
-    //     });
-    //     expect(accessToken).not.toBeNull();
+            it(`Should return error message ${ERROR_CATALOG.LOGIN.message}`, () => {
+                expect(error.message).toEqual(ERROR_CATALOG.LOGIN.message);
+            });
+        });
 
-    //     const refreshToken = await prisma.token.findUnique({
-    //         where: { token: res.body.data.refreshToken },
-    //         select: { id: true },
-    //     });
-    //     expect(refreshToken).not.toBeNull();
+        describe('Wrong password case', () => {
+            beforeAll(async () => {
+                input = { email: email, password: 'fail' };
+                output = await request(app).post('/auth/login').send(input);
+                error = output.body;
+            });
 
-    //     expect(res.body.data.user.email).toBe(testEmail);
-    // });
+            it(`Should return error message ${ERROR_CATALOG.LOGIN.message}`, () => {
+                expect(error.message).toEqual(ERROR_CATALOG.LOGIN.message);
+            });
+        });
 
-    // test(`should return status code ${ERROR_CATALOG.LOGIN.status} and error message on wrong password`, async () => {
-    //     const res = await request(app)
-    //         .post(path)
-    //         .send({ email: 'test@example.com', password: 'wrong' });
+        describe('Empty password case', () => {
+            beforeAll(async () => {
+                input = { email: email, password: '' };
+                output = await request(app).post('/auth/login').send(input);
+                error = output.body;
+            });
 
-    //     expect(res.status).toBe(ERROR_CATALOG.LOGIN.status);
-    //     expect(res.body.message).toBe(ERROR_CATALOG.LOGIN.message);
-    // });
+            it(`Should return error message ${ERROR_CATALOG.LOGIN.message}`, () => {
+                expect(error.message).toEqual(ERROR_CATALOG.LOGIN.message);
+            });
+        });
 
-    // test(`should return status code ${ERROR_CATALOG.LOGIN.status} and error message on wrong email`, async () => {
-    //     const res = await request(app)
-    //         .post(path)
-    //         .send({ email: 'no@example.com', password: 'secret' });
+        describe('Empty password case', () => {
+            beforeAll(async () => {
+                input = { email: '', password: '' };
+                output = await request(app).post('/auth/login').send(input);
+                error = output.body;
+            });
 
-    //     expect(res.status).toBe(ERROR_CATALOG.LOGIN.status);
-    //     expect(res.body.message).toBe(ERROR_CATALOG.LOGIN.message);
-    // });
+            it(`Should return error message ${ERROR_CATALOG.LOGIN.message}`, () => {
+                expect(error.message).toEqual(ERROR_CATALOG.LOGIN.message);
+            });
+        });
+    });
 });
