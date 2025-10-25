@@ -1,4 +1,10 @@
 import { prisma } from "../src/composition-root.js";
 
-var result = await prisma.user.findMany();
+
+await prisma.role.create({
+    data: {
+        name: "INSTRUCTOR"
+    }
+})
+var result = await prisma.role.findMany();
 console.log(result);
