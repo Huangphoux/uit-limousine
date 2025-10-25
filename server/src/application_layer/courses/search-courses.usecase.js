@@ -5,8 +5,18 @@ export class SearchCoursesUseCase {
         this.#courseRepository = courseRepository;
     }
 
-    async execute({ search }) {
-        const result = await this.#courseRepository.findByFilter({ title: search });
+    async execute({ search, category, level, page = 1, limit = 10 }) {
+        let take = parseInt(limit);
+        if (take < 0) take = 10;
+        let skip = (parseInt(page) - 1) * limit;
+        if (skip < 0) skip = 0;
+        const result = await this.#courseRepository.findByFilter({
+            title: search,
+            category: category,
+            level: level,
+            skip: skip,
+            take: take,
+        });
         return {
             courses: result.map(courseEntity => ({
                 id: courseEntity.id,

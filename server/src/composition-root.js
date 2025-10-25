@@ -20,7 +20,7 @@ export const prisma = new PrismaClient();
 
 const userRepository = new UserRepositoryPostgree(prisma.user);
 const tokenRepository = new TokenRepositoryPostgree(prisma.token);
-const loginUseCase = new LoginUseCase(userRepository, tokenRepository, config.jwt);
+const loginUseCase = new LoginUseCase(userRepository, tokenRepository);
 export const loginController = new LoginController(loginUseCase);
 
 const logoutUseCase = new LogoutUseCase(tokenRepository);

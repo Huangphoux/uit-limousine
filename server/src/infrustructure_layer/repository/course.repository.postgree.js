@@ -7,11 +7,15 @@ export class CourseRepository {
         this.#courseModel = courseModel;
     }
 
-    async findByFilter({ title }) {
+    async findByFilter({ title, category, level, skip, take }) {
         const result = await this.#courseModel.findMany({
             where: {
                 title: title,
+                category: category,
+                level: level,
             },
+            skip,
+            take,
             include: { instructor: true },
         });
         const courses = result.map(prismaCourse => CourseMapper.toDomain(prismaCourse));

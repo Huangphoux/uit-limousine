@@ -1,12 +1,11 @@
-import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import { ERROR_CATALOG } from "../../../constants/errors.js";
+import { generateJWT } from "../../utils/encrypt.js";
 
 export class LoginUseCase {
-    constructor(userRepository, tokenRepository, jwtConfig) {
+    constructor(userRepository, tokenRepository) {
         this.userRepository = userRepository;
         this.tokenRepository = tokenRepository;
-        this.jwtConfig = jwtConfig;
     }
 
     async execute({ email, password }) {
@@ -16,7 +15,7 @@ export class LoginUseCase {
         const isPasswordValid = await bcrypt.compare(password, user.password);
         if (!isPasswordValid) throw new Error(ERROR_CATALOG.LOGIN.message);
 
-        const accessJwt = jwt.sign({ sub: user.id }, this.jwtConfig.secret, { expiresIn: this.jwtConfig.accessExpiry });
+        const accessJwt = generateJWT(user.id);
 
         return {
             accessToken: accessJwt,

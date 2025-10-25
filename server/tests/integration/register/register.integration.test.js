@@ -1,8 +1,8 @@
 import request from 'supertest';
-import app from '../../src/app.js';
-import { SUCCESS_CATALOG } from '../../constants/messages.js';
-import { prisma } from '../../src/composition-root.js';
-import { ERROR_CATALOG } from '../../constants/errors.js';
+import app from '../../../src/app.js';
+import { SUCCESS_CATALOG } from '../../../constants/messages.js';
+import { prisma } from '../../../src/composition-root.js';
+import { ERROR_CATALOG } from '../../../constants/errors.js';
 import { email, password, username } from './register.test-data.js';
 
 jest.setTimeout(20000);
