@@ -1,4 +1,3 @@
-import { ERROR_CATALOG } from "../../../../constants/errors.js";
 import { SUCCESS_CATALOG } from "../../../../constants/messages.js";
 
 export class RegisterController {
