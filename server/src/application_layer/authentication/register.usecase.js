@@ -1,5 +1,7 @@
 import bcrypt from 'bcrypt';
-import { UserEntity } from "../../domain_layer/user.entity.js"
+import { UserEntity } from "../../domain_layer/user.entity.js";
+import { generateJWT } from '../../utils/encrypt.js';
+import { ERROR_CATALOG } from '../../../constants/errors.js';
 
 export class RegisterUseCase {
     #userRepository;
@@ -13,19 +15,29 @@ export class RegisterUseCase {
     }
 
     async execute({ email, password, fullname }) {
+        const registeredEmail = await this.#userRepository.findByEmail(email);
+        if (registeredEmail != null) throw Error(ERROR_CATALOG.REGISTER.message);
+
         const role = await this.#roleRepository.findByName('LEARNER');
+        if (!role) throw Error("The default role does not exist in the database");
+
         const hashedPassword = await bcrypt.hash(password, this.#bcryptConfig.saltRounds);
+
         let user = UserEntity.create(email, hashedPassword, fullname);
         user.addRole(role);
+
         const result = await this.#userRepository.create(user);
 
+        const accessJwt = generateJWT(result.id);
+
         return {
-            id: result.id,
-            email: result.email,
-            fullName: result.name,
-            roles: result.roles.map(roleEntity => roleEntity.name),
-            emailVerified: false,
-            createdAt: result.createdAt,
+            accessToken: accessJwt,
+            user: {
+                id: result.id,
+                email: result.email,
+                fullName: result.name,
+                roles: result.roles.map(roleEntity => roleEntity.name),
+            }
         };
     }
 }

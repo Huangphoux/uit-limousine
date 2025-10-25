@@ -1,5 +1,5 @@
 import bcrypt from "bcrypt";
-import { config } from "../../src/config.js";
+import { config } from "../../../src/config.js";
 
 export const email = 'login';
 export const password = 'login';

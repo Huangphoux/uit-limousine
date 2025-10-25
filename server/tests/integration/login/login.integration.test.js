@@ -1,9 +1,9 @@
 import request from 'supertest';
-import app from '../../src/app.js';
-import { prisma } from '../../src/composition-root.js';
-import { ERROR_CATALOG } from '../../constants/errors.js';
+import app from '../../../src/app.js';
+import { prisma } from '../../../src/composition-root.js';
+import { ERROR_CATALOG } from '../../../constants/errors.js';
 import { createUserData, email, password } from './login.test-data.js';
-import { SUCCESS_CATALOG } from '../../constants/messages.js';
+import { SUCCESS_CATALOG } from '../../../constants/messages.js';
 
 jest.setTimeout(40000);
 

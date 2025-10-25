@@ -5,7 +5,7 @@ import app from '../../src/app.js'
 
 jest.setTimeout(20000);
 
-describe('Logout Integration Test', () => {
+describe('Logout integration test', () => {
     let path = '/auth/logout';
     let mockToken = 'fake.jwt.token';
     let testUser;
@@ -13,7 +13,6 @@ describe('Logout Integration Test', () => {
     let testUsername = "logout";
     let testEmail = 'logout@example.com';
     let testPassword = "logout";
-
 
     beforeAll(async () => {
         await prisma.$connect();
