@@ -1,38 +1,41 @@
-== UC-01 — Login / Logout (Authentication) <uc-01>
+== UC-01 — Register / Login / Logout (Authentication) <uc-01>
 
-- *Actor:* Learner / Instructor / Admin (Owner / Staff / Customer)
+- *Actor:* Guest / Learner / Instructor / Admin (Owner / Staff / Customer)
 
-- *Description:* Log in and log out of the system to access features based on user roles.
+- *Description:* Anyone can register an account. Registered users can log in and log out to access features based on their roles.
 
-- *Preconditions:* The user already has a registered and verified account in the system.
+- *Preconditions:* None for registration (any visitor may register). For login: the user has a registered account (and email verified if required).
 
-- *Postconditions:* Successful login → session/token created; Logout → session terminated; Invalid credentials → error message displayed.
+- *Postconditions:* Registration → user account created (status = Pending or Active depending on email verification). Successful login → session/token created; logout → session terminated; invalid credentials → error message.
 
 - *Priority:* High
 
 - *Frequency of Use:* High
 
 - *Normal Course of Events:*
-    + User enters credentials (email/password)
-    + System validates credentials
-    + On success → create session/token and redirect to dashboard
-    + User logs out → system terminates session
+    + Visitor selects Register → provides required info (email, password, profile).
+    + System creates account (optionally sends email verification).
+    + After verification → account active.
+    + User enters credentials (email/password) to log in.
+    + System validates credentials.
+    + On success → create session/token and redirect to dashboard.
+    + User logs out → system terminates session.
 
 - *Alternative Courses:*
-    + User forgets password → selects "Forgot password" → system sends reset email
-    + Login via OAuth (Google/Facebook) if enabled
+    + Registration with OAuth (Google/Facebook) if enabled.
+    + User forgets password → selects "Forgot password" → system sends reset email.
 
-- *Exceptions:* Account locked, email not verified, too many failed attempts → show corresponding error
+- *Exceptions:* Email already used, invalid registration data, account locked, email not verified, too many failed login attempts → show corresponding error.
 
-- *Includes:* Password reset, optional 2FA verification
+- *Includes:* Password reset, optional 2FA verification, email verification.
 
 - *Extends:* N/A
 
-- *Special Requirements:* Password must not be displayed on screen; HTTPS encryption; login attempts rate-limited
+- *Special Requirements:* Passwords must be stored hashed; password must not be displayed on screen; HTTPS encryption; rate-limit registration/login attempts.
 
-- *Assumptions:* Email service is available for verification and password reset
+- *Assumptions:* Email service is available for verification and password reset.
 
-- *Notes and Issues:* All login/logout actions are logged for auditing
+- *Notes and Issues:* All registration, login, logout actions are logged for auditing. Decide if new accounts are given any default role (e.g., "Learner") or only basic user.
 
 == UC-02 — Search Course <uc-02>
 
@@ -71,13 +74,13 @@
 
 == UC-03 — View Course Details <uc-03>
 
-- *Actor:* Learner / Guest / Instructor
+- *Actor:* Learner / Guest / Instructor / Admin
 
-- *Description:* Display detailed information about a course: description, syllabus, instructor, reviews, and assignments.
+- *Description:* Display detailed information about a course: description, syllabus, instructor(s), reviews, assignments, pricing, and enrollment status.
 
 - *Preconditions:* The course is published (or in draft if viewed by the instructor).
 
-- *Postconditions:* User can choose to enroll or bookmark the course.
+- *Postconditions:* User can choose to enroll or bookmark the course; Admin may see additional management actions.
 
 - *Priority:* High
 
@@ -85,14 +88,14 @@
 
 - *Normal Course of Events:*
     + User opens the course detail page
-    + System displays title, description, syllabus, preview video, rating, price, and "Enroll" button
+    + System displays title, description, syllabus, preview video, rating, price, and "Enroll" or "Request to create similar course" button depending on role.
 
 - *Alternative Courses:*
     + If course is unpublished and viewer isn't the instructor → show 404 or forbidden message
 
 - *Exceptions:* Media fails to load → show placeholder
 
-- *Includes:* Search Course (UC-02), Enroll Course (UC-04)
+- *Includes:* Search Course (UC-02), Enroll in Course (UC-04)
 
 - *Extends:* N/A
 
@@ -242,29 +245,33 @@
 
 - *Notes and Issues:* Support bulk grading or CSV import if needed
 
-== UC-08 — Apply / Approve Instructor <uc-08>
+== UC-08 — Request to Create Course & Instructor Approval <uc-08>
 
-- *Actor:* Learner (Applicant) / Admin
+- *Actor:* Registered User (Applicant) / Admin
 
-- *Description:* A learner applies to become an instructor; admin reviews and approves or rejects the application.
+- *Description:* A registered user who intends to create a course files a "Request to Create Course." Admin reviews the request; if approved, Admin creates the course and assigns the requester as the instructor for that course (approval to be an instructor is tied to this course-creation intent).
 
-- *Preconditions:* Applicant is logged in and has a complete profile; Admin has permission to approve.
+- *Preconditions:* Applicant is logged in and has a complete profile. Applicant is specifically requesting permission to create a course (not a general automatic instructor upgrade).
 
-- *Postconditions:* Approved → role updated to Instructor; email notification sent; Rejected → applicant notified with reason.
+- *Postconditions:* If rejected → applicant notified with reason. If approved:
+    + Admin creates the course (or enables course creation) and assigns the applicant as the instructor for that course.
+    + Applicant receives notification; applicant gains instructor privileges for that course (global instructor role is optional and depends on policy).
 
 - *Priority:* Medium
 
 - *Frequency of Use:* Low to Medium
 
 - *Normal Course of Events:*
-    + Applicant opens the "Apply for Instructor" form
-    + Fills in information, uploads portfolio, and submits
-    + System sets status = Pending and notifies Admin
-    + Admin reviews and either Approves or Rejects
-    + System updates status and sends email notification
+    + Applicant opens "Request to Create Course" form.
+    + Fills in proposed course metadata (title, short outline, sample content/portfolio) → submits.
+    + System records request (status = Pending) and notifies Admin.
+    + Admin reviews the request and either Approves, Rejects, or Requests More Info.
+    + If Approved → Admin creates the course and assigns the applicant as the instructor for that course (and optionally grants course-level instructor permissions).
+    + System updates request status and notifies applicant.
 
 - *Alternative Courses:*
     + Admin requests more info → status "Needs More Info"
+    + Applicant withdraws request.
 
 - *Exceptions:* Applicant doesn't meet requirements → rejected automatically
 
@@ -272,17 +279,17 @@
 
 - *Extends:* N/A
 
-- *Special Requirements:* Store portfolio; form validation; email templates for notifications
+- *Special Requirements:* Store portfolio and request details; form validation; email templates for notifications.
 
-- *Assumptions:* Manual review process by admin; SLA for approval
+- *Assumptions:* Approval as an instructor is granted only when the user intends to create a course; global instructor role is not automatically granted unless policy dictates.
 
-- *Notes and Issues:* Consider automating approval if criteria become standardized
+- *Notes and Issues:* This flow centralizes course quality control: Admin acts as gatekeeper who creates the course record and assigns instructors upon approval. If you want some users to be able to create multiple courses independently, define a separate path for full instructor role elevation.
 
 == UC-09 — Notification (System Notifications) <uc-09>
 
 - *Actor:* System (background), Learner, Instructor, Admin
 
-- *Description:* Send in-app and/or email notifications for events such as enrollment, grading, new messages, certificate issuance.
+- *Description:* Send in-app and/or email notifications for events such as enrollment, grading, new messages, certificate issuance, request status changes.
 
 - *Preconditions:* User has an account; user notification preferences (opt-in/opt-out) are set (default ON).
 
@@ -293,7 +300,7 @@
 - *Frequency of Use:* High
 
 - *Normal Course of Events:*
-    + An event occurs (e.g., a submission is graded)
+    + An event occurs (e.g., a submission is graded or a request status changed).
     + The system creates a notification record
     + The notification appears in the notification center; an email is sent if configured
 
@@ -346,13 +353,15 @@
 
 - *Notes and Issues:* Can be extended to forum-style public Q&A
 
-== UC-11 — Create Course (Instructor Creates Course) <uc-11>
+== UC-11 — Create Course (Admin or Authorized Instructor Creates Course) <uc-11>
 
-- *Actor:* Instructor
+- *Actor:* Admin, Authorized Instructor (if policy allows direct creation)
 
-- *Description:* Create a new course with title, description, modules, lessons, assignments, pricing, and media.
+- *Description:* Create a new course with title, description, modules, lessons, assignments, pricing, and media. Primary intended flow: Admin creates course after approving a "Request to Create Course" and assigns the requester as the course instructor. Secondary flow: users already granted a full Instructor role may create their own courses.
 
-- *Preconditions:* User has the Instructor role; profile verification if required by policy.
+- *Preconditions:* 
+    + For Admin creation: Admin is authenticated and an approved request exists (optional: or Admin may create ad-hoc).
+    + For Instructor self-creation: user has global Instructor role (granted previously).
 
 - *Postconditions:* Course draft saved; instructor may publish the course to allow enrollments.
 
@@ -361,16 +370,16 @@
 - *Frequency of Use:* Medium
 
 - *Normal Course of Events:*
-    + Instructor opens "Create Course"
-    + Enters metadata, builds modules & lessons, uploads media, defines assignments/pricing
-    + Saves as Draft or Publishes the course
+    + Opens "Create Course" or uses the approved request to populate fields.
+    + Enters metadata, builds modules & lessons, uploads media, defines assignments/pricing.
+    + Saves as Draft or Publishes the course; assigns the requester as course instructor.
 
 - *Alternative Courses:*
     + Save draft to complete later
 
 - *Exceptions:* Media upload failure → display error and retry
 
-- *Includes:* Media upload service; Course Preview (UC-03)
+- *Includes:* Media upload service; Course Preview (UC-03); Request to Create Course (UC-08) integration.
 
 - *Extends:* N/A
 
@@ -378,7 +387,7 @@
 
 - *Assumptions:* Storage/CDN service is available
 
-- *Notes and Issues:* Consider support for versioning and course cloning
+- *Notes and Issues:* Consider support for versioning and course cloning. Clarify policy whether the requester gets a course-level instructor role only or a broader instructor role.
 
 == UC-12 — Modify Course (Edit Course) <uc-12>
 
@@ -550,30 +559,31 @@
 
 - *Notes and Issues:* Implement webhooks to handle asynchronous payment updates reliably
 
-== UC-17 — Manage Users & Roles (Admin User Management) <uc-17>
+== UC-17 — Manage Users & Roles (Admin User & Course Assignment) <uc-17>
 
 - *Actor:* Admin
 
-- *Description:* Admin creates/edits/deletes users, assigns roles (Instructor, Admin), and suspends accounts.
+- *Description:* Admin manages users (create/edit/delete), assigns roles (system-wide Instructor/Admin) and can assign course-level instructor permissions (e.g., assign a requester as instructor for a specific course created by Admin).
 
 - *Preconditions:* Admin is authenticated and has sufficient privileges.
 
-- *Postconditions:* User records updated; changes logged for audit.
+- *Postconditions:* User records updated; role and course assignments updated; changes logged for audit.
 
 - *Priority:* High
 
 - *Frequency of Use:* Low
 
 - *Normal Course of Events:*
-    + Admin searches for a user and edits roles/status, then saves
-    + System applies changes and records the action in the audit log
+    + Admin searches for a user and edits roles/status, then saves.
+    + Admin assigns a user as instructor for a particular course (usually after approving a request).
+    + System applies changes and records the action in the audit log.
 
 - *Alternative Courses:*
     + Bulk operations via CSV import/export
 
 - *Exceptions:* Attempt to change super-admin role → blocked
 
-- *Includes:* Audit log (UC-18), Notification if role changed
+- *Includes:* Audit log (UC-18), Notification if role or course-assignment changed.
 
 - *Extends:* N/A
 
@@ -581,13 +591,13 @@
 
 - *Assumptions:* Admin UI and role model are implemented
 
-- *Notes and Issues:* Support impersonation for support purposes (with strict auditing)
+- *Notes and Issues:* Support impersonation for support purposes (with strict auditing). Clarify difference between course-level instructor assignment and global instructor role.
 
 == UC-18 — Audit Log / System Logs <uc-18>
 
 - *Actor:* System, Admin
 
-- *Description:* Record important events: login/logout, role changes, grade changes, publish/unpublish course, payments, etc.
+- *Description:* Record important events: registration/login/logout, request submissions, role changes, grade changes, publish/unpublish course, payments, etc.
 
 - *Preconditions:* Logging service is configured and operational.
 
@@ -606,7 +616,7 @@
 
 - *Exceptions:* Log storage full → alert and degrade gracefully
 
-- *Includes:* Events from other use cases
+- *Includes:* Events from other use cases (e.g., UC-01 registration/login, UC-08 request and approvals).
 
 - *Extends:* N/A
 

@@ -27,3 +27,6 @@ Build a Learning Management System, with a Layered architecture and a Domain-Dri
 # Notes
 
 - `.env` needs to be outside of `/src`
+
+# Figma
+- https://www.figma.com/design/qIlNoB09y2bOvsum4brE8C/M%C3%A0n-h%C3%ACnh-t%C3%ACm-kho%C3%A1-h%E1%BB%8Dc?m=auto&t=GhhCqiywoQLyVyI5-1

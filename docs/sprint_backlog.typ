@@ -4,13 +4,12 @@
 
 - *Các công việc:*
 - Dựng kiến trúc dự án: Setup repo, CI/CD, môi trường backend/frontend
-- Tạo cơ sở dữ liệu ban đầu: Schema cho User, Role, Course
-- Thiết kế và seed dữ liệu Role: Admin, Instructor, Learner
-- Thiết lập mô hình xác thực cơ bản (chuẩn bị cho #link(<uc-01>)[UC-01])
-- Phân quyền truy cập ban đầu: Cấu hình middleware, RBAC
-- Cấu hình hệ thống log ban đầu (chuẩn bị cho #link(<uc-18>)[UC-18])
+- Chuẩn bị product_backlog, sprint_backlog, domain_model
+- Design API
+- Phân tích các use case
+- Thiết kế hoàn thiện login/logout
 
-- *Kết quả:* Dự án có cấu trúc hoàn chỉnh, database hoạt động, có thể đăng nhập cơ bản bằng tài khoản mẫu.
+- *Kết quả:* Dự án có cấu trúc hoàn chỉnh, database hoạt động, thực hiện đăng nhập/đăng xuất.
 
 == Sprint 2 – Authentication & Course Browsing
 
