@@ -1,17 +1,18 @@
 export class LoginController {
-    static get LOGIN_MESSAGE() { return 'Login successful'; }
-
     constructor(loginUseCase) {
         this.loginUseCase = loginUseCase;
     }
 
-    async login(req, res) {
+    async execute(req, res) {
         try {
             const result = await this.loginUseCase.execute(req.body);
-            res.json({ token: result });
+            res.json({
+                success: true,
+                data: result,
+            });
         }
         catch (error) {
-            res.status(401).json({ message: error.message });
+            res.json({ message: error.message });
         }
     }
 }
