@@ -2,7 +2,7 @@ import { Card, Button } from "react-bootstrap";
 import PropTypes from "prop-types";
 import { useState } from "react";
 
-const CourseCard = ({ course, onEnroll, onCardClick, darkTheme = true }) => {
+const CourseCard = ({ course, onEnroll, onCardClick }) => {
   const [imageError, setImageError] = useState(false);
 
   // Default image placeholder - optimized size for 200px height
@@ -33,162 +33,198 @@ const CourseCard = ({ course, onEnroll, onCardClick, darkTheme = true }) => {
     }
   };
 
-  const cardStyles = darkTheme
-    ? {
-        backgroundColor: "#2a2a2a",
-        border: course.enrolled ? "2px solid #007bff" : "1px solid #404040",
-        color: "#ffffff",
-        cursor: "pointer", // Add pointer cursor for clickable card
-        transition: "transform 0.2s ease-in-out", // Smooth hover effect
-      }
-    : {
-        backgroundColor: "#ffffff",
-        border: course.enrolled ? "2px solid #007bff" : "1px solid #dee2e6",
-        color: "#000000",
-        cursor: "pointer", // Add pointer cursor for clickable card
-        transition: "transform 0.2s ease-in-out", // Smooth hover effect
-      };
+  const cardStyles = {
+    backgroundColor: "#ffffff",
+    border: course.enrolled ? "2px solid #667eea" : "1px solid #e9ecef",
+    color: "#212529",
+    cursor: "pointer",
+    transition: "all 0.3s ease",
+    boxShadow: "0 2px 8px rgba(0, 0, 0, 0.08)",
+  };
 
-  const textColors = darkTheme
-    ? {
-        provider: "#007bff",
-        title: "#ffffff",
-        description: "#b0b0b0",
-        rating: "#ffffff",
-        students: "#b0b0b0",
-        duration: "#b0b0b0",
-      }
-    : {
-        provider: "#007bff",
-        title: "#000000",
-        description: "#6c757d",
-        rating: "#000000",
-        students: "#6c757d",
-        duration: "#6c757d",
-      };
+  const textColors = {
+    provider: "#667eea",
+    title: "#212529",
+    description: "#6c757d",
+    rating: "#212529",
+    students: "#6c757d",
+    duration: "#6c757d",
+  };
 
   return (
-    <Card
-      className="h-100 shadow-lg"
-      style={cardStyles}
-      onClick={handleCardClick}
-      onMouseEnter={(e) => (e.currentTarget.style.transform = "translateY(-5px)")}
-      onMouseLeave={(e) => (e.currentTarget.style.transform = "translateY(0)")}
-    >
-      <div style={{ position: "relative" }}>
-        <Card.Img
-          variant="top"
-          src={imageError || !course.image ? defaultImage : course.image}
-          alt={course.title}
-          style={{ height: "200px", objectFit: "cover" }}
-          onError={() => setImageError(true)}
-        />
-        <div
-          style={{
-            position: "absolute",
-            top: "10px",
-            left: "10px",
-            backgroundColor: "#007bff",
-            color: "white",
-            padding: "4px 8px",
-            borderRadius: "4px",
-            fontSize: "12px",
-            fontWeight: "bold",
-          }}
-        >
-          {course.category}
-        </div>
-        {course.enrolled && (
+    <>
+      <style>
+        {`
+          .course-card-hover:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15) !important;
+          }
+          
+          .enroll-btn-gradient {
+            background: #0d6efd
+            border: none;
+            transition: all 0.3s ease;
+          }
+          
+          .enroll-btn-gradient:hover:not(:disabled) {
+            background: #0b5ed7
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+          }
+          
+          .enrolled-badge {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            animation: pulse 2s ease-in-out infinite;
+          }
+          
+          @keyframes pulse {
+            0%, 100% {
+              box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+            }
+            50% {
+              box-shadow: 0 0 0 6px rgba(16, 185, 129, 0);
+            }
+          }
+          
+          .category-badge {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          }
+        `}
+      </style>
+      
+      <Card
+        className="h-100 course-card-hover"
+        style={cardStyles}
+        onClick={handleCardClick}
+      >
+        <div style={{ position: "relative" }}>
+          <Card.Img
+            variant="top"
+            src={imageError || !course.image ? defaultImage : course.image}
+            alt={course.title}
+            style={{ height: "200px", objectFit: "cover" }}
+            onError={() => setImageError(true)}
+          />
           <div
+            className="category-badge"
             style={{
               position: "absolute",
               top: "10px",
-              right: "10px",
-              backgroundColor: "#28a745",
+              left: "10px",
               color: "white",
-              padding: "4px 8px",
-              borderRadius: "4px",
+              padding: "6px 12px",
+              borderRadius: "6px",
               fontSize: "12px",
-              fontWeight: "bold",
+              fontWeight: "600",
+              boxShadow: "0 2px 8px rgba(0, 0, 0, 0.15)",
             }}
           >
-            Enrolled
+            {course.category}
           </div>
-        )}
-      </div>
+          {course.enrolled && (
+            <div
+              className="enrolled-badge"
+              style={{
+                position: "absolute",
+                top: "10px",
+                right: "10px",
+                color: "white",
+                padding: "6px 12px",
+                borderRadius: "6px",
+                fontSize: "12px",
+                fontWeight: "600",
+              }}
+            >
+              ✓ Enrolled
+            </div>
+          )}
+        </div>
 
-      <Card.Body className="d-flex flex-column">
-        <div className="mb-2">
-          <h6
-            className="mb-1"
+        <Card.Body className="d-flex flex-column" style={{ padding: "1.25rem" }}>
+          <div className="mb-2">
+            <h6
+              className="mb-1"
+              style={{
+                color: textColors.provider,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+                fontSize: "0.875rem",
+                fontWeight: "600",
+              }}
+            >
+              {course.provider}
+            </h6>
+            <Card.Title
+              className="fw-bold"
+              style={{
+                color: textColors.title,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+                fontSize: "1.1rem",
+                marginBottom: "0.5rem",
+              }}
+            >
+              {course.title}
+            </Card.Title>
+          </div>
+
+          <Card.Text
+            className="small mb-3"
             style={{
-              color: textColors.provider,
+              color: textColors.description,
               overflow: "hidden",
               textOverflow: "ellipsis",
               whiteSpace: "nowrap",
+              fontSize: "0.875rem",
             }}
           >
-            {course.provider}
-          </h6>
-          <Card.Title
-            className="h6 fw-bold"
-            style={{
-              color: textColors.title,
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-            }}
-          >
-            {course.title}
-          </Card.Title>
-        </div>
+            {course.description}
+          </Card.Text>
 
-        <Card.Text
-          className="small mb-3"
-          style={{
-            color: textColors.description,
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            whiteSpace: "nowrap",
-          }}
-        >
-          {course.description}
-        </Card.Text>
+          <div className="mb-3">
+            <div className="d-flex align-items-center mb-2">
+              <span className="me-1" style={{ color: "#fbbf24", fontSize: "1.1rem" }}>
+                ★
+              </span>
+              <span className="fw-bold me-2" style={{ color: textColors.rating, fontSize: "0.95rem" }}>
+                {course.rating}
+              </span>
+              <span className="small" style={{ color: textColors.students, fontSize: "0.85rem" }}>
+                👥 {course.students.toLocaleString()}
+              </span>
+            </div>
 
-        <div className="mb-3">
-          <div className="d-flex align-items-center mb-2">
-            <span className="me-1" style={{ color: "#ffc107" }}>
-              ★
-            </span>
-            <span className="fw-bold me-2" style={{ color: textColors.rating }}>
-              {course.rating}
-            </span>
-            <span className="small" style={{ color: textColors.students }}>
-              👥 {course.students.toLocaleString()}
-            </span>
+            <div className="d-flex justify-content-between align-items-center">
+              <span className={`badge bg-${getLevelColor(course.level)}`} style={{ fontSize: "0.75rem", padding: "0.35rem 0.65rem" }}>
+                {course.level}
+              </span>
+              <span className="small" style={{ color: textColors.duration, fontSize: "0.85rem" }}>
+                ⏱️ {course.duration}
+              </span>
+            </div>
           </div>
 
-          <div className="d-flex justify-content-between align-items-center">
-            <span className={`badge bg-${getLevelColor(course.level)}`}>{course.level}</span>
-            <span className="small" style={{ color: textColors.duration }}>
-              ⏱️ {course.duration}
-            </span>
+          <div className="mt-auto">
+            <Button
+              variant={course.enrolled ? "outline-secondary" : "primary"}
+              size="sm"
+              className={course.enrolled ? "w-100" : "w-100 enroll-btn-gradient"}
+              onClick={handleEnrollClick}
+              disabled={course.enrolled}
+              style={{
+                fontWeight: "600",
+                padding: "0.6rem 1rem",
+                borderRadius: "0.5rem",
+              }}
+            >
+              {course.enrolled ? "✓ Enrolled" : "Enroll Now"}
+            </Button>
           </div>
-        </div>
-
-        <div className="mt-auto">
-          <Button
-            variant={course.enrolled ? "outline-primary" : "primary"}
-            size="sm"
-            className="w-100"
-            onClick={handleEnrollClick}
-            disabled={course.enrolled}
-          >
-            {course.enrolled ? "Enrolled" : "Enroll"}
-          </Button>
-        </div>
-      </Card.Body>
-    </Card>
+        </Card.Body>
+      </Card>
+    </>
   );
 };
 
