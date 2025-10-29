@@ -18,9 +18,9 @@
 == Back-End Team
 - Thời gian:
 - Issue: #link("https://github.com/Huangphoux/uit-limousine/issues/")
-- Thành viên tham gia:
-- Công việc:
-- Hình ảnh minh chứng: #image("pair_programming_pics/Screenshot 2025-10-09 130620.png")
+- Thành viên tham gia:Tùng, Hưng 
+- Công việc:Tạo api cho phần login
+- Hình ảnh minh chứng: #image("pair_programming_pics/be_sprint1_login.jpg")
 
 = Sprint 2
 == Front-End Team
@@ -33,9 +33,9 @@
 == Back-End Team
 - Thời gian:
 - Issue: #link("https://github.com/Huangphoux/uit-limousine/issues/")
-- Thành viên tham gia:
-- Công việc:
-- Hình ảnh minh chứng: #image("pair_programming_pics/Screenshot 2025-10-09 130620.png")
+- Thành viên tham gia: Tùng, Hưng
+- Công việc: Tạo api và seed database cho phần tìm kiếm khóa học 
+- Hình ảnh minh chứng: #image("pair_programming_pics/be_sprint2_searchcourse.jpg")
 
 = Sprint 3
 == Front-End Team
