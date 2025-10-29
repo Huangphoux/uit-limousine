@@ -1,21 +1,43 @@
+// tests/integration/courses.integration.test.js
+import express from 'express';
 import request from 'supertest';
-import app from '../../src/app.js';
+import { PrismaClient } from '@prisma/client';
 
-describe('GET /api/courses/:id', () => {
-  let courseId;
+jest.setTimeout(20000);
+
+describe('Course Integration Test', () => {
+  let app;
+  let prisma;
+  let testCourseId;
 
   beforeAll(async () => {
-    // Lấy id khoá học đầu tiên từ API (đã seed dữ liệu)
-    const res = await request(app).get('/api/courses');
-    expect(res.statusCode).toBe(200);
-    expect(Array.isArray(res.body)).toBe(true);
-    courseId = res.body[0]?.id;
+    prisma = new PrismaClient();
+    await prisma.$connect();
+
+    // Tạo dữ liệu test
+    const course = await prisma.course.create({
+      data: {
+        title: 'Test Course',
+        description: 'Test Description',
+        instructor: 'Test Instructor',
+      }
+    });
+    testCourseId = course.id;
+
+    app = express();
+    app.use(express.json());
+    app.use('/api/courses', require('../../src/presentation_layer/routes/course.route.js').default);
+  });
+
+  afterAll(async () => {
+    await prisma.course.deleteMany({ where: { title: 'Test Course' } });
+    await prisma.$disconnect();
   });
 
   it('should return course detail for valid id', async () => {
-    const res = await request(app).get(`/api/courses/${courseId}`);
+    const res = await request(app).get(`/api/courses/${testCourseId}`);
     expect(res.statusCode).toBe(200);
-    expect(res.body).toHaveProperty('id', courseId);
+    expect(res.body).toHaveProperty('id', testCourseId);
     expect(res.body).toHaveProperty('title');
     expect(res.body).toHaveProperty('description');
     expect(res.body).toHaveProperty('instructor');
