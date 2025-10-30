@@ -1,14 +1,14 @@
-import express from 'express';
-import courseRoutes from './presentation_layer/routes/course.routes.js';
+import express from "express";
+import cors from "cors";
+import authRouter from './presentation_layer/routes/auth.route.js';
+import coursesRouter from './presentation_layer/routes/courses.route.js';
 
 const app = express();
+app.use(cors({ origin: ['https://uit-limousine.netlify.app', 'http://localhost:5173'] }));
 app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
 
-app.use('/api/courses', courseRoutes);
-
-const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => {
-  console.log(`Server running at http://localhost:${PORT}`);
-});
+app.use('/auth', authRouter);
+app.use('/courses', coursesRouter);
 
 export default app;
