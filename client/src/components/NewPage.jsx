@@ -25,6 +25,23 @@ const NewPage = () => {
   //   fetchCourses();
   // }, []);
 
+  // Debounced search effect - triggers 1 second after user stops typing
+  useEffect(() => {
+    const debounceTimer = setTimeout(() => {
+      if (searchTerm.trim() === "") {
+        // If search is empty, show all courses
+        setFilteredCourses(courses);
+      } else {
+        // Perform search after 1 second delay
+        const filtered = searchCourses(searchTerm, courses);
+        setFilteredCourses(filtered);
+      }
+    }, 1000);
+
+    // Cleanup: clear the timeout if user types again before 1 second
+    return () => clearTimeout(debounceTimer);
+  }, [searchTerm, courses, searchCourses]);
+
   const handleSearch = () => {
     const filtered = searchCourses(searchTerm, courses);
     setFilteredCourses(filtered);
@@ -261,7 +278,6 @@ const NewPage = () => {
                     placeholder="Search for courses, skills, or topics..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    onKeyPress={(e) => e.key === "Enter" && handleSearch()}
                     className="search-input"
                     style={{
                       backgroundColor: "#ffffff",
