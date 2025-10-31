@@ -19,14 +19,13 @@ describe('Course Integration Test', () => {
       data: {
         title: 'Test Course',
         description: 'Test Description',
-        instructor: 'Test Instructor',
       }
     });
     testCourseId = course.id;
 
     app = express();
     app.use(express.json());
-    app.use('/api/courses', require('../../src/presentation_layer/routes/course.route.js').default);
+    app.use('/api/courses', require('../../src/presentation_layer/routes/courses.route.js').default);
   });
 
   afterAll(async () => {

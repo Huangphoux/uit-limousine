@@ -30,7 +30,7 @@ export const getCourseById = async (req, res) => {
     res.json({
       id: course.id,
       title: course.title,
-      slug: course.slug,
+      // slug: course.slug,
       shortDesc: course.shortDesc,
       description: course.description,
       language: course.language,

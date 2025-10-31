@@ -142,7 +142,6 @@ async function main() {
   const course = await prisma.course.create({
     data: {
       title: 'React cơ bản',
-      slug: 'react-co-ban',
       shortDesc: 'Component, Hooks, State',
       description: 'Khoá học React cơ bản: components, props, state, hooks, routing',
       language: 'vi',
