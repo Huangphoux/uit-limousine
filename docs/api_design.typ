@@ -44,13 +44,12 @@ Response 201 Created:
 {
   "success": true,
   "data": {
-    "accessToken": "jwt_token_here",
-    "user": {
-      "id": "uuid",
-      "email": "user@example.com",
-      "fullName": "Nguyen Van A",
-      "role": "LEARNER"
-    }
+    "id": "uuid",
+    "email": "user@example.com",
+    "fullName": "Nguyen Van A",
+    "role": "LEARNER",
+    "emailVerified": false,
+    "createdAt": "2025-10-14T10:00:00Z"
   },
   "message": "Registration successful. Please check your email to verify your account."
 }
@@ -72,6 +71,7 @@ Response 200 OK:
   "success": true,
   "data": {
     "accessToken": "jwt_token_here",
+    "refreshToken": "refresh_token_here",
     "user": {
       "id": "uuid",
       "email": "student@example.com",
@@ -189,7 +189,7 @@ Content-Type: application/json
 === 4.1. List Courses (UC-02)
 
 ```http
-GET /courses?search=nodejs&category=programming&level=BEGINNER&page=1&limit=10
+GET /courses?search=nodejs&category=programming&page=1&limit=10
 Authorization: Bearer {token} (optional for guests)
 
 Response 200 OK:
@@ -383,7 +383,6 @@ Content-Type: application/json
   "slug": "advanced-react-development",
   "shortDesc": "Master React with advanced concepts",
   "description": "Complete description with detailed curriculum and learning outcomes",
-  "category": "Programming",
   "level": "INTERMEDIATE",
   "language": "vi",
   "instructorId": "uuid",
@@ -399,7 +398,6 @@ Response 201 Created:
     "title": "Advanced React Development",
     "slug": "advanced-react-development",
     "shortDesc": "Master React with advanced concepts",
-    "category": "Programming",
     "level": "INTERMEDIATE",
     "instructor": {
       "id": "uuid",

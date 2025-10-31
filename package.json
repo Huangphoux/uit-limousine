@@ -17,5 +17,8 @@
   "license": "ISC",
   "dependencies": {
     "concurrently": "^9.2.1"
+  },
+  "devDependencies": {
+    "jest": "^30.2.0"
   }
 }
