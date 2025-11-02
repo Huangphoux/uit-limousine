@@ -1,0 +1,14 @@
+@startuml
+title UC-10 Messaging / Q&A (Thread & Message)
+start
+:User opens thread or creates new thread;
+:Type message + optional file;
+:Click Send;
+partition "System" {
+  :Persist Message in Thread;
+  :Update thread lastActivity;
+  :Notify thread subscribers (in-app/email);
+}
+:Message appears for participants;
+stop
+@enduml
