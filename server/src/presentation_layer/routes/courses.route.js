@@ -1,12 +1,11 @@
 import { Router } from "express";
-import { searchCoursesController, getCourseByIdController } from "../../composition-root.js";
+import { searchCoursesController } from "../../composition-root.js";
+import { getCourseById, getAllCourses } from '../controllers/courses/course.controller.js';
 
 const router = Router();
 
 // GET /api/courses?search=nodejs&category=programming&page=1&limit=10
 router.get('/', async (req, res) => await searchCoursesController.execute(req, res));
-
-// GET /api/courses/:id
-router.get('/:id', async (req, res) => await getCourseByIdController.execute(req, res));
+router.get('/:id', getCourseById);
 
 export default router;

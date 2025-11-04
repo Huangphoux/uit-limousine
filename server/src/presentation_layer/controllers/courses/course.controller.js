@@ -1,4 +1,4 @@
-import prisma from '../../../prisma/client.js';
+import prisma from '../../../../prisma/client.js';
 
 export const getCourseById = async (req, res) => {
   const { id: courseId } = req.params; 

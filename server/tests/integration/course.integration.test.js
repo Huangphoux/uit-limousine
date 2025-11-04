@@ -1,7 +1,8 @@
 // tests/integration/courses.integration.test.js
 import request from 'supertest';
 import { PrismaClient } from '@prisma/client';
-import app from '../../src/app.js';  
+import app from '../../src/app'
+
 jest.setTimeout(20000);
 
 describe('Course Integration Test', () => {
@@ -28,7 +29,7 @@ describe('Course Integration Test', () => {
   });
 
   it('should return course detail for valid id', async () => {
-    const res = await request(app).get(`/api/courses/${testCourseId}`);  
+    const res = await request(app).get(`/courses/${testCourseId}`);
     expect(res.statusCode).toBe(200);
     expect(res.body).toHaveProperty('id', testCourseId);
     expect(res.body).toHaveProperty('title');
@@ -42,7 +43,7 @@ describe('Course Integration Test', () => {
   });
 
   it('should return 404 for invalid id', async () => {
-     const res = await request(app).get('/api/courses/invalid-id-123');
+    const res = await request(app).get('/courses/invalid-id-123');
     expect(res.statusCode).toBe(404);
     expect(res.body).toHaveProperty('error');
   });
