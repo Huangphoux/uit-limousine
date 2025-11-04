@@ -15,6 +15,9 @@ import { RoleRepositoryPostgree } from "./infrustructure_layer/repository/role.r
 import { CourseRepository } from "./infrustructure_layer/repository/course.repository.postgree.js";
 import { SearchCoursesUseCase } from "./application_layer/courses/search-courses.usecase.js";
 import { SearchCoursesController } from "./presentation_layer/controllers/courses/search-courses.controller.js";
+import { EnrollCoursesController } from "./presentation_layer/controllers/courses/enroll-courses.controller.js";
+import { EnrollCoursesUseCase } from "./application_layer/courses/enroll-courses.usecase.js";
+import { EnrollmentRepositoryPostgree } from "./infrustructure_layer/repository/enrollment.repository.postgree.js";
 
 export const prisma = new PrismaClient();
 
@@ -33,3 +36,7 @@ export const registerController = new RegisterController(registerUseCase);
 const courseRepository = new CourseRepository(prisma.course);
 const searchCoursesUseCase = new SearchCoursesUseCase(courseRepository);
 export const searchCoursesController = new SearchCoursesController(searchCoursesUseCase);
+
+const enrollmentRepository = new EnrollmentRepositoryPostgree(prisma.enrollment);
+const enrollCoursesUseCase = new EnrollCoursesUseCase(userRepository, courseRepository, enrollmentRepository);
+export const enrollCoursesController = new EnrollCoursesController(enrollCoursesUseCase);

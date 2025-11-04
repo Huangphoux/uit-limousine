@@ -8,6 +8,18 @@ export class UserRepositoryPostgree {
         this.#userModel = userModel;
     }
 
+    async findById(id) {
+        const row = await this.#userModel.findUnique({
+            where: { id: id },
+            select: {
+                id: true,
+                roles: true,
+            }
+        });
+
+        return UserMapper.toDomain(row);
+    }
+
     async findByEmail(email) {
         const row = await this.#userModel.findUnique({
             where: { email: email },
@@ -20,16 +32,7 @@ export class UserRepositoryPostgree {
             }
         });
 
-        if (row == null)
-            return row;
-
-        let user = new UserEntity();
-        user.id = row.id;
-        user.email = row.email;
-        user.password = row.password;
-        user.name = row.name;
-        user.roles = row.role;
-        return user;
+        return UserMapper.toDomain(row);
     }
 
     async create(user) {
