@@ -18,6 +18,10 @@ import { SearchCoursesController } from "./presentation_layer/controllers/course
 import { EnrollCoursesController } from "./presentation_layer/controllers/courses/enroll-courses.controller.js";
 import { EnrollCoursesUseCase } from "./application_layer/courses/enroll-courses.usecase.js";
 import { EnrollmentRepositoryPostgree } from "./infrustructure_layer/repository/enrollment.repository.postgree.js";
+import { CourseMaterialsQueryController } from "./presentation_layer/controllers/courses/course-materials-query.controller.js";
+import { CourseMaterialsQueryUseCase, CourseMaterialsQueryUseCaseInput } from "./application_layer/courses/course-materials-query.usecase.js";
+import { CourseReadAccessor } from "./infrustructure_layer/read_accessor/course.read-accessor.js";
+import { UserReadAccessor } from "./infrustructure_layer/read_accessor/user.read-accessor.js";
 
 export const prisma = new PrismaClient();
 
@@ -40,3 +44,8 @@ export const searchCoursesController = new SearchCoursesController(searchCourses
 const enrollmentRepository = new EnrollmentRepositoryPostgree(prisma.enrollment);
 const enrollCoursesUseCase = new EnrollCoursesUseCase(userRepository, courseRepository, enrollmentRepository);
 export const enrollCoursesController = new EnrollCoursesController(enrollCoursesUseCase);
+
+const userReadAccessor = new UserReadAccessor(prisma);
+const courseReadAccessor = new CourseReadAccessor(prisma);
+const courseMaterialsQueryUsecase = new CourseMaterialsQueryUseCase(courseReadAccessor, userReadAccessor);
+export const courseMaterialsQueryController = new CourseMaterialsQueryController(courseMaterialsQueryUsecase);

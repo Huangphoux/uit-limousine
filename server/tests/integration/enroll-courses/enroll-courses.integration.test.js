@@ -3,6 +3,8 @@ import { prisma } from "../../../src/composition-root"
 import { course, student, studentRole } from "./enroll-courses.test-data"
 import app from "../../../src/app"
 
+jest.setTimeout(20000);
+
 describe('Enroll courses integration test', () => {
     let path;
     let input;

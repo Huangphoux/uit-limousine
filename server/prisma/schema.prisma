@@ -31,6 +31,7 @@ model User {
   submissions           Submission[]            @relation("studentSubmissions")
   tokens                Token[]
   roles                 UserRole[]
+  LessonProgress        LessonProgress[]
 }
 
 model Token {
@@ -99,18 +100,32 @@ model Module {
 }
 
 model Lesson {
-  id          String   @id @default(uuid())
-  moduleId    String
-  title       String
-  content     String? // markdown or rich text
-  mediaUrl    String? // optional video/file url
-  contentType String? // "video" | "article" | "file"
-  durationSec Int? // for video lessons
-  position    Int      @default(0)
-  createdAt   DateTime @default(now())
-  module      Module   @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  id             String           @id @default(uuid())
+  moduleId       String
+  title          String
+  content        String? // markdown or rich text
+  mediaUrl       String? // optional video/file url
+  contentType    String? // "video" | "article" | "file"
+  durationSec    Int? // for video lessons
+  position       Int              @default(0)
+  createdAt      DateTime         @default(now())
+  module         Module           @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  LessonProgress LessonProgress[]
 
   @@index([moduleId, position])
+}
+
+model LessonProgress {
+  id       String @id @default(uuid())
+  userId   String
+  lessonId String
+  progress Float  @default(0.0)
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, lessonId])
+  @@index([lessonId])
 }
 
 model Enrollment {
