@@ -116,10 +116,11 @@ model Lesson {
 }
 
 model LessonProgress {
-  id       String @id @default(uuid())
-  userId   String
-  lessonId String
-  progress Float  @default(0.0)
+  id          String   @id @default(uuid())
+  userId      String
+  lessonId    String
+  progress    Float    @default(0.0)
+  completedAt DateTime @default(now())
 
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
