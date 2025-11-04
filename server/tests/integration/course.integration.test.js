@@ -1,11 +1,12 @@
 // tests/integration/courses.integration.test.js
+import express from 'express';
 import request from 'supertest';
 import { PrismaClient } from '@prisma/client';
-import app from '../../src/app'
 
 jest.setTimeout(20000);
 
 describe('Course Integration Test', () => {
+  let app;
   let prisma;
   let testCourseId;
 
@@ -21,6 +22,10 @@ describe('Course Integration Test', () => {
       },
     });
     testCourseId = course.id;
+
+    app = express();
+    app.use(express.json());
+    app.use('/api/courses', require('../../src/presentation_layer/routes/courses.route.js').default);
   });
 
   afterAll(async () => {
@@ -29,7 +34,7 @@ describe('Course Integration Test', () => {
   });
 
   it('should return course detail for valid id', async () => {
-    const res = await request(app).get(`/courses/${testCourseId}`);
+    const res = await request(app).get(`/api/courses/${testCourseId}`);
     expect(res.statusCode).toBe(200);
     expect(res.body).toHaveProperty('id', testCourseId);
     expect(res.body).toHaveProperty('title');
@@ -43,7 +48,7 @@ describe('Course Integration Test', () => {
   });
 
   it('should return 404 for invalid id', async () => {
-    const res = await request(app).get('/courses/invalid-id-123');
+    const res = await request(app).get('/api/courses/invalid-id-123');
     expect(res.statusCode).toBe(404);
     expect(res.body).toHaveProperty('error');
   });
