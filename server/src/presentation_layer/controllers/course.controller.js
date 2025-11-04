@@ -1,7 +1,8 @@
 import prisma from '../../../prisma/client.js';
 
 export const getCourseById = async (req, res) => {
-  const courseId = req.params.id;
+  const { id: courseId } = req.params; 
+
   try {
     const course = await prisma.course.findUnique({
       where: { id: courseId },
