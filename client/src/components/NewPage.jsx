@@ -254,7 +254,7 @@ const NewPage = () => {
           </Row>
 
           {/* Search Section */}
-          <Row className="mb-5 search-section">
+          <Row className="mb-4 search-section">
             <Col lg={10} xl={8}>
               <InputGroup
                 size="lg"
@@ -359,6 +359,32 @@ const NewPage = () => {
               </Col>
             </Row>
           )}
+
+          {/* Enrolled Courses Counter */}
+          <Row className="mb-4">
+            <Col>
+              <div
+                className="d-flex"
+                style={{
+                  animation: "fadeInUp 0.8s ease-out 0.3s backwards",
+                }}
+              >
+                <div
+                  style={{
+                    backgroundColor: "#20c997",
+                    color: "white",
+                    padding: "12px 24px",
+                    borderRadius: "25px",
+                    fontSize: "16px",
+                    fontWeight: "600",
+                    boxShadow: "0 4px 12px rgba(32, 201, 151, 0.3)",
+                  }}
+                >
+                  You have enrolled in {courses.filter((course) => course.enrolled).length} courses
+                </div>
+              </div>
+            </Col>
+          </Row>
 
           {/* Courses Grid */}
           <Row className="courses-grid">
