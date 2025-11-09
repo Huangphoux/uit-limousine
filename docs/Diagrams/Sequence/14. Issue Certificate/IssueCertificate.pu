@@ -1,0 +1,25 @@
+@startuml
+title UC-14 Issue Certificate (Sequence)
+participant Trigger
+participant CertificateService
+participant EnrollmentService
+participant DB
+participant Storage
+participant NotificationService
+participant User
+
+Trigger -> CertificateService: issueCertificateRequest(userId, courseId)
+CertificateService -> EnrollmentService: verifyCompletion(userId, courseId)
+EnrollmentService -> DB: SELECT enrollment & progress
+DB --> EnrollmentService: completion status
+alt eligible
+CertificateService -> DB: INSERT certificate(record)
+DB --> CertificateService: certId
+CertificateService -> Storage: generateAndStorePDF(certId, data)
+Storage --> CertificateService: pdfUrl
+CertificateService -> NotificationService: notifyUserCertificate(userId, pdfUrl)
+NotificationService --> User: in-app/email
+else not eligible
+CertificateService -> NotificationService: notifyAdminFailure(reason)
+end
+@enduml

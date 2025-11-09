@@ -1,0 +1,21 @@
+@startuml
+title UC-13 View Reports / Analytics (Sequence)
+participant User
+participant WebApp
+participant Analytics
+participant DataWarehouse
+participant DB
+
+User -> WebApp: open analytics dashboard & request report
+WebApp -> Analytics: getReport(params)
+Analytics -> DataWarehouse: query(pre-aggregated) 
+alt cache hit
+DataWarehouse --> Analytics: cachedReport
+else
+Analytics -> DB: run aggregation queries
+DB --> Analytics: raw results
+Analytics -> DataWarehouse: cache results
+end
+Analytics --> WebApp: report data
+WebApp --> User: render charts / export
+@enduml

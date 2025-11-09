@@ -60,7 +60,7 @@ model UserRole {
 model Course {
   id           String        @id @default(uuid())
   title        String
-  slug         String        @unique
+  // slug         String        @unique
   shortDesc    String?
   description  String?
   language     String?       @default("en")

@@ -1,0 +1,16 @@
+@startuml
+title UC-17 Manage Users & Roles (Admin)
+start
+:Admin opens user management console;
+:Search/select user;
+:View user profile, roles, status;
+:Choose action (add/remove role, suspend, reset password...);
+:Confirm action;
+partition "System" {
+  :Update User / UserRole records;
+  :Invalidate sessions if needed;
+  :Persist AuditLog entry for action;
+  :Notify user of role/status change (optional);
+}
+stop
+@enduml

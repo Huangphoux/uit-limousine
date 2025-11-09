@@ -1,0 +1,17 @@
+@startuml
+title UC-03 View Course Details
+start
+:User clicks course;
+partition "System" {
+  :Load course by slug/id;
+  :Load instructor, modules, reviews;
+  :Check user's enrollment status (if logged in);
+}
+:Render course page (content, CTAs);
+if (User enrolled?) then (yes)
+  :Show "Continue learning";
+else (no)
+  :Show "Enroll / Buy" CTA;
+endif
+stop
+@enduml

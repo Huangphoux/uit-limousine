@@ -1,0 +1,18 @@
+@startuml
+title UC-10 Messaging / Q&A (Sequence)
+participant User
+participant WebApp
+participant ThreadService
+participant DB
+participant NotificationService
+participant Subscribers
+
+User -> WebApp: create thread or post message
+WebApp -> ThreadService: createMessage(threadId?, payload)
+ThreadService -> DB: INSERT message (and thread if new)
+DB --> ThreadService: ok
+ThreadService -> NotificationService: notifySubscribers(threadId, message)
+NotificationService -> Subscribers: push notifications
+ThreadService --> WebApp: success
+WebApp --> User: show message
+@enduml
