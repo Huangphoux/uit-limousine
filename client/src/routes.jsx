@@ -5,6 +5,7 @@ import Login from "./components/Login";
 import Signup from "./components/Signup";
 import NewPage from "./components/NewPage";
 import UserInfo from "./components/UserInfo";
+import CourseContent from "./components/CourseContent";
 
 const routes = [
   {
@@ -41,6 +42,11 @@ const routes = [
         element: <NewPage />,
       },
     ],
+  },
+  {
+    path: "/course/:courseId",
+    element: <CourseContent />,
+    errorElement: <ErrorPage />,
   },
 ];
 
