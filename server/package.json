@@ -8,13 +8,14 @@
     "start:generate": "npx prisma generate && nodemon",
     "dev": "nodemon",
     "generate": "npx prisma generate",
-    "test": "jest --verbose --runInBand",
-    "test:watch": "jest --verbose --runInBand --watch",
+    "test": "jest --verbose --runInBand --detectOpenHandles",
+    "test:watch": "jest --verbose --runInBand --detectOpenHandles --watch",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
     "migrate": "npx prisma migrate dev",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "seed": "npx prisma db seed"
   },
   "keywords": [],
   "author": "",
@@ -48,6 +49,9 @@
     "prettier": "3.6.2",
     "prisma": "^6.16.2",
     "supertest": "^7.1.4"
+  },
+  "prisma": {
+    "seed": "node prisma/seed.js"
   },
   "jest": {
     "testEnvironment": "node",

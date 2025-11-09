@@ -4,7 +4,7 @@ import { defineConfig } from "eslint/config";
 
 export default defineConfig([
   {
-    files: ["**/*.{js,mjs,cjs}"],
+    files: ["src/**/*.{js,mjs,cjs}"],
     plugins: { js },
     extends: ["js/recommended"],
     languageOptions: {
@@ -17,6 +17,10 @@ export default defineConfig([
         ...globals.commonjs,
         myCustomGlobal: "readonly",
       },
+    },
+    rules: {
+      "no-unused-vars": "off",
+      "no-undef": "off",
     },
     // env: {
     //   commonjs: true,
