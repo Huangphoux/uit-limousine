@@ -1,0 +1,31 @@
+@startuml
+title UC-01 Register / Login / Logout (Sequence)
+participant User
+participant WebApp
+participant AuthService
+participant DB
+participant NotificationService
+
+== Register ==
+User -> WebApp: Open Register Form / Submit data
+WebApp -> AuthService: createUser(payload)
+AuthService -> DB: insert User
+DB --> AuthService: user created
+AuthService -> NotificationService: sendWelcomeEmail(user)
+NotificationService --> User: email
+
+alt Login flow
+User -> WebApp: Submit credentials
+WebApp -> AuthService: authenticate(credentials)
+AuthService -> DB: find user
+DB --> AuthService: user record
+AuthService --> WebApp: token/session
+WebApp --> User: session established
+end
+
+== Logout ==
+User -> WebApp: Click Logout
+WebApp -> AuthService: invalidateSession(token)
+AuthService --> WebApp: ok
+WebApp --> User: logged out
+@enduml

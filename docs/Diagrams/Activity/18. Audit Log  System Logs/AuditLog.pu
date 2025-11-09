@@ -1,0 +1,13 @@
+@startuml
+title UC-18 Audit Log / System Logs (Record Action)
+start
+:Action occurs (create/update/delete) by actor;
+partition "System" {
+  :Collect audit details (actor, action, resource, before/after);
+  :Persist AuditLog entry;
+  if (Alert rule matched?) then (yes)
+    :Send alert to admin/security (email/SLACK);
+  endif
+}
+stop
+@enduml
