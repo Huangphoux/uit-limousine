@@ -1,0 +1,20 @@
+@startuml
+title UC-05 Learn Course / View Lesson
+start
+:User selects Course -> Module -> Lesson;
+partition "System" {
+  :Verify enrollment & permission;
+  if (allowed?) then (yes)
+    fork
+      :Load lesson content (video/text/media);
+    fork again
+      :Start progress tracking (heartbeat);
+    end fork
+    :Render lesson UI/player;
+    :Save progress periodically;
+  else (no)
+    :Show access denied / prompt to enroll;
+  endif
+}
+stop
+@enduml

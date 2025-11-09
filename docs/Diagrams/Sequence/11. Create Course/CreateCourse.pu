@@ -1,0 +1,24 @@
+@startuml
+title UC-11 Create Course (Sequence)
+participant Instructor
+participant WebApp
+participant CourseService
+participant DB
+participant NotificationService
+participant Admin
+
+Instructor -> WebApp: open Create Course -> submit draft or request review
+WebApp -> CourseService: createCourse(payload, publish=false or pending)
+CourseService -> DB: INSERT course (status draft/pending)
+DB --> CourseService: courseId
+alt requires approval
+CourseService -> NotificationService: notifyAdmins(courseId)
+NotificationService -> Admin: in-app/email
+else auto-publish
+CourseService -> DB: UPDATE course(status=published)
+DB --> CourseService: published
+CourseService -> NotificationService: notifyFollowers(course)
+end
+CourseService --> WebApp: ack
+WebApp --> Instructor: show course saved/pending/published
+@enduml

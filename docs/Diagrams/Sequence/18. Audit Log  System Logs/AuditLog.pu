@@ -1,0 +1,20 @@
+@startuml
+title UC-18 Audit Log / System Logs (Sequence)
+participant Actor
+participant WebApp
+participant AuditService
+participant DB
+participant AlertService
+participant Admin
+
+Actor -> WebApp: perform action (create/update/delete)
+WebApp -> AuditService: record(actorId, action, resource, before, after)
+AuditService -> DB: INSERT audit_log
+DB --> AuditService: saved
+alt alert rule matched
+AuditService -> AlertService: sendAlert(details)
+AlertService -> Admin: email/Slack alert
+end
+AuditService --> WebApp: ack
+WebApp --> Actor: continue
+@enduml
