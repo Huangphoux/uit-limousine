@@ -19,7 +19,7 @@ class ModuleOutput {
     lessons;
 
     static create(module, progressMap) {
-        let result = new LessonOutput();
+        let result = new ModuleOutput();
         result.id = module.id;
         result.title = module.title;
         result.lessons = module.lessons.map(lesson => LessonOutput.create(lesson, progressMap));
@@ -37,7 +37,7 @@ class LessonOutput {
     isCompleted;
 
     static create(lesson, progressMap) {
-        result = new LessonOutput();
+        let result = new LessonOutput();
         result.id = lesson.id;
         result.title = lesson.title;
         result.type = lesson.contentType;
@@ -62,7 +62,7 @@ export class CourseMaterialsQueryUseCase {
     async execute(input) {
         const courseMaterials = await this.courseReadAccessor.getCourseMaterials(input.courseId);
         const lessonProgresses = await this.userReadAccessor.getLessonProgresses(input.userId);
-        const progressMap = new Map(lessonProgresses.map(p => [p.id, p.progress]));
+        const progressMap = new Map(lessonProgresses.map(p => [p.lessonId, p.progress]));
         return CourseMaterialsQueryUseCaseOutput.create(courseMaterials, progressMap);
     }
 }

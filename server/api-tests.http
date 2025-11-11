@@ -1,0 +1,442 @@
+### ============================================================================
+### UIT-LIMOUSINE LMS API - REST CLIENT TEST FILE
+### ============================================================================
+### 
+### 📖 HOW TO USE:
+### 1. Make sure server is running: cd server && npm run dev
+### 2. Click "Send Request" above any request you want to test
+### 3. Response appears in a new tab on the right
+### 4. Look for "HTTP/1.1 200 OK" and "success": true
+### 5. Copy important values (tokens, IDs) and update variables below
+###
+### 🎯 TESTING ORDER:
+### 1. Register → Copy accessToken
+### 2. Login → Verify credentials work
+### 3. Search Courses → Copy courseId
+### 4. Enroll in Course
+### 5. Get Course Materials → Copy lessonId
+### 6. Complete Lesson
+### 7. Logout
+###
+### ============================================================================
+
+### ============================================================================
+### ENVIRONMENT VARIABLES
+### ============================================================================
+@baseUrl = http://localhost:3000
+@contentType = application/json
+
+# After Register/Login, paste your token here:
+@accessToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI5Zjc1OGYxMy00MWI4LTRlZjYtOTM4OS01OTE1OTAwYmMwZWIiLCJpYXQiOjE3NjI4NTYzNTAsImV4cCI6MTc2Mjk0Mjc1MH0.n3gba_i5JUoip9tAIcWW2Cnj4asPhGJOeLzdwtAEbjY
+
+# After Search Courses, paste a course ID here:
+@courseId = 1e33a8a7-c63e-457e-9f9d-2383940d75a4
+
+# After Get Course Materials, paste a lesson ID here:
+@lessonId = 96dd490c-1fcb-4751-b7d5-ea22e8f1b3e8
+
+### ============================================================================
+### 1. AUTHENTICATION
+### ============================================================================
+
+### 1.1 Register New User
+# Expected: 201 Created
+# Response: { "success": true, "data": { "accessToken": "...", "user": {...} } }
+# Action: Copy the accessToken and paste it in @accessToken variable above
+POST {{baseUrl}}/auth/register
+Content-Type: {{contentType}}
+
+{
+  "email": "testuser@example.com",
+  "password": "password123",
+  "name": "Test User"
+}
+
+###
+
+### 1.2 Register Another User (for testing multiple users)
+POST {{baseUrl}}/auth/register
+Content-Type: {{contentType}}
+
+{
+  "email": "student2@example.com",
+  "password": "password123",
+  "name": "Student Two"
+}
+
+###
+
+### 1.3 Login with Existing User
+# Expected: 200 OK
+# Response: { "success": true, "data": { "accessToken": "...", "user": {...} } }
+# Action: Copy the accessToken if you need a fresh token
+POST {{baseUrl}}/auth/login
+Content-Type: {{contentType}}
+
+{
+  "email": "workflow@example.com",
+  "password": "test123"
+}
+
+###
+
+### 1.4 Login with Wrong Password (Test Error Handling)
+# Expected: 401 Unauthorized
+POST {{baseUrl}}/auth/login
+Content-Type: {{contentType}}
+
+{
+  "email": "testuser@example.com",
+  "password": "wrongpassword"
+}
+
+###
+
+### 1.5 Logout
+# Expected: 200 OK
+# Response: { "success": true, "message": "Logged out successfully" }
+POST {{baseUrl}}/auth/logout
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+###
+
+### ============================================================================
+### 2. COURSES
+### ============================================================================
+
+### 2.1 Search All Courses (No Filters)
+# Expected: 200 OK
+# Response: { "success": true, "data": { "courses": [...], "total": X } }
+# Action: Copy an "id" from any course and paste it in @courseId variable
+GET {{baseUrl}}/courses
+Authorization: Bearer {{accessToken}}
+
+###
+
+### 2.2 Search Courses with Filters
+# Expected: 200 OK
+# Test different filter combinations:
+GET {{baseUrl}}/courses?search=node&category=programming&level=BEGINNER&page=1&limit=10
+Authorization: Bearer {{accessToken}}
+
+###
+
+### 2.3 Search Courses - Only Search Term
+GET {{baseUrl}}/courses?search=react
+Authorization: Bearer {{accessToken}}
+
+###
+
+### 2.4 Search Courses - By Category
+GET {{baseUrl}}/courses?category=programming
+Authorization: Bearer {{accessToken}}
+
+###
+
+### 2.5 Search Courses - By Level
+GET {{baseUrl}}/courses?level=INTERMEDIATE
+Authorization: Bearer {{accessToken}}
+
+###
+
+### 2.6 Search Courses - Pagination Test
+GET {{baseUrl}}/courses?page=1&limit=5
+Authorization: Bearer {{accessToken}}
+
+###
+
+### 2.7 Get Course Details by ID
+# Expected: 200 OK
+# Response: Full course details with modules, lessons, instructor info
+# Make sure you've set @courseId variable!
+GET {{baseUrl}}/courses/{{courseId}}
+Authorization: Bearer {{accessToken}}
+
+###
+
+### 2.8 Get Course that Doesn't Exist (Test Error)
+# Expected: 404 Not Found
+GET {{baseUrl}}/courses/00000000-0000-0000-0000-000000000000
+Authorization: Bearer {{accessToken}}
+
+###
+
+### ============================================================================
+### 3. ENROLLMENT
+### ============================================================================
+
+### 3.1 Enroll in a Course
+# Expected: 201 Created
+# Response: { "success": true, "data": { "enrollmentId": "...", "status": "ENROLLED" } }
+# Make sure you've set @courseId variable!
+POST {{baseUrl}}/courses/{{courseId}}/enroll
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+{}
+
+###
+
+### 3.2 Try to Enroll Again (Test Duplicate)
+# Expected: 409 Conflict (Already enrolled)
+POST {{baseUrl}}/courses/{{courseId}}/enroll
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+{}
+
+###
+
+### 3.3 Enroll Without Token (Test Auth)
+# Expected: 401 Unauthorized
+POST {{baseUrl}}/courses/{{courseId}}/enroll
+Content-Type: {{contentType}}
+
+{}
+
+###
+
+### ============================================================================
+### 4. COURSE MATERIALS
+### ============================================================================
+
+### 4.1 Get Course Materials (Modules & Lessons)
+# Expected: 200 OK
+# Response: { "success": true, "data": { "modules": [...] } }
+# Action: Copy a lesson "id" from the response and paste in @lessonId variable
+GET {{baseUrl}}/courses/{{courseId}}/materials
+Authorization: Bearer {{accessToken}}
+
+###
+
+### 4.2 Get Materials Without Enrollment (Test Access Control)
+# Expected: 403 Forbidden (if not enrolled)
+# Use a different course ID that you haven't enrolled in
+GET {{baseUrl}}/courses/some-other-course-id/materials
+Authorization: Bearer {{accessToken}}
+
+###
+
+### ============================================================================
+### 5. LESSONS & PROGRESS
+### ============================================================================
+
+### 5.1 Mark Lesson as Complete
+# Expected: 200 OK
+# Response: { "success": true, "data": { "lessonId": "...", "completedAt": "...", "courseProgress": X } }
+# Make sure you've set @lessonId variable!
+POST {{baseUrl}}/lessons/{{lessonId}}/complete
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+{}
+
+###
+
+### 5.2 Complete Same Lesson Again (Test Idempotency)
+# Expected: 200 OK or 409 Conflict (depends on implementation)
+POST {{baseUrl}}/lessons/{{lessonId}}/complete
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+{}
+
+###
+
+### 5.3 Complete Lesson Without Token (Test Auth)
+# Expected: 401 Unauthorized
+POST {{baseUrl}}/lessons/{{lessonId}}/complete
+Content-Type: {{contentType}}
+
+{}
+
+###
+
+### ============================================================================
+### 6. ERROR TESTING & EDGE CASES
+### ============================================================================
+
+### 6.1 Register with Duplicate Email
+# Expected: 409 Conflict
+POST {{baseUrl}}/auth/register
+Content-Type: {{contentType}}
+
+{
+  "email": "testuser@example.com",
+  "password": "password123",
+  "name": "Duplicate User"
+}
+
+###
+
+### 6.2 Register with Invalid Email Format
+# Expected: 400 Bad Request
+POST {{baseUrl}}/auth/register
+Content-Type: {{contentType}}
+
+{
+  "email": "not-an-email",
+  "password": "password123",
+  "name": "Invalid Email"
+}
+
+###
+
+### 6.3 Register with Missing Fields
+# Expected: 400 Bad Request
+POST {{baseUrl}}/auth/register
+Content-Type: {{contentType}}
+
+{
+  "email": "incomplete@example.com"
+}
+
+###
+
+### 6.4 Access Protected Route Without Token
+# Expected: 401 Unauthorized
+GET {{baseUrl}}/courses
+
+###
+
+### 6.5 Access with Invalid Token
+# Expected: 401 Unauthorized
+GET {{baseUrl}}/courses
+Authorization: Bearer invalid_token_12345
+
+###
+
+### 6.6 Access with Malformed Token
+# Expected: 401 Unauthorized
+GET {{baseUrl}}/courses
+Authorization: InvalidFormat
+
+###
+
+### ============================================================================
+### 7. TESTING WORKFLOW (Copy-Paste This Sequence)
+### ============================================================================
+
+### STEP 1: Register
+POST {{baseUrl}}/auth/register
+Content-Type: {{contentType}}
+
+{
+  "email": "workflow@example.com",
+  "password": "test123",
+  "name": "Workflow Test"
+}
+### → Copy accessToken and update @accessToken variable above
+
+###
+
+### STEP 2: Search Courses
+GET {{baseUrl}}/courses?limit=5
+Authorization: Bearer {{accessToken}}
+### → Copy a course id and update @courseId variable above
+
+###
+
+### STEP 3: Get Course Details
+GET {{baseUrl}}/courses/{{courseId}}
+Authorization: Bearer {{accessToken}}
+
+###
+
+### STEP 4: Enroll in Course
+POST {{baseUrl}}/courses/{{courseId}}/enroll
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+{}
+
+###
+
+### STEP 5: Get Course Materials
+GET {{baseUrl}}/courses/{{courseId}}/materials
+Authorization: Bearer {{accessToken}}
+### → Copy a lesson id and update @lessonId variable above
+
+###
+
+### STEP 6: Complete First Lesson
+POST {{baseUrl}}/lessons/{{lessonId}}/complete
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+{}
+
+###
+
+### STEP 7: Check Progress (Get Materials Again)
+GET {{baseUrl}}/courses/{{courseId}}/materials
+Authorization: Bearer {{accessToken}}
+### → Check if lesson shows isCompleted: true
+
+###
+
+### STEP 8: Logout
+POST {{baseUrl}}/auth/logout
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+###
+
+### ============================================================================
+### 8. QUICK DEBUGGING
+### ============================================================================
+
+### Health Check - Is Server Running?
+GET {{baseUrl}}/
+### Expected: Some response (even 404 means server is running)
+
+###
+
+### Check if Port 3000 is Accessible
+GET http://localhost:3000/
+### If this fails, check if server is running: npm run dev
+
+###
+
+### ============================================================================
+### 📝 NOTES & TIPS
+### ============================================================================
+###
+### ✅ SUCCESS INDICATORS:
+### - Status code: 200 OK, 201 Created, 204 No Content
+### - Response body: "success": true
+### - Server console: No error messages
+###
+### ❌ COMMON ERRORS:
+### - 400: Bad request (check JSON syntax)
+### - 401: Unauthorized (update @accessToken)
+### - 403: Forbidden (insufficient permissions)
+### - 404: Not Found (check @courseId, @lessonId)
+### - 409: Conflict (duplicate entry, already enrolled)
+### - 500: Internal server error (check server logs)
+###
+### 🔧 TROUBLESHOOTING:
+### 1. Server not responding?
+###    → Check: npm run dev is running
+###    → Check: Console shows "Listening to http://localhost:3000"
+###
+### 2. 401 Unauthorized on all requests?
+###    → Login again and copy new token
+###    → Update @accessToken variable at the top
+###
+### 3. Empty courses array?
+###    → Run: npm run seed (to add sample data)
+###    → Or: npx prisma studio (to add data manually)
+###
+### 4. Token expired?
+###    → Tokens expire after 24h (JWT_EXPIRY in .env)
+###    → Just login again to get a fresh token
+###
+### 📚 DOCUMENTATION:
+### - Full API docs: ../docs/api_design.typ
+### - Success guide: HOW_TO_VERIFY_SUCCESS.md
+### - Quick start: QUICK_START.md
+### - Testing guide: YAAK_TESTING_GUIDE.md
+###
+### ============================================================================

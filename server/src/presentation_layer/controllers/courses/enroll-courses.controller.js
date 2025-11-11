@@ -12,7 +12,7 @@ export class EnrollCoursesController {
             console.log(`Call POST /courses/${req.params.courseId}/enroll`);
 
             let input = new EnrollCoursesUseCaseInput();
-            input.userId = req.body.userId;
+            input.userId = req.userId; // Get from auth middleware
             input.courseId = req.params.courseId;
 
             const result = await this.#useCase.execute(input);

@@ -1,4 +1,4 @@
-import { CourseMaterialsQueryUseCaseInput } from "../../../application_layer/courses/course-materials-query.usecase";
+import { CourseMaterialsQueryUseCaseInput } from "../../../application_layer/courses/course-materials-query.usecase.js";
 
 export class CourseMaterialsQueryController {
     #useCase;
@@ -12,7 +12,7 @@ export class CourseMaterialsQueryController {
             console.log(`Call GET /courses/${req.params.courseId}/materials`);
 
             let input = new CourseMaterialsQueryUseCaseInput();
-            input.userId = req.body.userId;
+            input.userId = req.userId; // Get from auth middleware
             input.courseId = req.params.courseId;
 
             const result = await this.#useCase.execute(input);

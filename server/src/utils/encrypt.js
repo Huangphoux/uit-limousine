@@ -1,6 +1,6 @@
 import jwt from "jsonwebtoken";
-// import { config } from "../config.js";
+import { config } from "../config.js";
 
 export function generateJWT(id) {
-    return jwt.sign({ sub: id }, "config.jwt.secret", { expiresIn: "1h" });
+    return jwt.sign({ sub: id }, config.jwt.secret, { expiresIn: config.jwt.expiry || "24h" });
 }
