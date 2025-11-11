@@ -36,10 +36,16 @@ export class EnrollCoursesUseCase {
     }
 
     async execute(input) {
+        console.log('EnrollCoursesUseCase - input:', input);
+        
         let user = await this.#userRepository.findById(input.userId);
+        console.log('EnrollCoursesUseCase - found user:', user);
+        
         if (!user) throw Error(`User not found, ${input.userId}`);
 
         let course = await this.#courseRepository.findById(input.courseId);
+        console.log('EnrollCoursesUseCase - found course:', course);
+        
         if (!course) throw Error(`Course not found, ${input.courseId}`);
 
         let enrollment = EnrollmentEntity.create(user.id, course.id);

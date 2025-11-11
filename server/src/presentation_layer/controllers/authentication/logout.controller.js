@@ -8,7 +8,11 @@ export class LogoutController {
 
     async execute(req, res) {
         try {
-            await this.logoutUseCase.execute(req.body);
+            // Extract token from Authorization header
+            const authHeader = req.headers['authorization'];
+            const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+            
+            await this.logoutUseCase.execute({ token });
             res.json({
                 success: true,
                 message: SUCCESS_CATALOG.LOGOUT.message,

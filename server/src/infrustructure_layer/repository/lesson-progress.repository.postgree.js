@@ -22,4 +22,11 @@ export class LessonProgressRepositoryPostgree {
         });
         return LessonProgressMapper.toDomain(row);
     }
+
+    async create(entity) {
+        const row = await this.#model.create({
+            data: LessonProgressMapper.toPersistence(entity)
+        });
+        return LessonProgressMapper.toDomain(row);
+    }
 }

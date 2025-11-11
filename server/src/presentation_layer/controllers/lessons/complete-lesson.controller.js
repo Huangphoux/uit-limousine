@@ -12,7 +12,7 @@ export class CompleteLessonController {
             console.log(`Call POST /lessons/${req.params.lessonId}/complete`);
 
             let input = new CompleteLessonUseCaseInput();
-            input.userId = req.body.userId;
+            input.userId = req.userId; // Get from auth middleware
             input.lessonId = req.params.lessonId;
 
             const result = await this.#useCase.execute(input);

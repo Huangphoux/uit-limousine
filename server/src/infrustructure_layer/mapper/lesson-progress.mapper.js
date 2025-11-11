@@ -1,8 +1,11 @@
-import { LessonProgressEntity } from "../../domain_layer/lesson-progress.entity";
+import { LessonProgressEntity } from "../../domain_layer/lesson-progress.entity.js";
 
 export class LessonProgressMapper {
     static toPersistence(entity) {
         return {
+            id: entity.id || undefined,
+            userId: entity.userId,
+            lessonId: entity.lessonId,
             progress: entity.progress,
             completedAt: entity.completedAt,
         };
