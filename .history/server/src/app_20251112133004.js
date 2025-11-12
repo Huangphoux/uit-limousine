@@ -12,6 +12,5 @@ app.use(express.urlencoded({ extended: false }));
 
 app.use('/auth', authRouter);
 app.use('/courses', coursesRouter);
-app.use('/notifications', notificationRouter);
 
 export default app;
