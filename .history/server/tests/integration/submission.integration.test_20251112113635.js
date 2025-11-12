@@ -1,0 +1,142 @@
+import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
+import request from 'supertest';
+import app from '../../src/app.js';
+
+// prisma đã được setup trong tests/setup.js
+const prisma = global.prisma;
+
+describe('Submit Assignment API', () => {
+  let userId, courseId, assignmentId;
+
+  beforeAll(async () => {
+    // Tạo test data
+    const user = await prisma.user.create({
+      data: {
+        email: `test-${Date.now()}@example.com`,
+        name: 'Test Student',
+        username: `test${Date.now()}`
+      }
+    });
+    userId = user.id;
+
+    const course = await prisma.course.create({
+      data: {
+        title: 'Test Course',
+        level: 'Beginner',
+        published: true
+      }
+    });
+    courseId = course.id;
+
+    const assignment = await prisma.assignment.create({
+      data: {
+        courseId,
+        title: 'Test Assignment',
+        dueDate: new Date('2025-12-31'),
+        maxPoints: 100
+      }
+    });
+    assignmentId = assignment.id;
+
+    await prisma.enrollment.create({
+      data: {
+        userId,
+        courseId,
+        status: 'ENROLLED',
+        isPaid: true
+      }
+    });
+  });
+
+  afterAll(async () => {
+    // Cleanup test data
+    await prisma.submission.deleteMany({ where: { studentId: userId } });
+    await prisma.enrollment.deleteMany({ where: { userId } });
+    await prisma.assignment.deleteMany({ where: { courseId } });
+    await prisma.course.delete({ where: { id: courseId } });
+    await prisma.user.delete({ where: { id: userId } });
+  });
+
+  const submitAssignment = (assignmentId, data) =>
+    request(app)
+      .post(`/courses/assignments/${assignmentId}/submit`)
+      .send(data);
+
+  it('should submit successfully', async () => {
+    const res = await submitAssignment(assignmentId, {
+      studentId: userId,
+      content: 'My submission',
+      fileUrl: 'https://example.com/file.pdf'
+    });
+
+    expect(res.status).toBe(201);
+    expect(res.body.success).toBe(true);
+    expect(res.body.data.status).toBe('SUBMITTED');
+  });
+
+  it('should fail if already submitted', async () => {
+    const newAssignment = await prisma.assignment.create({
+      data: {
+        courseId,
+        title: 'Test Assignment Duplicate',
+        dueDate: new Date('2025-12-31'),
+        maxPoints: 100
+      }
+    });
+
+    await submitAssignment(newAssignment.id, { 
+      studentId: userId, 
+      content: 'First' 
+    });
+    
+    const res = await submitAssignment(newAssignment.id, { 
+      studentId: userId, 
+      content: 'Second' 
+    });
+
+    expect(res.status).toBe(403);
+    expect(res.body.message).toBe('You have already submitted this assignment');
+
+    // Cleanup
+    await prisma.submission.deleteMany({ where: { assignmentId: newAssignment.id } });
+    await prisma.assignment.delete({ where: { id: newAssignment.id } });
+  });
+
+  it('should fail if assignment not found', async () => {
+    const res = await submitAssignment('00000000-0000-0000-0000-000000000000', { 
+      studentId: userId, 
+      content: 'Test' 
+    });
+
+    expect(res.status).toBe(404);
+    expect(res.body.message).toBe('Assignment not found');
+  });
+
+  it('should fail if not enrolled', async () => {
+    const user2 = await prisma.user.create({
+      data: { 
+        email: `other-${Date.now()}@example.com`, 
+        username: `other${Date.now()}` 
+      }
+    });
+
+    const res = await submitAssignment(assignmentId, { 
+      studentId: user2.id, 
+      content: 'Test' 
+    });
+
+    expect(res.status).toBe(403);
+    expect(res.body.message).toBe('You are not enrolled in this course');
+
+    await prisma.user.delete({ where: { id: user2.id } });
+  });
+
+  it('should fail if no content or fileUrl', async () => {
+    const res = await submitAssignment(assignmentId, { 
+      studentId: userId 
+    });
+
+    expect(res.status).toBe(400);
+    expect(res.body.message).toBe('Please provide either content or file');
+  });
+});

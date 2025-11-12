@@ -3,7 +3,6 @@ import { searchCoursesController } from "../../composition-root.js";
 import { getCourseById } from '../controllers/courses/course.controller.js';
 import { submitAssignment } from '../controllers/courses/submit-assignment.controller.js';
  
-
 const router = Router();
 
 // GET /courses?search=nodejs&category=programming&page=1&limit=10

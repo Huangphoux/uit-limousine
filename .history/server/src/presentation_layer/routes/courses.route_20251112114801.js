@@ -1,3 +1,6 @@
+
+
+
 import { Router } from "express";
 import { searchCoursesController } from "../../composition-root.js";
 import { getCourseById } from '../controllers/courses/course.controller.js';
