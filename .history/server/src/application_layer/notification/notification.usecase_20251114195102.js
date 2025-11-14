@@ -112,7 +112,6 @@ export class NotificationUseCase {
     } catch (error) {
       console.error('[NotificationUseCase] Error deleting notification:', error);
       throw error;
-      
     }
   }
 

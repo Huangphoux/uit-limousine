@@ -1,1 +1,0 @@
-server/src/presentation_layer/controllers/courses/submit-assignment.controller.js
