@@ -25,23 +25,6 @@ const NewPage = () => {
   //   fetchCourses();
   // }, []);
 
-  // Debounced search effect - triggers 1 second after user stops typing
-  useEffect(() => {
-    const debounceTimer = setTimeout(() => {
-      if (searchTerm.trim() === "") {
-        // If search is empty, show all courses
-        setFilteredCourses(courses);
-      } else {
-        // Perform search after 1 second delay
-        const filtered = searchCourses(searchTerm, courses);
-        setFilteredCourses(filtered);
-      }
-    }, 1000);
-
-    // Cleanup: clear the timeout if user types again before 1 second
-    return () => clearTimeout(debounceTimer);
-  }, [searchTerm, courses, searchCourses]);
-
   const handleSearch = () => {
     const filtered = searchCourses(searchTerm, courses);
     setFilteredCourses(filtered);
@@ -254,7 +237,7 @@ const NewPage = () => {
           </Row>
 
           {/* Search Section */}
-          <Row className="mb-4 search-section">
+          <Row className="mb-5 search-section">
             <Col lg={10} xl={8}>
               <InputGroup
                 size="lg"
@@ -278,6 +261,7 @@ const NewPage = () => {
                     placeholder="Search for courses, skills, or topics..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
+                    onKeyPress={(e) => e.key === "Enter" && handleSearch()}
                     className="search-input"
                     style={{
                       backgroundColor: "#ffffff",
@@ -359,32 +343,6 @@ const NewPage = () => {
               </Col>
             </Row>
           )}
-
-          {/* Enrolled Courses Counter */}
-          <Row className="mb-4">
-            <Col>
-              <div
-                className="d-flex"
-                style={{
-                  animation: "fadeInUp 0.8s ease-out 0.3s backwards",
-                }}
-              >
-                <div
-                  style={{
-                    backgroundColor: "#20c997",
-                    color: "white",
-                    padding: "12px 24px",
-                    borderRadius: "25px",
-                    fontSize: "16px",
-                    fontWeight: "600",
-                    boxShadow: "0 4px 12px rgba(32, 201, 151, 0.3)",
-                  }}
-                >
-                  You have enrolled in {courses.filter((course) => course.enrolled).length} courses
-                </div>
-              </div>
-            </Col>
-          </Row>
 
           {/* Courses Grid */}
           <Row className="courses-grid">

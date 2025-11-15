@@ -1,26 +1,12 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { Modal, Button } from "react-bootstrap";
 import PropTypes from "prop-types";
-import { useNavigate } from "react-router-dom";
 
 const CourseDetailModal = ({ course, show, onHide, onEnroll }) => {
-  const [isEnrolled, setIsEnrolled] = useState(course?.enrolled || false);
-  const navigate = useNavigate();
-
-  // Sync local state with course prop when course changes
-  useEffect(() => {
-    if (course) {
-      setIsEnrolled(course.enrolled || false);
-    }
-  }, [course]);
-
   if (!course) return null;
 
   const handleEnroll = () => {
-    setIsEnrolled(true); // Just update UI state, no API call
-    // Close modal after enrollment
-    onHide();
-    // No API call here - will be called when "View courses" is clicked
+    onEnroll(course.id, course);
   };
 
   const getLevelColor = (level) => {
@@ -103,7 +89,12 @@ const CourseDetailModal = ({ course, show, onHide, onEnroll }) => {
           <Modal.Title style={{ fontSize: "0.875rem", color: "#6c757d", fontWeight: "500" }}>
             Course Details
           </Modal.Title>
-          <button type="button" className="btn-close" onClick={onHide} aria-label="Close" />
+          <button
+            type="button"
+            className="btn-close"
+            onClick={onHide}
+            aria-label="Close"
+          />
         </Modal.Header>
 
         {/* Body */}
@@ -129,10 +120,7 @@ const CourseDetailModal = ({ course, show, onHide, onEnroll }) => {
               </svg>
             </div>
             <div>
-              <h5
-                className="mb-0"
-                style={{ color: "#007bff", fontWeight: "600", fontSize: "1.125rem" }}
-              >
+              <h5 className="mb-0" style={{ color: "#007bff", fontWeight: "600", fontSize: "1.125rem" }}>
                 {course.provider}
               </h5>
             </div>
@@ -161,11 +149,7 @@ const CourseDetailModal = ({ course, show, onHide, onEnroll }) => {
 
             {/* Students */}
             <div className="d-flex align-items-center gap-1">
-              <svg
-                style={{ width: "20px", height: "20px", color: "#007bff" }}
-                fill="currentColor"
-                viewBox="0 0 20 20"
-              >
+              <svg style={{ width: "20px", height: "20px", color: "#007bff" }} fill="currentColor" viewBox="0 0 20 20">
                 <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
               </svg>
               <span style={{ fontWeight: "500", color: "#495057" }}>
@@ -175,51 +159,30 @@ const CourseDetailModal = ({ course, show, onHide, onEnroll }) => {
 
             {/* Duration */}
             <div className="d-flex align-items-center gap-1">
-              <svg
-                style={{ width: "20px", height: "20px", color: "#28a745" }}
-                fill="currentColor"
-                viewBox="0 0 20 20"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"
-                  clipRule="evenodd"
-                />
+              <svg style={{ width: "20px", height: "20px", color: "#28a745" }} fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
               </svg>
               <span style={{ fontWeight: "500", color: "#495057" }}>{course.duration}</span>
             </div>
 
             {/* Level */}
             <div className="d-flex align-items-center gap-1">
-              <svg
-                style={{ width: "20px", height: "20px", color: "#6f42c1" }}
-                fill="currentColor"
-                viewBox="0 0 20 20"
-              >
+              <svg style={{ width: "20px", height: "20px", color: "#6f42c1" }} fill="currentColor" viewBox="0 0 20 20">
                 <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
               </svg>
-              <span className={`fw-semibold ${getLevelColor(course.level)}`}>{course.level}</span>
+              <span className={`fw-semibold ${getLevelColor(course.level)}`}>
+                {course.level}
+              </span>
             </div>
           </div>
 
           {/* About Section */}
           <div className="mb-4">
             <div className="d-flex align-items-center gap-2 mb-2">
-              <svg
-                style={{ width: "20px", height: "20px", color: "#495057" }}
-                fill="currentColor"
-                viewBox="0 0 20 20"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-                  clipRule="evenodd"
-                />
+              <svg style={{ width: "20px", height: "20px", color: "#495057" }} fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
               </svg>
-              <h5
-                className="mb-0"
-                style={{ fontWeight: "700", color: "#212529", fontSize: "1.125rem" }}
-              >
+              <h5 className="mb-0" style={{ fontWeight: "700", color: "#212529", fontSize: "1.125rem" }}>
                 About this course
               </h5>
             </div>
@@ -231,67 +194,20 @@ const CourseDetailModal = ({ course, show, onHide, onEnroll }) => {
 
         {/* Footer */}
         <Modal.Footer className="border-top" style={{ padding: "1rem 1.5rem" }}>
-          {isEnrolled ? (
-            <div className="d-flex gap-3 w-100">
-              <Button
-                variant="success"
-                size="lg"
-                className="flex-fill"
-                onClick={() => {
-                  // Navigate to course content page
-                  navigate(`/course/${course.id}`);
-                  onHide(); // Close modal after navigation
-                }}
-                style={{
-                  fontWeight: "700",
-                  borderRadius: "0.75rem",
-                  padding: "0.875rem",
-                  backgroundColor: "#28a745",
-                  borderColor: "#28a745",
-                  color: "white",
-                }}
-              >
-                View Course
-              </Button>
-              <Button
-                variant="outline-secondary"
-                size="lg"
-                className="flex-fill"
-                onClick={() => {
-                  // Handle unsubscribe action
-                  setIsEnrolled(false); // Reset local state
-                  console.log("Unsubscribe clicked for:", course.title);
-                  if (onEnroll) {
-                    onEnroll(course.id, course, "unsubscribe");
-                  }
-                }}
-                style={{
-                  fontWeight: "700",
-                  borderRadius: "0.75rem",
-                  padding: "0.875rem",
-                  backgroundColor: "white",
-                  borderColor: "#6c757d",
-                  color: "#6c757d",
-                }}
-              >
-                Unsubscribe
-              </Button>
-            </div>
-          ) : (
-            <Button
-              variant="primary"
-              size="lg"
-              className="w-100"
-              onClick={handleEnroll}
-              style={{
-                fontWeight: "700",
-                borderRadius: "0.75rem",
-                padding: "0.875rem",
-              }}
-            >
-              Enroll Now
-            </Button>
-          )}
+          <Button
+            variant={course.enrolled ? "secondary" : "primary"}
+            size="lg"
+            className="w-100"
+            onClick={handleEnroll}
+            disabled={course.enrolled}
+            style={{
+              fontWeight: "700",
+              borderRadius: "0.75rem",
+              padding: "0.875rem",
+            }}
+          >
+            {course.enrolled ? "✓ Enrolled" : "Enroll"}
+          </Button>
         </Modal.Footer>
       </Modal>
     </>
