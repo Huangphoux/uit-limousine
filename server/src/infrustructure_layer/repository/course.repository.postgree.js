@@ -7,6 +7,17 @@ export class CourseRepository {
         this.#courseModel = courseModel;
     }
 
+    async findById(id) {
+        const row = await this.#courseModel.findUnique({
+            where: { id: id },
+            select: {
+                id: true
+            }
+        });
+
+        return CourseMapper.toDomain(row);
+    }
+
     async findByFilter({ title, category, level, skip, take }) {
         const result = await this.#courseModel.findMany({
             where: {

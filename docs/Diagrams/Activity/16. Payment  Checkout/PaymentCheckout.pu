@@ -1,0 +1,25 @@
+@startuml
+title UC-16 Payment / Checkout
+start
+:User proceeds to checkout for course(s);
+:Review cart & price breakdown;
+:Enter payment method (card, wallet...);
+:Confirm payment;
+partition "System" {
+  :Create Payment record (status=PENDING);
+  :Initiate transaction;
+  note right: Payment Gateway
+  if (Gateway returns SUCCESS) then (yes)
+    :Update Payment (status=SUCCESS);
+    :Trigger post-payment flows (enrollment, receipts);
+  else (no)
+    if (Gateway returns PENDING) then (pending)
+      :Wait for callback / poll status;
+    else
+      :Update Payment (status=FAILED);
+      :Show error to user;
+    endif
+  endif
+}
+stop
+@enduml

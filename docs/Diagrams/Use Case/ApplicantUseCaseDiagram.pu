@@ -1,0 +1,10 @@
+@startuml
+title Use Cases - Registered User (Applicant)
+left to right direction
+
+actor "RegisteredUser\n(Applicant)" as Applicant
+
+Applicant --> (UC-01: Register / Login / Logout)
+Applicant --> (UC-08: Request to Create Course & Instructor Approval)
+
+@enduml

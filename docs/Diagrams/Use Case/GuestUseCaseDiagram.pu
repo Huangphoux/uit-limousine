@@ -1,0 +1,11 @@
+@startuml
+title Use Cases - Guest
+left to right direction
+
+actor Guest
+
+Guest --> (UC-01: Register / Login / Logout)
+Guest --> (UC-02: Search Course)
+Guest --> (UC-03: View Course Details)
+
+@enduml

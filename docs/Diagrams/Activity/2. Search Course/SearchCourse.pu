@@ -1,0 +1,18 @@
+@startuml
+title UC-02 Search Course
+start
+:Open search / courses page;
+:Enter query and filters;
+:Submit search;
+partition "System" {
+  :Parse query & filters;
+  :Lookup index / DB;
+  if (Results found?) then (yes)
+    :Return paged results;
+  else (no)
+    :Return "no results";
+  endif
+}
+:Render results;
+stop
+@enduml

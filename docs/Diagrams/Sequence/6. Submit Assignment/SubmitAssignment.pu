@@ -1,0 +1,21 @@
+@startuml
+title UC-06 Submit Assignment (Sequence)
+participant User
+participant WebApp
+participant AssignmentService
+participant Storage
+participant DB
+participant NotificationService
+participant Instructor
+
+User -> WebApp: open assignment page & upload file
+WebApp -> Storage: uploadFile(file)
+Storage --> WebApp: fileUrl
+WebApp -> AssignmentService: submitAssignment(userId, assignmentId, fileUrl, content)
+AssignmentService -> DB: INSERT submission(status=SUBMITTED)
+DB --> AssignmentService: submissionId
+AssignmentService -> NotificationService: notifyInstructor(submission)
+NotificationService -> Instructor: in-app/email
+AssignmentService --> WebApp: success
+WebApp --> User: submission confirmed
+@enduml
