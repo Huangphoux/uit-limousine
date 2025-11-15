@@ -3,6 +3,7 @@ import cors from "cors";
 import authRouter from './presentation_layer/routes/auth.route.js';
 import coursesRouter from './presentation_layer/routes/courses.route.js';
 import notificationRouter from './presentation_layer/routes/notification.route.js';
+import gradeRouter from './presentation_layer/routes/grade.route.js'; 
 
 
 const app = express();
@@ -13,5 +14,5 @@ app.use(express.urlencoded({ extended: false }));
 app.use('/auth', authRouter);
 app.use('/courses', coursesRouter);
 app.use('/notifications', notificationRouter);
-
+app.use('/grade', gradeRouter);
 export default app;
