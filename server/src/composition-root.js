@@ -15,16 +15,6 @@ import { RoleRepositoryPostgree } from "./infrustructure_layer/repository/role.r
 import { CourseRepository } from "./infrustructure_layer/repository/course.repository.postgree.js";
 import { SearchCoursesUseCase } from "./application_layer/courses/search-courses.usecase.js";
 import { SearchCoursesController } from "./presentation_layer/controllers/courses/search-courses.controller.js";
-import { EnrollCoursesController } from "./presentation_layer/controllers/courses/enroll-courses.controller.js";
-import { EnrollCoursesUseCase } from "./application_layer/courses/enroll-courses.usecase.js";
-import { EnrollmentRepositoryPostgree } from "./infrustructure_layer/repository/enrollment.repository.postgree.js";
-import { CourseMaterialsQueryController } from "./presentation_layer/controllers/courses/course-materials-query.controller.js";
-import { CourseMaterialsQueryUseCase } from "./application_layer/courses/course-materials-query.usecase.js";
-import { CourseReadAccessor } from "./infrustructure_layer/read_accessor/course.read-accessor.js";
-import { UserReadAccessor } from "./infrustructure_layer/read_accessor/user.read-accessor.js";
-import { CompleteLessonUseCase } from "./application_layer/lessons/complete-lesson.usecase.js";
-import { CompleteLessonController } from "./presentation_layer/controllers/lessons/complete-lesson.controller.js";
-import { LessonProgressRepositoryPostgree } from "./infrustructure_layer/repository/lesson-progress.repository.postgree.js";
 
 export const prisma = new PrismaClient();
 
@@ -43,16 +33,3 @@ export const registerController = new RegisterController(registerUseCase);
 const courseRepository = new CourseRepository(prisma.course);
 const searchCoursesUseCase = new SearchCoursesUseCase(courseRepository);
 export const searchCoursesController = new SearchCoursesController(searchCoursesUseCase);
-
-const enrollmentRepository = new EnrollmentRepositoryPostgree(prisma.enrollment);
-const enrollCoursesUseCase = new EnrollCoursesUseCase(userRepository, courseRepository, enrollmentRepository);
-export const enrollCoursesController = new EnrollCoursesController(enrollCoursesUseCase);
-
-const userReadAccessor = new UserReadAccessor(prisma);
-const courseReadAccessor = new CourseReadAccessor(prisma);
-const courseMaterialsQueryUsecase = new CourseMaterialsQueryUseCase(courseReadAccessor, userReadAccessor);
-export const courseMaterialsQueryController = new CourseMaterialsQueryController(courseMaterialsQueryUsecase);
-
-const lessonProgressRepository = new LessonProgressRepositoryPostgree(prisma.lessonProgress);
-const completeLessonUseCase = new CompleteLessonUseCase(userRepository, lessonProgressRepository);
-export const completeLessonController = new CompleteLessonController(completeLessonUseCase);

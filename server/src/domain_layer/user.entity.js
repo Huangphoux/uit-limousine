@@ -20,6 +20,10 @@ export class UserEntity {
     set createdAt(value) { this.#createdAt = value; }
     set roles(value) { this.#roles = value; }
 
+    matchPassword(password) {
+        return this.#password === password;
+    }
+
     addRole(role) {
         this.#roles.push(role);
     }

@@ -2,8 +2,6 @@ import { CourseEntity } from '../../domain_layer/course.entity.js';
 
 export class CourseMapper {
     static toDomain(prismaCourse) {
-        if (!prismaCourse) return prismaCourse;
-
         let courseEntity = new CourseEntity();
         courseEntity.id = prismaCourse.id;
         courseEntity.title = prismaCourse.title;

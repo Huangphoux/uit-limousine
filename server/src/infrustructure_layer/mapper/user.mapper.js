@@ -17,8 +17,6 @@ export class UserMapper {
     }
 
     static toDomain(prismaUser) {
-        if (!prismaUser) return prismaUser;
-
         let userEntity = new UserEntity();
         userEntity.id = prismaUser.id;
         userEntity.email = prismaUser.email;
