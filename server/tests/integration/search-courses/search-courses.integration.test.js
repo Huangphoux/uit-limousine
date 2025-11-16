@@ -176,8 +176,10 @@ describe('Search courses integration test', () => {
         describe('Negative page search case', () => {
             beforeAll(async () => {
                 input = { search: course.title, category: course.category, level: course.level, page: -1 };
-                output = await request(app).get('/courses').query(input);
-                // console.log(util.inspect(output.body, { depth: null, colors: true }));
+                output = await request(app)
+                    .get('/courses')
+                    .query(input)
+                    .set('Authorization', `Bearer ${accessToken}`);
             });
 
             it('Should return status 200', () => {
