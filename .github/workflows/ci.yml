@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      DATABASE_URL: file:./prisma/test.db
+      DATABASE_URL: file:./prisma/dev.db
       PORT: 4000
 
     strategy:
