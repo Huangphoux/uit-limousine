@@ -1,0 +1,23 @@
+@startuml
+title UC-07 Grade Assignment (Sequence)
+participant Instructor
+participant WebApp
+participant AssignmentService
+participant DB
+participant NotificationService
+participant User
+
+Instructor -> WebApp: open submission
+WebApp -> AssignmentService: getSubmission(submissionId)
+AssignmentService -> DB: SELECT submission
+DB --> AssignmentService: submission data
+AssignmentService --> WebApp: show submission
+Instructor -> WebApp: enter grade & feedback -> submit
+WebApp -> AssignmentService: gradeSubmission(submissionId, grade, feedback, graderId)
+AssignmentService -> DB: UPDATE submission (grade, status=GRADED)
+DB --> AssignmentService: updated
+AssignmentService -> NotificationService: notifyStudent(studentId, grade)
+NotificationService --> User: in-app/email
+AssignmentService --> WebApp: result
+WebApp --> Instructor: confirmation
+@enduml

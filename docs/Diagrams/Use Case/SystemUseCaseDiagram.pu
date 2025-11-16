@@ -1,0 +1,11 @@
+@startuml
+title Use Cases - System (automated)
+left to right direction
+
+actor System
+
+System --> (UC-09: Notification - automated)
+System --> (UC-14: Issue Certificate - automated)
+System --> (UC-18: Audit Log / System Logs - automated)
+
+@enduml
