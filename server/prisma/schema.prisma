@@ -31,6 +31,7 @@ model User {
   submissions           Submission[]            @relation("studentSubmissions")
   tokens                Token[]
   roles                 UserRole[]
+  LessonProgress        LessonProgress[]
 }
 
 model Token {
@@ -58,24 +59,25 @@ model UserRole {
 }
 
 model Course {
-  id           String        @id @default(uuid())
-  title        String
-  slug         String        @unique
-  shortDesc    String?
-  description  String?
-  language     String?       @default("en")
-  level        String?
-  price        Float?        @default(0)
-  published    Boolean       @default(false)
-  publishDate  DateTime?
-  coverImage   String?
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  id          String    @id @default(uuid())
+  title       String
+  shortDesc   String?
+  description String?
+  language    String?   @default("en")
+  level       String? // e.g., Beginner / Intermediate / Advanced
+  price       Float?    @default(0)
+  published   Boolean   @default(false)
+  publishDate DateTime?
+  coverImage  String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // relations
+  instructor   User?         @relation("InstructorCourses", fields: [instructorId], references: [id], onDelete: SetNull)
   instructorId String?
   category     String?
   assignments  Assignment[]
   certificates Certificate[]
-  instructor   User?         @relation("InstructorCourses", fields: [instructorId], references: [id])
   enrollments  Enrollment[]
   modules      Module[]
   payments     Payment[]
@@ -98,18 +100,33 @@ model Module {
 }
 
 model Lesson {
-  id          String   @id @default(uuid())
-  moduleId    String
-  title       String
-  content     String?
-  mediaUrl    String?
-  contentType String?
-  durationSec Int?
-  position    Int      @default(0)
-  createdAt   DateTime @default(now())
-  module      Module   @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  id             String           @id @default(uuid())
+  moduleId       String
+  title          String
+  content        String? // markdown or rich text
+  mediaUrl       String? // optional video/file url
+  contentType    String? // "video" | "article" | "file"
+  durationSec    Int? // for video lessons
+  position       Int              @default(0)
+  createdAt      DateTime         @default(now())
+  module         Module           @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  LessonProgress LessonProgress[]
 
   @@index([moduleId, position])
+}
+
+model LessonProgress {
+  id          String   @id @default(uuid())
+  userId      String
+  lessonId    String
+  progress    Float    @default(0.0)
+  completedAt DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, lessonId])
+  @@index([lessonId])
 }
 
 model Enrollment {
@@ -143,7 +160,7 @@ model Submission {
   id           String           @id @default(uuid())
   assignmentId String
   studentId    String
-  content      String?
+  content      String? // comments or text
   fileUrl      String?
   status       SubmissionStatus @default(SUBMITTED)
   grade        Float?

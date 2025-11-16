@@ -14,7 +14,7 @@ export const userRole = {
 
 export const course = {
     title: "Introduction to Node.js",
-    slug: "introduction-to-node-js",
+    // slug: "introduction-to-node-js",
     category: "Programming",
     shortDesc: "Learn Node.js basics",
     description: "Learn Node.js from scratch, covering core concepts and building your first app.",
