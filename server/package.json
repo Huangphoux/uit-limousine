@@ -15,7 +15,8 @@
     "format": "prettier --write .",
     "migrate": "npx prisma migrate dev",
     "postinstall": "prisma generate",
-    "seed": "npx prisma db seed"
+    "seed": "npx prisma db seed",
+    "db:push": "npx prisma db push"
   },
   "keywords": [],
   "author": "",
@@ -34,8 +35,7 @@
     "jsonwebtoken": "^9.0.2",
     "npm": "^11.6.0",
     "passport": "^0.7.0",
-    "passport-local": "^1.0.0",
-    "pg": "^8.16.3"
+    "passport-local": "^1.0.0"
   },
   "devDependencies": {
     "@babel/core": "^7.28.4",
