@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { courseMaterialsQueryController, enrollCoursesController, searchCoursesController } from "../../composition-root.js";
-import { getCourseById, getAllCourses } from '../controllers/courses/course.controller.js';
+import { getCourseById } from '../controllers/courses/course.controller.js';
 
 const router = Router();
 

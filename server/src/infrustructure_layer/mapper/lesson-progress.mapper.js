@@ -1,4 +1,4 @@
-import { LessonProgressEntity } from "../../domain_layer/lesson-progress.entity";
+import { LessonProgressEntity } from "../../domain_layer/lesson-progress.entity.js";
 
 export class LessonProgressMapper {
     static toPersistence(entity) {

@@ -1,4 +1,4 @@
-import { CourseMaterialsQueryUseCaseInput } from "../../../application_layer/courses/course-materials-query.usecase";
+import { CourseMaterialsQueryUseCaseInput } from "../../../application_layer/courses/course-materials-query.usecase.js";
 
 export class CourseMaterialsQueryController {
     #useCase;

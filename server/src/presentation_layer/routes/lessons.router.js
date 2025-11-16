@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { completeLessonController } from "../../composition-root";
+import { completeLessonController } from "../../composition-root.js";
 
 const router = Router();
 
