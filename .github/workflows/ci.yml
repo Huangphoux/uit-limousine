@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      DATABASE_URL: file:./prisma/test.db
       PORT: 4000
 
     strategy:
@@ -59,6 +59,10 @@ jobs:
       - name: Generate Prisma Client
         if: matrix.app == 'server'
         run: npx prisma generate
+
+      - name: Run Prisma Migrations
+        if: matrix.app == 'server'
+        run: npx prisma migrate deploy
 
       - name: Run tests
         run: npm test
