@@ -1,9 +1,12 @@
 import { Card, Button } from "react-bootstrap";
 import PropTypes from "prop-types";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 const CourseCard = ({ course, onEnroll, onCardClick }) => {
   const [imageError, setImageError] = useState(false);
+  const [isEnrolled, setIsEnrolled] = useState(course.enrolled || false);
+  const navigate = useNavigate();
 
   // Default image placeholder - optimized size for 200px height
   const defaultImage = "/images/course-placeholder.svg";
@@ -22,9 +25,8 @@ const CourseCard = ({ course, onEnroll, onCardClick }) => {
 
   const handleEnrollClick = (e) => {
     e.stopPropagation(); // Prevent card click when clicking enroll button
-    if (onEnroll) {
-      onEnroll(course.id, course);
-    }
+    setIsEnrolled(true); // Immediately update local state to show new buttons
+    // No API call here - will be called when "View courses" is clicked
   };
 
   const handleCardClick = () => {
@@ -35,7 +37,7 @@ const CourseCard = ({ course, onEnroll, onCardClick }) => {
 
   const cardStyles = {
     backgroundColor: "#ffffff",
-    border: course.enrolled ? "2px solid #667eea" : "1px solid #e9ecef",
+    border: isEnrolled ? "2px solid #667eea" : "1px solid #e9ecef",
     color: "#212529",
     cursor: "pointer",
     transition: "all 0.3s ease",
@@ -71,6 +73,18 @@ const CourseCard = ({ course, onEnroll, onCardClick }) => {
             transform: translateY(-2px);
             box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
           }
+
+          .view-course-btn-gradient {
+            background: #008236
+            border: none;
+            transition: all 0.3s ease;
+          }
+          
+          .view-course-gradient:hover:not(:disabled) {
+            background: #025f29ff
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+          }
           
           .enrolled-badge {
             background: linear-gradient(135deg, #10b981 0%, #059669 100%);
@@ -91,12 +105,8 @@ const CourseCard = ({ course, onEnroll, onCardClick }) => {
           }
         `}
       </style>
-      
-      <Card
-        className="h-100 course-card-hover"
-        style={cardStyles}
-        onClick={handleCardClick}
-      >
+
+      <Card className="h-100 course-card-hover" style={cardStyles} onClick={handleCardClick}>
         <div style={{ position: "relative" }}>
           <Card.Img
             variant="top"
@@ -121,7 +131,7 @@ const CourseCard = ({ course, onEnroll, onCardClick }) => {
           >
             {course.category}
           </div>
-          {course.enrolled && (
+          {isEnrolled && (
             <div
               className="enrolled-badge"
               style={{
@@ -188,7 +198,10 @@ const CourseCard = ({ course, onEnroll, onCardClick }) => {
               <span className="me-1" style={{ color: "#fbbf24", fontSize: "1.1rem" }}>
                 ★
               </span>
-              <span className="fw-bold me-2" style={{ color: textColors.rating, fontSize: "0.95rem" }}>
+              <span
+                className="fw-bold me-2"
+                style={{ color: textColors.rating, fontSize: "0.95rem" }}
+              >
                 {course.rating}
               </span>
               <span className="small" style={{ color: textColors.students, fontSize: "0.85rem" }}>
@@ -197,7 +210,10 @@ const CourseCard = ({ course, onEnroll, onCardClick }) => {
             </div>
 
             <div className="d-flex justify-content-between align-items-center">
-              <span className={`badge bg-${getLevelColor(course.level)}`} style={{ fontSize: "0.75rem", padding: "0.35rem 0.65rem" }}>
+              <span
+                className={`badge bg-${getLevelColor(course.level)}`}
+                style={{ fontSize: "0.75rem", padding: "0.35rem 0.65rem" }}
+              >
                 {course.level}
               </span>
               <span className="small" style={{ color: textColors.duration, fontSize: "0.85rem" }}>
@@ -207,20 +223,67 @@ const CourseCard = ({ course, onEnroll, onCardClick }) => {
           </div>
 
           <div className="mt-auto">
-            <Button
-              variant={course.enrolled ? "outline-secondary" : "primary"}
-              size="sm"
-              className={course.enrolled ? "w-100" : "w-100 enroll-btn-gradient"}
-              onClick={handleEnrollClick}
-              disabled={course.enrolled}
-              style={{
-                fontWeight: "600",
-                padding: "0.6rem 1rem",
-                borderRadius: "0.5rem",
-              }}
-            >
-              {course.enrolled ? "✓ Enrolled" : "Enroll Now"}
-            </Button>
+            {isEnrolled ? (
+              <div className="d-flex flex-column gap-2">
+                <Button
+                  variant="success"
+                  size="sm"
+                  className="w-100"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    // Navigate to course content page
+                    navigate(`/course/${course.id}`);
+                  }}
+                  style={{
+                    fontWeight: "600",
+                    padding: "0.6rem 1rem",
+                    borderRadius: "0.5rem",
+                    backgroundColor: "#28a745",
+                    borderColor: "#28a745",
+                  }}
+                >
+                  View courses
+                </Button>
+                <Button
+                  variant="danger"
+                  size="sm"
+                  className="w-100"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    // Handle unsubscribe action
+                    setIsEnrolled(false); // Reset local state to show enroll button again
+                    console.log("Unsubscribe clicked for:", course.title);
+                    if (onEnroll) {
+                      // You might want to pass a different callback for unsubscribe
+                      onEnroll(course.id, course, "unsubscribe");
+                    }
+                  }}
+                  style={{
+                    fontWeight: "600",
+                    padding: "0.6rem 1rem",
+                    borderRadius: "0.5rem",
+                    backgroundColor: "#dc3545",
+                    borderColor: "#dc3545",
+                  }}
+                >
+                  Unsubscribe
+                </Button>
+              </div>
+            ) : (
+              <Button
+                variant="primary"
+                size="sm"
+                className="w-100 enroll-btn-gradient"
+                onClick={handleEnrollClick}
+                style={{
+                  fontWeight: "600",
+                  padding: "0.6rem 1rem",
+                  borderRadius: "0.5rem",
+                }}
+              >
+                Enroll Now
+              </Button>
+            )}
           </div>
         </Card.Body>
       </Card>

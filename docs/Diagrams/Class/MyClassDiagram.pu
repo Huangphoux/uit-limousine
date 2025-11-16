@@ -1,0 +1,322 @@
+@startuml
+' Generated from schema.prisma (LMS)
+skinparam classAttributeIconSize 0
+skinparam shadowing false
+hide empty members
+
+' ------------------------
+' Classes (models)
+' ------------------------
+class User {
+  +id: String
+  username?: String
+  email: String
+  password?: String
+  name?: String
+  avatarUrl?: String
+  bio?: String
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+class Token {
+  +id: Int
+  token: String
+}
+
+class Role {
+  +id: Int
+  name: String
+  desc?: String
+}
+
+class UserRole {
+  +id: Int
+  userId: String
+  roleId: Int
+}
+
+class Course {
+  +id: String
+  title: String
+  slug: String
+  shortDesc?: String
+  description?: String
+  language?: String
+  level?: String
+  price?: Float
+  published: Boolean
+  publishDate?: DateTime
+  coverImage?: String
+  createdAt: DateTime
+  updatedAt: DateTime
+  instructorId?: String
+  category?: String
+}
+
+class Module {
+  +id: String
+  courseId: String
+  title: String
+  position: Int
+  createdAt: DateTime
+}
+
+class Lesson {
+  +id: String
+  moduleId: String
+  title: String
+  content?: String
+  mediaUrl?: String
+  contentType?: String
+  durationSec?: Int
+  position: Int
+  createdAt: DateTime
+}
+
+class Enrollment {
+  +id: String
+  userId: String
+  courseId: String
+  status: EnrollmentStatus
+  isPaid: Boolean
+  enrolledAt: DateTime
+  completedAt?: DateTime
+}
+
+class Assignment {
+  +id: String
+  courseId: String
+  title: String
+  description?: String
+  dueDate?: DateTime
+  maxPoints?: Int
+  createdAt: DateTime
+}
+
+class Submission {
+  +id: String
+  assignmentId: String
+  studentId: String
+  content?: String
+  fileUrl?: String
+  status: SubmissionStatus
+  grade?: Float
+  feedback?: String
+  submittedAt: DateTime
+  gradedAt?: DateTime
+  graderId?: String
+}
+
+class Notification {
+  +id: String
+  userId: String
+  channel: NotificationChannel
+  title: String
+  body: String
+  data?: Json
+  read: Boolean
+  createdAt: DateTime
+}
+
+class Thread {
+  +id: String
+  courseId?: String
+  subject?: String
+  createdAt: DateTime
+}
+
+class Message {
+  +id: String
+  threadId: String
+  senderId: String
+  content: String
+  fileUrl?: String
+  createdAt: DateTime
+}
+
+class Review {
+  +id: String
+  courseId: String
+  userId: String
+  rating: Int
+  comment?: String
+  createdAt: DateTime
+}
+
+class Payment {
+  +id: String
+  userId: String
+  courseId?: String
+  amount: Float
+  currency: String
+  provider?: String
+  providerTxnId?: String
+  status: PaymentStatus
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+class Certificate {
+  +id: String
+  userId: String
+  courseId: String
+  issuedAt: DateTime
+  certificateUrl: String
+  verificationCode: String
+}
+
+class InstructorApplication {
+  +id: String
+  applicantId: String
+  requestedCourseTitle?: String
+  requestedCourseSummary?: String
+  portfolioUrl?: String
+  status: InstructorApplicationStatus
+  note?: String
+  appliedAt: DateTime
+  reviewedAt?: DateTime
+  reviewerId?: String
+}
+
+class AuditLog {
+  +id: String
+  actorId?: String
+  action: String
+  resource?: String
+  resourceId?: String
+  data?: Json
+  createdAt: DateTime
+}
+
+class FileMeta {
+  +id: String
+  url: String
+  filename?: String
+  size?: Int
+  mimeType?: String
+  createdAt: DateTime
+}
+
+' ------------------------
+' Enums
+' ------------------------
+enum EnrollmentStatus {
+  PENDING
+  ENROLLED
+  COMPLETED
+  CANCELLED
+}
+
+enum SubmissionStatus {
+  SUBMITTED
+  LATE
+  NEEDS_RESUBMIT
+  GRADED
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  REFUNDED
+}
+
+enum NotificationChannel {
+  IN_APP
+  EMAIL
+}
+
+enum InstructorApplicationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+' ------------------------
+' Associations (relations & cardinalities)
+' ------------------------
+
+' User relations
+User "1" -- "0..*" Token : tokens
+User "1" -- "0..*" AuditLog : actorLogs
+User "1" -- "0..*" Certificate : certificates
+User "1" -- "0..*" Course : courses (as Instructor)
+User "1" -- "0..*" Enrollment : enrollments
+User "1" -- "0..*" InstructorApplication : applicationsSubmitted (applicant)
+User "1" -- "0..*" InstructorApplication : applicationsReviewed (reviewer)
+User "1" -- "0..*" Message : messages (sent)
+User "1" -- "0..*" Notification : notifications
+User "1" -- "0..*" Payment : payments
+User "1" -- "0..*" Review : reviews
+User "1" -- "0..*" Submission : submissions (studentSubmissions)
+User "1" -- "0..*" Submission : gradedSubmits (graderSubmissions)
+User "1" -- "0..*" UserRole : userRoles
+
+' Role relations
+Role "1" -- "0..*" UserRole : userRoles
+
+' Join model UserRole connects User <-> Role
+UserRole "0..*" -- "1" User : user
+UserRole "0..*" -- "1" Role : role
+
+' Course relations
+Course "1" -- "0..*" Module : modules
+Course "1" -- "0..*" Assignment : assignments
+Course "1" -- "0..*" Certificate : certificates
+Course "1" -- "0..*" Enrollment : enrollments
+Course "1" -- "0..*" Payment : payments
+Course "1" -- "0..*" Review : reviews
+Course "1" -- "0..*" Thread : threads
+Course "0..1" -- "1" User : instructor
+
+' Module -> Lesson
+Module "1" -- "0..*" Lesson : lessons
+Module "0..*" -- "1" Course : course
+
+' Assignment -> Submission
+Assignment "1" -- "0..*" Submission : submissions
+Submission "1" -- "1" Assignment : assignment
+
+' Submission -> student & grader (both reference User)
+Submission "1" -- "1" User : student
+Submission "0..1" -- "1" User : grader
+
+' Thread -> Message
+Thread "1" -- "0..*" Message : messages
+Message "1" -- "1" Thread : thread
+Message "1" -- "1" User : sender
+
+' Review -> Course & User
+Review "1" -- "1" Course : course
+Review "1" -- "1" User : user
+
+' Enrollment -> Course & User
+Enrollment "1" -- "1" Course : course
+Enrollment "1" -- "1" User : user
+
+' Payment -> User & Course (course optional)
+Payment "1" -- "1" User : user
+Payment "0..1" -- "1" Course : course
+
+' Certificate -> Course & User
+Certificate "1" -- "1" Course : course
+Certificate "1" -- "1" User : user
+
+' InstructorApplication -> applicant & reviewer (both Users)
+InstructorApplication "1" -- "1" User : applicant
+InstructorApplication "0..1" -- "1" User : reviewer
+
+' AuditLog -> actor (optional User)
+AuditLog "0..1" -- "1" User : actor
+
+' FileMeta is standalone (used to store uploaded file metadata)
+' (no explicit foreign keys in schema linking FileMeta)
+
+' Token -> User
+Token "1" -- "1" User : user
+
+' ------------------------
+' End
+' ------------------------
+@enduml

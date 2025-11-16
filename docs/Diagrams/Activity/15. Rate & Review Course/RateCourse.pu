@@ -1,0 +1,18 @@
+@startuml
+title UC-15 Rate & Review Course
+start
+:User opens review form on course page;
+:Select rating (1-5) + write comment;
+:Click Submit;
+partition "System" {
+  :Check eligibility (enrolled/completed?) (optional);
+  if (Eligible?) then (yes)
+    :Persist Review;
+    :Recalculate course average rating;
+    :Display review in course page;
+  else (no)
+    :Show "not eligible" message;
+  endif
+}
+stop
+@enduml

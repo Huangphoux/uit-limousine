@@ -1,0 +1,25 @@
+@startuml
+title UC-03 View Course Details (Sequence)
+participant User
+participant WebApp
+participant CourseService
+participant DB
+participant ReviewService
+participant EnrollmentService
+
+User -> WebApp: open course page (slug)
+WebApp -> CourseService: getCourseBySlug(slug)
+CourseService -> DB: SELECT course, instructor, meta
+DB --> CourseService: course data
+CourseService -> ReviewService: getReviews(courseId)
+ReviewService -> DB: SELECT reviews
+DB --> ReviewService: reviews
+alt user logged in
+WebApp -> EnrollmentService: checkEnrollment(userId, courseId)
+EnrollmentService -> DB: SELECT enrollment
+DB --> EnrollmentService: enrollmentStatus
+EnrollmentService --> WebApp: status
+end
+CourseService --> WebApp: course + reviews + enrollmentStatus
+WebApp --> User: render course page
+@enduml

@@ -1,0 +1,18 @@
+@startuml
+title UC-06 Submit Assignment
+start
+:User opens assignment page;
+:Compose submission / upload file;
+:Click Submit;
+partition "System" {
+  :Validate submission (size, format);
+  if (OK?) then (yes)
+    :Persist Submission (status=SUBMITTED);
+    :Notify instructor(s);
+    :Update analytics / activity;
+  else (no)
+    :Show validation errors;
+  endif
+}
+stop
+@enduml
