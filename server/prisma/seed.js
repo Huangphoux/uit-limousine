@@ -106,7 +106,6 @@ async function main() {
       { userId: learner1.id, roleId: learnerRole.id },
       { userId: learner2.id, roleId: learnerRole.id },
     ],
-    skipDuplicates: true,
   });
 
   // 4) Tokens
@@ -116,7 +115,6 @@ async function main() {
       { token: 'token-admin-123', userId: admin.id },
       { token: 'token-inst-123', userId: instructor.id },
     ],
-    skipDuplicates: true,
   });
 
   // 5) InstructorApplication (applicant requests a course)
@@ -193,7 +191,6 @@ async function main() {
       { userId: learner1.id, courseId: course.id, status: 'ENROLLED', isPaid: false },
       { userId: learner2.id, courseId: course.id, status: 'PENDING', isPaid: false },
     ],
-    skipDuplicates: true,
   });
 
   // 9) Assignment + Submission
