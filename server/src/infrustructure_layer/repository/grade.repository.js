@@ -41,13 +41,11 @@ export default class GradeRepository {
         }
       });
 
-      if (submission) {
-              } else {
-              }
+      
 
       return submission;
     } catch (error) {
-            throw error;
+            throw new Error("get submission for grading!");
     }
   }
   async saveGrade(submissionId, gradeData) {
@@ -88,7 +86,7 @@ export default class GradeRepository {
       
       return updatedSubmission;
     } catch (error) {
-            throw error;
+            throw new Error("Failed to save grade!");
     }
   }
   async verifyInstructorPermission(graderId, courseId) {
@@ -119,7 +117,7 @@ export default class GradeRepository {
       
       return { isAuthorized, course };
     } catch (error) {
-            throw error;
+            throw new Error("Failed to verify permission!");
     }
   }
 }

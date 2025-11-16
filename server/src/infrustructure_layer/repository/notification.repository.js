@@ -22,7 +22,7 @@ export class NotificationRepository {
 
       return new NotificationEntity(notification);
     } catch (error) {
-      throw error;
+      throw new Error('Failed to create notification!');
     }
   }
 
@@ -39,7 +39,7 @@ export class NotificationRepository {
 
       return new NotificationEntity(notification);
     } catch (error) {
-      throw error;
+      throw new Error('Failed to find notification by id!');
     }
   }
 
@@ -60,7 +60,7 @@ export class NotificationRepository {
 
       return notifications.map(n => new NotificationEntity(n));
     } catch (error) {
-      throw error;
+      throw new Error('Failed to find notifications for user!');
     }
   }
 
@@ -74,7 +74,7 @@ export class NotificationRepository {
 
       return new NotificationEntity(notification);
     } catch (error) {
-      throw error;
+      throw new Error('Failed to mark notification as read!');
     }
   }
 
@@ -91,7 +91,7 @@ export class NotificationRepository {
 
       return result.count;
     } catch (error) {
-      throw error;
+      throw new Error('Failed to mark all notifications as read!');
     }
   }
 
@@ -104,7 +104,7 @@ export class NotificationRepository {
 
       return true;
     } catch (error) {
-      throw error;
+      throw new Error('Failed to delete notification!');
     }
   }
 
@@ -120,7 +120,7 @@ export class NotificationRepository {
 
       return count;
     } catch (error) {
-      throw error;
+      throw new Error('Failed to get unread notification count!');
     }
   }
 }

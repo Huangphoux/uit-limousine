@@ -22,49 +22,39 @@ export class NotificationUseCase {
         data
       });
 
-      
       return notification;
     } catch (error) {
-      
-      throw error;
+      throw new Error('Failed to create notification!');
     }
   }
 
   async getUserNotifications(userId, filters = {}) {
-    
-    
     try {
       const notifications = await this.notificationRepository.findByUserId(userId, filters);
-      
+      return notifications;
     } catch (error) {
-      
-      throw error;
+      throw new Error('Failed to get notifications for user!');
     }
   }
 
   async getNotificationById(id) {
-    
-    
     try {
       const notification = await this.notificationRepository.findById(id);
-      
+
       if (!notification) {
         throw new Error('Notification not found');
       }
 
-     
+      return notification;
     } catch (error) {
-     
-      throw error;
+      throw new Error('Failed to get notification by id!');
     }
   }
 
   async markNotificationAsRead(id, userId) {
-   
-    
     try {
       const notification = await this.notificationRepository.findById(id);
-      
+
       if (!notification) {
         throw new Error('Notification not found');
       }
@@ -74,31 +64,25 @@ export class NotificationUseCase {
       }
 
       const updatedNotification = await this.notificationRepository.markAsRead(id);
-    
       return updatedNotification;
     } catch (error) {
-      
-      throw error;
+      throw new Error('Failed to mark notification as read!');
     }
   }
 
   async markAllNotificationsAsRead(userId) {
-   
-    
     try {
       const count = await this.notificationRepository.markAllAsRead(userId);
       return { count };
     } catch (error) {
-      throw error;
+      throw new Error('Failed to mark all notifications as read!');
     }
   }
 
   async deleteNotification(id, userId) {
-    
     try {
-      // Verify ownership
       const notification = await this.notificationRepository.findById(id);
-      
+
       if (!notification) {
         throw new Error('Notification not found');
       }
@@ -111,21 +95,19 @@ export class NotificationUseCase {
       return true;
     } catch (error) {
       console.error('[NotificationUseCase] Error deleting notification:', error);
-      throw error;
-      
+      throw new Error('Failed to delete notification!');
     }
   }
 
   async getUnreadCount(userId) {
     console.log('[NotificationUseCase] Getting unread count for user:', userId);
-    
     try {
       const count = await this.notificationRepository.getUnreadCount(userId);
       console.log('[NotificationUseCase] Unread count:', count);
       return { count };
     } catch (error) {
       console.error('[NotificationUseCase] Error getting unread count:', error);
-      throw error;
+      throw new Error('Failed to get unread notification count!');
     }
   }
 }

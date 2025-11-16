@@ -4,24 +4,28 @@ import GradeEntity from '../../domain_layer/grade.entity.js';
 export default class GradeUseCase {
   constructor() {
     this.gradeRepo = new GradeRepository();
-      }
+  }
 
   async executeGrading(submissionId, graderId, gradeData) {
-                
+   
+
     try {
-            const submission = await this.gradeRepo.getSubmissionForGrading(submissionId);
+     
+      const submission = await this.gradeRepo.getSubmissionForGrading(submissionId);
 
       if (!submission) {
-                throw new Error('Submission not found');
+        throw new Error('Submission not found');
       }
-
-                        if (submission.status === 'GRADED') {
-                        throw new Error('Submission has already been graded');
+     
+      
+      if (submission.status === 'GRADED') {
+       
+        throw new Error('Submission has already been graded');
       }
-            const courseId = submission.assignment?.courseId;
+      const courseId = submission.assignment?.courseId;
 
       if (!courseId) {
-                throw new Error('Course information missing');
+        throw new Error('Course information missing');
       }
 
       const { isAuthorized, course } = await this.gradeRepo.verifyInstructorPermission(
@@ -30,22 +34,27 @@ export default class GradeUseCase {
       );
 
       if (!isAuthorized) {
-                        throw new Error('Only the course instructor can grade this assignment');
+      
+        throw new Error('Only the course instructor can grade this assignment');
       }
-
-                        const maxPoints = submission.assignment?.maxPoints || 100;
+     
+      
+      const maxPoints = submission.assignment?.maxPoints || 100;
       let finalGrade = gradeData.grade;
 
-      
+     
+
       if (gradeData.grade < 0) {
-                finalGrade = 0;
+        finalGrade = 0;
       }
 
       if (gradeData.grade > maxPoints) {
-                finalGrade = maxPoints;
+        finalGrade = maxPoints;
       }
+     
 
-                        const gradeEntity = new GradeEntity({
+      
+      const gradeEntity = new GradeEntity({
         submissionId: submission.id,
         graderId: graderId,
         grade: finalGrade,
@@ -56,17 +65,22 @@ export default class GradeUseCase {
         assignmentId: submission.assignmentId,
         courseId: courseId
       });
-            const gradedSubmission = await this.gradeRepo.saveGrade(submissionId, {
+      
+      const gradedSubmission = await this.gradeRepo.saveGrade(submissionId, {
         grade: gradeEntity.grade,
         feedback: gradeEntity.feedback,
         graderId: gradeEntity.graderId
       });
-            const resultEntity = GradeEntity.fromSubmission(gradedSubmission);
-                        
+     
+      const resultEntity = GradeEntity.fromSubmission(gradedSubmission);
+    
+      
+
       return { entity: resultEntity, submission: gradedSubmission };
 
     } catch (error) {
-                                    throw error;
+      console.log("fixed");
+      throw error;
     }
   }
 }
