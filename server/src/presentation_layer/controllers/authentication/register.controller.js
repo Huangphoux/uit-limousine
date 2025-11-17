@@ -10,15 +10,19 @@ export class RegisterController {
     async execute(req, res) {
         try {
             const result = await this.#useCase.execute(req.body);
-            res.status(SUCCESS_CATALOG.REGISTER.status);
-            res.json({
+            res.status(201).json({
                 success: true,
                 data: result,
                 message: SUCCESS_CATALOG.REGISTER.message,
             });
         }
         catch (error) {
-            res.json({ message: error.message });
+            res.status(400).json({ 
+                success: false,
+                error: {
+                    message: error.message 
+                }
+            });
         }
     }
 }

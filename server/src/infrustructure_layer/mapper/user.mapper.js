@@ -4,7 +4,7 @@ import { RoleMapper } from "./role.mapper.js";
 export class UserMapper {
     static toPersistence(userEntity) {
         return {
-            id: userEntity.id ?? "",
+            id: userEntity.id ?? undefined,
             email: userEntity.email,
             password: userEntity.password,
             name: userEntity.name,

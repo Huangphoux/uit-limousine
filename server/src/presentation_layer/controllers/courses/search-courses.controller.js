@@ -8,13 +8,18 @@ export class SearchCoursesController {
     async execute(req, res) {
         try {
             const result = await this.#useCase.execute(req.query);
-            res.json({
+            res.status(200).json({
                 success: true,
                 data: result,
             })
         }
         catch (error) {
-            res.status(400).json({ message: error.message });
+            res.status(400).json({ 
+                success: false,
+                error: {
+                    message: error.message 
+                }
+            });
         }
     }
 }

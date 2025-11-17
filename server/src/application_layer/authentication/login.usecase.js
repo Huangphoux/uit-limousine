@@ -22,8 +22,8 @@ export class LoginUseCase {
             user: {
                 id: user.id,
                 email: user.email,
-                fullName: user.fullName,
-                role: user.role,
+                fullName: user.name,  // Map name to fullName for API response
+                roles: user.roles.map(role => role.name),
             }
         };
     }

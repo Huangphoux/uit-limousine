@@ -13,7 +13,15 @@ export class UserRepositoryPostgree {
             where: { id: id },
             select: {
                 id: true,
-                roles: true,
+                email: true,
+                password: true,
+                name: true,
+                createdAt: true,
+                roles: {
+                    include: {
+                        role: true
+                    }
+                },
             }
         });
 
@@ -28,7 +36,11 @@ export class UserRepositoryPostgree {
                 email: true,
                 password: true,
                 name: true,
-                roles: true,
+                roles: {
+                    include: {
+                        role: true
+                    }
+                },
             }
         });
 

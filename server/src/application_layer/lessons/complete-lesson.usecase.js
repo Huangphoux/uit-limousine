@@ -1,3 +1,5 @@
+import { LessonProgressEntity } from "../../domain_layer/lesson-progress.entity.js";
+
 export class CompleteLessonUseCaseInput {
     userId;
     lessonId;
@@ -32,7 +34,14 @@ export class CompleteLessonUseCase {
         if (!user) throw Error(`User not found, ${input.userId}`);
 
         let lessonProgress = await this.#lessonProgressRepository.findByPairId(input.userId, input.lessonId);
-        if (!lessonProgress) throw Error(`User has not learnt yet, ${input.lessonId}`);
+        
+        // Create lesson progress if it doesn't exist yet
+        if (!lessonProgress) {
+            lessonProgress = LessonProgressEntity.create(undefined, input.userId, input.lessonId);
+            lessonProgress.complete();
+            let savedLessonProgress = await this.#lessonProgressRepository.create(lessonProgress);
+            return CompleteLessonUseCaseOutput.create(savedLessonProgress, "Deo hieu thiet ke api kieu gi luon ???");
+        }
 
         lessonProgress.complete();
 

@@ -12,11 +12,11 @@ export class CompleteLessonController {
             console.log(`Call POST /lessons/${req.params.lessonId}/complete`);
 
             let input = new CompleteLessonUseCaseInput();
-            input.userId = req.body.userId;
+            input.userId = req.userId; // from auth middleware
             input.lessonId = req.params.lessonId;
 
             const result = await this.#useCase.execute(input);
-            res.json({
+            res.status(200).json({
                 success: true,
                 data: result,
             })
@@ -24,8 +24,13 @@ export class CompleteLessonController {
             console.log(`Return POST /lessons/${req.params.lessonId}/complete`)
         }
         catch (error) {
-            console.error(error.message);
-            res.json({ message: error.message });
+            console.error('Complete lesson error:', error);
+            res.status(400).json({ 
+                success: false,
+                error: {
+                    message: error.message || String(error)
+                }
+            });
         }
     }
 }

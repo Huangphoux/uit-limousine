@@ -6,13 +6,18 @@ export class LoginController {
     async execute(req, res) {
         try {
             const result = await this.loginUseCase.execute(req.body);
-            res.json({
+            res.status(200).json({
                 success: true,
                 data: result,
             });
         }
         catch (error) {
-            res.json({ message: error.message });
+            res.status(401).json({ 
+                success: false,
+                error: {
+                    message: error.message 
+                }
+            });
         }
     }
 }

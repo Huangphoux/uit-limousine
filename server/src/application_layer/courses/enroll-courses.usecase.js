@@ -42,9 +42,15 @@ export class EnrollCoursesUseCase {
         let course = await this.#courseRepository.findById(input.courseId);
         if (!course) throw Error(`Course not found, ${input.courseId}`);
 
+        // Check if user is already enrolled (idempotent)
+        let existingEnrollment = await this.#enrollmentRepository.findByUserAndCourse(user.id, course.id);
+        if (existingEnrollment) {
+            return EnrollCoursesUseCaseOutput.create(existingEnrollment);
+        }
+
         let enrollment = EnrollmentEntity.create(user.id, course.id);
 
-        let savedEnrollment = await this.#enrollmentRepository.add(enrollment);;
+        let savedEnrollment = await this.#enrollmentRepository.add(enrollment);
 
         return EnrollCoursesUseCaseOutput.create(savedEnrollment);
     }

@@ -994,7 +994,7 @@ Lưu ý quan trọng:
   + Nếu được chấp thuận:
     * Admin tạo khóa học
     * Admin gán người yêu cầu làm instructor cho khóa học đó
-    * Người yêu cầu được cấp instructor privileges (course-level hoặc global tùy policy)
+     Người yêu cầu được cấp instructor privileges (course-level hoặc global tùy policy)
 - Một người có thể nộp nhiều course creation requests (để tạo nhiều khóa học khác nhau)
 
 === 11.1. Get My Course Creation Requests

@@ -62,7 +62,7 @@ export class CourseMaterialsQueryUseCase {
     async execute(input) {
         const courseMaterials = await this.courseReadAccessor.getCourseMaterials(input.courseId);
         const lessonProgresses = await this.userReadAccessor.getLessonProgresses(input.userId);
-        const progressMap = new Map(lessonProgresses.map(p => [p.id, p.progress]));
+        const progressMap = new Map(lessonProgresses.map(p => [p.lessonId, p.progress]));
         return CourseMaterialsQueryUseCaseOutput.create(courseMaterials, progressMap);
     }
 }

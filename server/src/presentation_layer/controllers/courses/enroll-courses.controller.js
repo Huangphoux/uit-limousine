@@ -12,11 +12,11 @@ export class EnrollCoursesController {
             console.log(`Call POST /courses/${req.params.courseId}/enroll`);
 
             let input = new EnrollCoursesUseCaseInput();
-            input.userId = req.body.userId;
+            input.userId = req.userId; // from auth middleware
             input.courseId = req.params.courseId;
 
             const result = await this.#useCase.execute(input);
-            res.json({
+            res.status(200).json({
                 success: true,
                 data: result,
             })
@@ -25,7 +25,12 @@ export class EnrollCoursesController {
         }
         catch (error) {
             console.error(error.message);
-            res.json({ message: error.message });
+            res.status(400).json({ 
+                success: false,
+                error: {
+                    message: error.message 
+                }
+            });
         }
     }
 }

@@ -11,4 +11,16 @@ export class EnrollmentRepositoryPostgree {
         const row = await this.#model.create({ data: EnrollmentMapper.toPersistence(entity) });
         return EnrollmentMapper.toDomain(row);
     }
+
+    async findByUserAndCourse(userId, courseId) {
+        const row = await this.#model.findUnique({
+            where: {
+                userId_courseId: {
+                    userId: userId,
+                    courseId: courseId
+                }
+            }
+        });
+        return row ? EnrollmentMapper.toDomain(row) : null;
+    }
 }

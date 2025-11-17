@@ -8,14 +8,20 @@ export class LogoutController {
 
     async execute(req, res) {
         try {
-            await this.logoutUseCase.execute(req.body);
-            res.json({
+            // Stateless logout - just return success
+            // Client should delete the token
+            res.status(200).json({
                 success: true,
                 message: SUCCESS_CATALOG.LOGOUT.message,
             });
         }
         catch (error) {
-            res.status(ERROR_CATALOG.LOGOUT.status).json({ message: error.message });
+            res.status(ERROR_CATALOG.LOGOUT.status).json({ 
+                success: false,
+                error: {
+                    message: error.message 
+                }
+            });
         }
     }
 }
