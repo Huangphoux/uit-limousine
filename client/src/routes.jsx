@@ -1,11 +1,12 @@
 import App from "./pages/App";
 import ErrorPage from "./pages/ErrorPage";
 import NewPageLayout from "./pages/NewPageLayout";
-import Login from "./components/Login";
-import Signup from "./components/Signup";
-import NewPage from "./components/NewPage";
-import UserInfo from "./components/UserInfo";
-import CourseContent from "./components/CourseContent";
+import Login from "./pages/Login";
+import Signup from "./pages/Signup";
+import NewPage from "./pages/NewPage";
+import UserInfo from "./pages/UserInfo";
+import CourseContent from "./pages/CourseContent";
+import InstructorScreen from "./pages/InstructorScreen";
 
 const routes = [
   {
@@ -46,6 +47,11 @@ const routes = [
   {
     path: "/course/:courseId",
     element: <CourseContent />,
+    errorElement: <ErrorPage />,
+  },
+  {
+    path: "/instructor-screen",
+    element: <InstructorScreen />,
     errorElement: <ErrorPage />,
   },
 ];
