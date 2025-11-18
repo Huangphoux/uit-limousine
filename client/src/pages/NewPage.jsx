@@ -1,8 +1,8 @@
 import React from "react";
 import { Container, Row, Col, Button, Form, InputGroup, Spinner, Alert } from "react-bootstrap";
 import { useState, useEffect } from "react";
-import CourseCard from "./CourseCard";
-import CourseDetailModal from "./CourseDetailModal";
+import CourseCard from "../components/CourseCard";
+import CourseDetailModal from "../components/CourseDetailModal";
 import { useCourses, defaultCourses } from "../hooks/useCourses";
 
 const NewPage = () => {
