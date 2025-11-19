@@ -1,15 +1,23 @@
-import React, { useState } from "react";
-import { Container, Row, Col, Card, Form, Button } from "react-bootstrap";
-import { FaBook, FaChartLine, FaFileAlt, FaUsers, FaSearch, FaPlus } from "react-icons/fa";
+import React, { useState, useEffect } from "react";
+import { Container, Row, Col, Card } from "react-bootstrap";
+import { FaBook, FaChartLine, FaFileAlt, FaUsers, FaRegClock } from "react-icons/fa";
 import Header from "../components/Header";
 import CreateCourseModal from "../components/CreateCourseModal";
-import CourseManagementCard from "../components/CourseManagementCard";
+import EditCourseModal from "../components/instructor-screen/course-management/EditCourseModal";
+import CourseManagementView from "../components/instructor-screen/course-management/CourseManagementView";
+import AssignmentGradingView from "../components/instructor-screen/grade-assignment/AssignmentGradingView";
+import { IoMdCheckmarkCircleOutline } from "react-icons/io";
 
 const InstructorScreen = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("course-management"); // "assignment-grading" or "course-management"
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [selectedCourse, setSelectedCourse] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [filteredCourses, setFilteredCourses] = useState([]);
 
+  // Course Management Part
   // Sample course data
   const [courses, setCourses] = useState([
     {
@@ -21,6 +29,9 @@ const InstructorScreen = () => {
       duration: "3 months",
       status: "Draft",
       rating: 0,
+      durationWeeks: "12",
+      durationDays: "90",
+      durationHours: "180",
     },
     {
       id: 2,
@@ -31,6 +42,36 @@ const InstructorScreen = () => {
       duration: "2 months",
       status: "Published",
       rating: 4.5,
+      durationWeeks: "8",
+      durationDays: "60",
+      durationHours: "120",
+    },
+    {
+      id: 3,
+      title: "React Fundamentals",
+      description: "Learn the basics of React development",
+      image: "public/images/course-placeholder.svg",
+      enrolledStudents: 12,
+      duration: "6 weeks",
+      status: "Wait for approval",
+      rating: 0,
+      durationWeeks: "6",
+      durationDays: "42",
+      durationHours: "90",
+    },
+    {
+      id: 4,
+      title: "Python for Beginners",
+      description: "Introduction to Python programming",
+      image: "public/images/course-placeholder.svg",
+      enrolledStudents: 0,
+      duration: "4 months",
+      status: "Denied",
+      rating: 0,
+      denialReason: "abc",
+      durationWeeks: "16",
+      durationDays: "120",
+      durationHours: "240",
     },
   ]);
 
@@ -56,12 +97,38 @@ const InstructorScreen = () => {
 
   const handleEditCourse = (courseData) => {
     console.log("Edit course:", courseData);
-    // Add edit course logic here
+    setSelectedCourse(courseData);
+    setShowEditModal(true);
   };
 
-  const handlePublishCourse = (courseData) => {
-    console.log("Publish course:", courseData);
-    // Add publish course logic here
+  const handleCloseEditModal = () => {
+    setShowEditModal(false);
+    setSelectedCourse(null);
+  };
+
+  const handleSaveEditedCourse = (updatedCourseData) => {
+    // Update the course in the courses array
+    setCourses((prevCourses) =>
+      prevCourses.map((course) => (course.id === updatedCourseData.id ? updatedCourseData : course))
+    );
+    console.log("Course updated:", updatedCourseData);
+    // You can add API call to update the course data here
+  };
+
+  const handlePublishCourse = (courseDataWithAction) => {
+    const { action, ...courseData } = courseDataWithAction;
+
+    switch (action) {
+      case "resend":
+        // Handle resending denied course
+        break;
+      case "hide":
+        // Handle hiding published course
+        break;
+      case "publish":
+        // Handle publishing draft course
+        break;
+    }
   };
 
   const handleDeleteCourse = (courseData) => {
@@ -74,64 +141,98 @@ const InstructorScreen = () => {
     setActiveTab(tab);
   };
 
-  const courseManagementStats = [
-    {
-      title: "Total Courses",
-      value: "0",
-      icon: <FaBook className="text-primary" />,
-      bgColor: "rgba(13, 110, 253, 0.6)",
-    },
-    {
-      title: "Published",
-      value: "0",
-      icon: <FaChartLine className="text-success" />,
-      bgColor: "rgba(25, 135, 84, 0.6)",
-    },
-    {
-      title: "Drafts",
-      value: "0",
-      icon: <FaFileAlt className="text-yellow" />,
-      bgColor: "orange",
-    },
-    {
-      title: "Students",
-      value: "0",
-      icon: <FaUsers className="text-black" />,
-      bgColor: "rgba(232, 47, 161, 0.7)",
-    },
-  ];
+  // Initialize filtered courses
+  useEffect(() => {
+    setFilteredCourses(courses);
+  }, [courses]);
 
-  const assignmentGradingStats = [
-    {
-      title: "Waiting",
-      value: "0",
-      icon: <FaFileAlt className="text-dark" />,
-      bgColor: "#FFA500", // Orange
-    },
-    {
-      title: "Published",
-      value: "0",
-      icon: <FaChartLine className="text-white" />,
-      bgColor: "#32CD32", // Green
-    },
-    {
-      title: "Denied",
-      value: "0",
-      icon: <FaFileAlt className="text-white" />,
-      bgColor: "#FF4500", // Red-Orange
-    },
-    {
-      title: "Courses",
-      value: "0",
-      icon: <FaBook className="text-white" />,
-      bgColor: "#1E90FF", // Blue
-    },
-  ];
+  // Simulate loading effect
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setLoading(false);
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Debounced search effect - triggers 1 second after user stops typing
+  useEffect(() => {
+    const debounceTimer = setTimeout(() => {
+      if (searchQuery.trim() === "") {
+        // If search is empty, show all courses
+        setFilteredCourses(courses);
+      } else {
+        // Perform search after 1 second delay
+        const filtered = courses.filter(
+          (course) =>
+            course.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            course.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            course.status.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+        setFilteredCourses(filtered);
+      }
+    }, 1000);
+
+    // Cleanup: clear the timeout if user types again before 1 second
+    return () => clearTimeout(debounceTimer);
+  }, [searchQuery, courses]);
 
   return (
     <>
       <style>
         {`
+          @keyframes fadeInUp {
+            from {
+              opacity: 0;
+              transform: translateY(30px);
+            }
+            to {
+              opacity: 1;
+              transform: translateY(0);
+            }
+          }
+
+          @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+          }
+
+          .instructor-page-background {
+            background: linear-gradient(-45deg, #f8f9fa, #ffffff, #f0f4f8, #e8f1f9);
+            background-size: 400% 400%;
+            animation: gradientShift 15s ease infinite;
+          }
+
+          .tab-section {
+            animation: fadeInUp 0.8s ease-out;
+          }
+
+          .stats-section {
+            animation: fadeInUp 0.8s ease-out 0.2s backwards;
+          }
+
+          .search-section {
+            animation: fadeInUp 0.8s ease-out 0.4s backwards;
+          }
+
+          .courses-grid {
+            animation: fadeInUp 0.8s ease-out 0.6s backwards;
+          }
+
+          .course-management-card {
+            transition: all 0.3s ease;
+            cursor: pointer;
+          }
+
+          .course-management-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15) !important;
+          }
+
+          .loading-spinner {
+            animation: fadeInUp 0.6s ease-out;
+          }
+
           #course-search-input::placeholder {
             color: #000 !important;
             opacity: 0.6 !important;
@@ -160,11 +261,11 @@ const InstructorScreen = () => {
         {/* Main Content */}
         <Container
           fluid
-          className="pt-5 mt-4"
-          style={{ backgroundColor: "#f8f9fa", minHeight: "100vh" }}
+          className="pt-5 mt-4 instructor-page-background"
+          style={{ minHeight: "100vh" }}
         >
           {/* Tab Navigation */}
-          <div className="mb-4 d-flex justify-content-center">
+          <div className="mb-4 d-flex justify-content-center tab-section">
             <div
               className="d-flex rounded-3 p-1 shadow-sm"
               style={{
@@ -211,37 +312,6 @@ const InstructorScreen = () => {
             </div>
           </div>
 
-          {/* Stats Cards */}
-          <Row className="mb-2">
-            {(activeTab === "course-management"
-              ? courseManagementStats
-              : assignmentGradingStats
-            ).map((card, index) => (
-              <Col md={3} key={index} className="mb-3">
-                <Card className="h-100 border-0 shadow-sm" style={{ backgroundColor: "#BBEDF9" }}>
-                  <Card.Body className="p-4">
-                    <div className="d-flex justify-content-between align-items-start">
-                      <div>
-                        <h6 className="text-black mb-2">{card.title}</h6>
-                        <h2 className="mb-0 fw-bold text-black">{card.value}</h2>
-                      </div>
-                      <div
-                        className="rounded p-3 d-flex align-items-center justify-content-center"
-                        style={{
-                          backgroundColor: card.bgColor,
-                          minWidth: "56px",
-                          minHeight: "56px",
-                        }}
-                      >
-                        {React.cloneElement(card.icon, { size: 24 })}
-                      </div>
-                    </div>
-                  </Card.Body>
-                </Card>
-              </Col>
-            ))}
-          </Row>
-
           {/* Content Section */}
           <Row>
             <Col md={12}>
@@ -249,128 +319,23 @@ const InstructorScreen = () => {
                 <Card.Body className="p-4" style={{ color: "black" }}>
                   {/* Course Management */}
                   {activeTab === "course-management" && (
-                    <>
-                      {/* Search and Create Button */}
-                      <Row className="mb-4 align-items-center">
-                        <Col md={8}>
-                          <div className="position-relative">
-                            <FaSearch
-                              className="position-absolute"
-                              style={{
-                                left: "12px",
-                                top: "50%",
-                                transform: "translateY(-50%)",
-                                zIndex: 2,
-                                color: "black",
-                              }}
-                            />
-                            <Form.Control
-                              id="course-search-input"
-                              type="text"
-                              placeholder="Search courses..."
-                              value={searchQuery}
-                              onChange={(e) => setSearchQuery(e.target.value)}
-                              className="ps-5 search-input-custom"
-                              style={{
-                                color: "#000",
-                                backgroundColor: "#ADD8E6",
-                                border: "1px solid #e9ecef",
-                                borderRadius: "8px",
-                                height: "50px",
-                                fontSize: "16px",
-                              }}
-                            />
-                          </div>
-                        </Col>
-                        <Col md={4} className="text-end">
-                          <Button
-                            variant="primary"
-                            onClick={handleCreateCourse}
-                            className="d-flex align-items-center ms-auto"
-                            style={{
-                              borderRadius: "8px",
-                              height: "50px",
-                              fontSize: "16px",
-                              padding: "12px 20px",
-                            }}
-                          >
-                            <FaPlus className="me-2" />
-                            Create New Course
-                          </Button>
-                        </Col>
-                      </Row>
-
-                      {/* Course Cards */}
-                      {courses.length > 0 ? (
-                        <Row className="g-4">
-                          {courses.map((course) => (
-                            <Col md={4} key={course.id}>
-                              <CourseManagementCard
-                                courseData={course}
-                                onEdit={handleEditCourse}
-                                onPublish={handlePublishCourse}
-                                onDelete={handleDeleteCourse}
-                              />
-                            </Col>
-                          ))}
-                        </Row>
-                      ) : (
-                        /* Empty State */
-                        <div className="text-center py-5">
-                          <div className="mb-4">
-                            <FaBook size={80} className="text-muted" />
-                          </div>
-                          <h5 className="mb-3" style={{ color: "black" }}>
-                            No courses yet
-                          </h5>
-                          <p className="mb-4" style={{ color: "black" }}>
-                            Start by creating your first course
-                          </p>
-                          <Button
-                            variant="dark"
-                            onClick={handleCreateCourse}
-                            className="d-flex align-items-center mx-auto"
-                            style={{ borderRadius: "8px" }}
-                          >
-                            <FaPlus className="me-2" />
-                            Create New Course
-                          </Button>
-                        </div>
-                      )}
-                    </>
+                    <CourseManagementView
+                      searchQuery={searchQuery}
+                      setSearchQuery={setSearchQuery}
+                      courses={courses}
+                      filteredCourses={filteredCourses}
+                      setFilteredCourses={setFilteredCourses}
+                      loading={loading}
+                      onCreateCourse={handleCreateCourse}
+                      onEditCourse={handleEditCourse}
+                      onPublishCourse={handlePublishCourse}
+                      onDeleteCourse={handleDeleteCourse}
+                    />
                   )}
 
-                  {/* Assignment-grading */}
+                  {/* Assignment Grading */}
                   {activeTab === "assignment-grading" && (
-                    <>
-                      <div className="mb-4">
-                        <h4 className="mb-3" style={{ color: "black" }}>
-                          📝 Grade Assignments
-                        </h4>
-                        <p style={{ color: "black" }}>Grade and evaluate student assignments</p>
-                      </div>
-
-                      {/* Assignment Grading Content */}
-                      <div className="text-center py-5">
-                        <div className="mb-4">
-                          <FaFileAlt size={80} className="text-muted" style={{ opacity: 0.3 }} />
-                        </div>
-                        <h5 className="mb-3" style={{ color: "black" }}>
-                          No assignments to grade
-                        </h5>
-                        <p className="mb-4" style={{ color: "black" }}>
-                          Student assignments will appear here after they submit their work
-                        </p>
-                        <Button
-                          variant="outline-primary"
-                          disabled
-                          className="d-flex align-items-center mx-auto"
-                          style={{ borderRadius: "8px" }}
-                        >
-                          📋 Assignment List
-                        </Button>
-                      </div>
-                    </>
+                    <AssignmentGradingView courses={courses} />
                   )}
                 </Card.Body>
               </Card>
@@ -384,6 +349,14 @@ const InstructorScreen = () => {
         show={showCreateModal}
         onClose={handleCloseModal}
         onSave={handleSaveCourse}
+      />
+
+      {/* Edit Course Modal */}
+      <EditCourseModal
+        show={showEditModal}
+        onClose={handleCloseEditModal}
+        onSave={handleSaveEditedCourse}
+        courseData={selectedCourse}
       />
     </>
   );
