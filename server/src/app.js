@@ -5,6 +5,7 @@ import coursesRouter from './presentation_layer/routes/courses.route.js';
 import lessonRouter from './presentation_layer/routes/lessons.router.js';
 import notificationRouter from './presentation_layer/routes/notification.route.js';
 import gradeRouter from './presentation_layer/routes/grade.route.js'; 
+import instructorRouter from './presentation_layer/routes/instructor.route.js';
 
 
 const app = express();
@@ -17,5 +18,5 @@ app.use('/courses', coursesRouter);
 app.use('/lessons', lessonRouter);
 app.use('/notifications', notificationRouter);
 app.use('/grade', gradeRouter);
-
+app.use('/instructor', instructorRouter);
 export default app;
