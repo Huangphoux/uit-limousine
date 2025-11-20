@@ -7,6 +7,7 @@ import NewPage from "./pages/NewPage";
 import UserInfo from "./pages/UserInfo";
 import CourseContent from "./pages/CourseContent";
 import InstructorScreen from "./pages/InstructorScreen";
+import AdminScreen from "./pages/AdminScreen";
 
 const routes = [
   {
@@ -52,6 +53,11 @@ const routes = [
   {
     path: "/instructor-screen",
     element: <InstructorScreen />,
+    errorElement: <ErrorPage />,
+  },
+  {
+    path: "/admin-screen",
+    element: <AdminScreen />,
     errorElement: <ErrorPage />,
   },
 ];
