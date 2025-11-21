@@ -10,9 +10,7 @@ export class CourseRepository {
     async findById(id) {
         const row = await this.#courseModel.findUnique({
             where: { id: id },
-            select: {
-                id: true
-            }
+            select: CourseRepository.baseQuery,
         });
 
         return CourseMapper.toDomain(row);
@@ -31,5 +29,30 @@ export class CourseRepository {
         });
         const courses = result.map(prismaCourse => CourseMapper.toDomain(prismaCourse));
         return courses;
+    }
+
+    async save(course) {
+        const raw = await this.#courseModel.update({
+            where: { id: course.id },
+            data: CourseMapper.toPersistence(course),
+        })
+
+        return CourseMapper.toDomain(raw);
+    }
+
+    static baseQuery = {
+        id: true,
+        title: true,
+        shortDesc: true,
+        description: true,
+        language: true,
+        level: true,
+        price: true,
+        published: true,
+        publishDate: true,
+        coverImage: true,
+        createdAt: true,
+        updatedAt: true,
+        instructorId: true,
     }
 }

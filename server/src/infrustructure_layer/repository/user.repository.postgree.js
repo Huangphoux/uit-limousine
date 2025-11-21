@@ -11,10 +11,7 @@ export class UserRepositoryPostgree {
     async findById(id) {
         const row = await this.#userModel.findUnique({
             where: { id: id },
-            select: {
-                id: true,
-                roles: true,
-            }
+            select: UserRepositoryPostgree.baseQuery
         });
 
         return UserMapper.toDomain(row);
@@ -22,14 +19,8 @@ export class UserRepositoryPostgree {
 
     async findByEmail(email) {
         const row = await this.#userModel.findUnique({
-            where: { email: email },
-            select: {
-                id: true,
-                email: true,
-                password: true,
-                name: true,
-                roles: true,
-            }
+            where: { email },
+            select: UserRepositoryPostgree.baseQuery
         });
 
         return UserMapper.toDomain(row);
@@ -38,8 +29,19 @@ export class UserRepositoryPostgree {
     async create(user) {
         const row = await this.#userModel.create({
             data: UserMapper.toPersistence(user),
-            include: { roles: { include: { role: true } } },
+            select: UserRepositoryPostgree.baseQuery
         });
+
         return UserMapper.toDomain(row);
+    }
+
+    static baseQuery = {
+        id: true,
+        email: true,
+        password: true,
+        name: true,
+        roles: {
+            select: { role: true }
+        },
     }
 }

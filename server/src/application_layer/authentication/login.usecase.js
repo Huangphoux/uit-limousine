@@ -15,7 +15,7 @@ export class LoginUseCase {
         const isPasswordValid = await bcrypt.compare(password, user.password);
         if (!isPasswordValid) throw new Error(ERROR_CATALOG.LOGIN.message);
 
-        const accessJwt = generateJWT(user.id);
+        const accessJwt = generateJWT({ id: user.id, roles: user.roles.map(r => r.id) });
 
         return {
             accessToken: accessJwt,

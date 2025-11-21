@@ -5,14 +5,15 @@ export class LoginController {
 
     async execute(req, res) {
         try {
+            console.log(`Call POST /auth/login`);
+
             const result = await this.loginUseCase.execute(req.body);
-            res.json({
-                success: true,
-                data: result,
-            });
+            res.jsend.success(result);
+
+            console.log(`Return POST /auth/login`);
         }
         catch (error) {
-            res.json({ message: error.message });
+            res.status(400).jsend.fail(error.message);
         }
     }
 }

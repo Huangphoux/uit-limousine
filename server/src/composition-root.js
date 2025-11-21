@@ -25,6 +25,8 @@ import { UserReadAccessor } from "./infrustructure_layer/read_accessor/user.read
 import { CompleteLessonUseCase } from "./application_layer/lessons/complete-lesson.usecase.js";
 import { CompleteLessonController } from "./presentation_layer/controllers/lessons/complete-lesson.controller.js";
 import { LessonProgressRepositoryPostgree } from "./infrustructure_layer/repository/lesson-progress.repository.postgree.js";
+import { ModifyCourseUsecase } from "./application_layer/courses/modify-course.usecase.js";
+import { AuditLogRepository } from "./infrustructure_layer/repository/audit-log.repository.js";
 
 export const prisma = new PrismaClient();
 
@@ -40,7 +42,7 @@ const roleRepository = new RoleRepositoryPostgree(prisma.role);
 const registerUseCase = new RegisterUseCase(userRepository, roleRepository, config.bcrypt);
 export const registerController = new RegisterController(registerUseCase);
 
-const courseRepository = new CourseRepository(prisma.course);
+export const courseRepository = new CourseRepository(prisma.course);
 const searchCoursesUseCase = new SearchCoursesUseCase(courseRepository);
 export const searchCoursesController = new SearchCoursesController(searchCoursesUseCase);
 
@@ -56,3 +58,6 @@ export const courseMaterialsQueryController = new CourseMaterialsQueryController
 const lessonProgressRepository = new LessonProgressRepositoryPostgree(prisma.lessonProgress);
 const completeLessonUseCase = new CompleteLessonUseCase(userRepository, lessonProgressRepository);
 export const completeLessonController = new CompleteLessonController(completeLessonUseCase);
+
+const auditLogRepository = new AuditLogRepository(prisma);
+export const modifyCourseUsecase = new ModifyCourseUsecase(courseRepository, auditLogRepository);

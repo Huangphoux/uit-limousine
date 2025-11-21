@@ -1,6 +1,23 @@
 import jwt from "jsonwebtoken";
+import z from "zod";
 // import { config } from "../config.js";
 
-export function generateJWT(id) {
-    return jwt.sign({ sub: id }, "config.jwt.secret", { expiresIn: "1h" });
+const secret = "config.jwt.secret"
+
+export const bearerTokenHeaderSchema = z.string().regex(
+    /^Bearer\s+[\w-]+\.[\w-]+\.[\w-]+$/,
+    "Invalid Bearer token format"
+);
+
+export const authenticationTokenSchema = z.object({
+    id: z.string(),
+    roles: z.array(z.number()),
+});
+
+export function generateJWT(payload) {
+    return jwt.sign(payload, secret, { expiresIn: "1h" });
+}
+
+export function verifyJwt(token) {
+    return jwt.verify(token, secret);
 }
