@@ -27,6 +27,7 @@ import { CompleteLessonController } from "./presentation_layer/controllers/lesso
 import { LessonProgressRepositoryPostgree } from "./infrustructure_layer/repository/lesson-progress.repository.postgree.js";
 import { ModifyCourseUsecase } from "./application_layer/courses/modify-course.usecase.js";
 import { AuditLogRepository } from "./infrustructure_layer/repository/audit-log.repository.js";
+import { GetUsersUsecase } from "./application_layer/instructor/get-users.usecase.js";
 
 export const prisma = new PrismaClient();
 
@@ -61,3 +62,5 @@ export const completeLessonController = new CompleteLessonController(completeLes
 
 const auditLogRepository = new AuditLogRepository(prisma);
 export const modifyCourseUsecase = new ModifyCourseUsecase(courseRepository, auditLogRepository);
+
+export const getUsersUsecase = new GetUsersUsecase(userReadAccessor);

@@ -15,7 +15,7 @@ export async function modifyCourse(req, res) {
         console.log(`.Return PUT /courses/${req.params.courseId}`)
     }
     catch (error) {
-        console.error(error.message);
+        console.error(error.messag);
         res.status(400);
         res.jsend.fail(error.message);
     }

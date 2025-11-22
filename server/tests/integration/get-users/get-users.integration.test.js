@@ -1,97 +1,78 @@
-// import { prisma, modifyCourseUsecase } from "../../../src/composition-root"
-// import { course, input } from "./modify-course.test-data"
-// import { outputSchema } from "../../../src/application_layer/courses/modify-course.usecase";
-// import { ZodError } from "zod"
+import { prisma, getUsersUsecase } from "../../../src/composition-root"
+import { outputSchema } from "../../../src/application_layer/instructor/get-users.usecase.js";
+import { ZodError } from "zod"
+import { user1, user2, input } from "./get-users.test-data.js";
 
-// jest.setTimeout(20000);
+jest.setTimeout(20000);
 
-// describe('Get users integration test', () => {
-//     beforeAll(async () => {
-//     })
+describe('Get users integration test', () => {
+    beforeAll(async () => {
+        await prisma.user.createMany({ data: [user1, user2] });
+    })
 
-//     afterAll(async () => {
-//     })
+    afterAll(async () => {
+        await prisma.user.deleteMany({ where: { id: { in: [user1.id, user2.id] } } });
+    })
 
-//     describe('Normal case', () => {
-//         let test_input = input;
-//         let test_output;
+    describe('Normal case', () => {
+        let test_input = input;
+        let test_output;
 
-//         beforeAll(async () => {
-//             try {
-//                 test_output = await getUserUsecase.execute(test_input);
-//             }
-//             catch (e) {
-//                 test_output = e;
-//             }
-//         });
+        beforeAll(async () => {
+            try {
+                test_output = await getUsersUsecase.execute(test_input);
+            }
+            catch (e) {
+                test_output = e;
+            }
+        });
 
-//         it(`Should return object match the schema`, () => {
-//             expect(() => outputSchema.parse(test_output)).not.toThrow()
-//         });
-//     });
+        it(`Should return object match the schema`, () => {
+            expect(() => outputSchema.parse(test_output)).not.toThrow()
+        });
+    });
 
-//     // describe('Abnormal case', () => {
-//     //     describe('Not found course case', () => {
-//     //         let test_input = structuredClone(input);
-//     //         let test_output;
+    describe('Abnormal case', () => {
+        describe('Negative page course case', () => {
+            let test_input = structuredClone(input);
+            let test_output;
 
-//     //         beforeAll(async () => {
-//     //             test_input.id = "unknown";
+            beforeAll(async () => {
+                test_input.page = -1;
 
-//     //             try {
-//     //                 test_output = await modifyCourseUsecase.execute(test_input);
-//     //             }
-//     //             catch (e) {
-//     //                 test_output = e;
-//     //             }
-//     //         });
+                try {
+                    test_output = await getUsersUsecase.execute(test_input);
+                }
+                catch (e) {
+                    test_output = e;
+                }
+            });
 
-//     //         it(`Should return error message`, () => {
-//     //             expect(test_output.message).toBe(`Course not found, ${test_input.id}`);
-//     //         });
-//     //     });
+            it(`Should return error message`, () => {
+                expect(test_output).toBeInstanceOf(ZodError);
+                expect(test_output.issues[0].message).toBe("Page must be at least 1");
+            });
+        });
 
-//     //     describe('Empty title course case', () => {
-//     //         let inputClone = structuredClone(input);
-//     //         let test_output;
+        describe('Negative limit course case', () => {
+            let test_input = structuredClone(input);
+            let test_output;
 
-//     //         beforeAll(async () => {
-//     //             inputClone.title = "";
+            beforeAll(async () => {
+                test_input.limit = -1;
 
-//     //             try {
-//     //                 test_output = await modifyCourseUsecase.execute(inputClone);
-//     //             }
-//     //             catch (e) {
-//     //                 test_output = e;
-//     //             }
-//     //         });
+                try {
+                    test_output = await getUsersUsecase.execute(test_input);
+                }
+                catch (e) {
+                    test_output = e;
+                }
+            });
 
-//     //         it("Should return error message", () => {
-//     //             expect(test_output).toBeInstanceOf(ZodError);
-//     //             expect(test_output.issues[0].message).toBe("Title cannot be empty");
-//     //         });
-//     //     });
-
-//     //     describe('Negative price course case', () => {
-//     //         let test_input = structuredClone(input);
-//     //         let test_output;
-
-//     //         beforeAll(async () => {
-//     //             test_input.price = -1;
-
-//     //             try {
-//     //                 test_output = await modifyCourseUsecase.execute(test_input);
-//     //             }
-//     //             catch (e) {
-//     //                 test_output = e;
-//     //                 console.log(test_output);
-//     //             }
-//     //         });
-
-//     //         it(`Should return error message`, () => {
-//     //             expect(test_output).toBeInstanceOf(ZodError);
-//     //             expect(test_output.issues[0].message).toBe("Price must be >= 0");
-//     //         });
-//     //     });
-//     // });
-// });
+            it(`Should return error message`, () => {
+                expect(test_output).toBeInstanceOf(ZodError);
+                expect(test_output.issues[0].message).toBe("Limit must be at least 1");
+            });
+        });
+    });
+});

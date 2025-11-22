@@ -28,7 +28,7 @@ export class RegisterUseCase {
 
         const result = await this.#userRepository.create(user);
 
-        const accessJwt = generateJWT({ id: user.id, roles: user.roles.map(r => r.id) });
+        const accessJwt = generateJWT({ id: user.id, roles: user.roles.map(r => r.name) });
 
         return {
             accessToken: accessJwt,

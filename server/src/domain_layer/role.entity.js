@@ -8,3 +8,9 @@ export class RoleEntity {
     set id(value) { this.#id = value; }
     set name(value) { this.#name = value; }
 }
+
+export const Role = {
+    ADMIN: "ADMIN",
+    INSTRUCTOR: "INSTRUCTOR",
+    LEARNER: "LEARNER",
+}

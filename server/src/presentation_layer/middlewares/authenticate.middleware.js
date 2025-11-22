@@ -17,7 +17,7 @@ export function authenticationMiddleware(
         console.log("Return authentication middleware");
     } catch (e) {
         console.error(e.message);
-        res.status(401).json({ message: e.message });
+        res.status(401).jsend.fail(e.message);
     }
 }
 
