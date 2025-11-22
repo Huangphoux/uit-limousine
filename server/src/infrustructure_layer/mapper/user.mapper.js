@@ -8,7 +8,17 @@ export class UserMapper {
             password: userEntity.password,
             name: userEntity.name,
             roles: {
-                create: userEntity.roles.map(role => ({ roleId: role.id })),
+                connectOrCreate: userEntity.roles.map(role => ({
+                    where: {
+                        userId_roleId: {
+                            userId: userEntity.id,
+                            roleId: role.id,
+                        },
+                    },
+                    create: {
+                        roleId: role.id,
+                    },
+                })),
             }
         };
     }

@@ -28,6 +28,7 @@ import { LessonProgressRepositoryPostgree } from "./infrustructure_layer/reposit
 import { ModifyCourseUsecase } from "./application_layer/courses/modify-course.usecase.js";
 import { AuditLogRepository } from "./infrustructure_layer/repository/audit-log.repository.js";
 import { GetUsersUsecase } from "./application_layer/instructor/get-users.usecase.js";
+import { ChangeRoleUsecase } from "./application_layer/instructor/change-role.usecase.js";
 
 export const prisma = new PrismaClient();
 
@@ -64,3 +65,4 @@ const auditLogRepository = new AuditLogRepository(prisma);
 export const modifyCourseUsecase = new ModifyCourseUsecase(courseRepository, auditLogRepository);
 
 export const getUsersUsecase = new GetUsersUsecase(userReadAccessor);
+export const changeRoleUsecase = new ChangeRoleUsecase(userRepository, roleRepository);

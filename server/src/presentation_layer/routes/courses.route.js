@@ -3,7 +3,7 @@ import { courseMaterialsQueryController, enrollCoursesController, searchCoursesC
 import { getCourseById } from '../controllers/courses/course.controller.js';
 import { submitAssignment } from '../controllers/courses/submit-assignment.controller.js';
 import { modifyCourse } from "../controllers/courses/modify-course.controller.js";
-import { authenticationMiddleware } from "../middlewares/authenticate.middleware.js";
+import { authenticationMiddleware } from "../middlewares/authentication.middleware.js";
 
 const router = Router();
 

@@ -7,6 +7,9 @@ export class UserEntity {
     roles = [];
 
     addRole(role) {
+        if (this.roles.some(r => r.id == role.id))
+            return;
+
         this.roles.push(role);
     }
 

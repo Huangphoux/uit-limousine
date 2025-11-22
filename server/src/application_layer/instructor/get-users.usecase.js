@@ -5,7 +5,7 @@ export const inputSchema = z.object({
     authId: z.string(),
     page: z.coerce.number().int().min(1, { message: "Page must be at least 1" }).default(1),
     limit: z.coerce.number().int().min(1, { message: "Limit must be at least 1" }).default(10),
-    role: z.string(),
+    role: z.string().optional(),
 })
 
 export const outputSchema = z.object({

@@ -7,7 +7,7 @@ import lessonRouter from './presentation_layer/routes/lessons.router.js';
 import notificationRouter from './presentation_layer/routes/notification.route.js';
 import gradeRouter from './presentation_layer/routes/grade.route.js';
 import instructorRouter from './presentation_layer/routes/instructor.route.js';
-
+import adminRouter from './presentation_layer/routes/admin.route.js';
 
 const app = express();
 app.use(cors({ origin: ['https://uit-limousine.netlify.app', 'http://localhost:5173'] }));
@@ -21,4 +21,5 @@ app.use('/lessons', lessonRouter);
 app.use('/notifications', notificationRouter);
 app.use('/grade', gradeRouter);
 app.use('/instructor', instructorRouter);
+app.use('/admin', adminRouter);
 export default app;
