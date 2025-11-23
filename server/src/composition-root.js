@@ -57,15 +57,15 @@ const enrollmentRepository = new EnrollmentRepositoryPostgree(prisma);
 export const enrollCoursesUseCase = new EnrollCourseUseCase(courseRepository, paymentReadAccessor, enrollmentRepository);
 export const enrollCoursesController = new EnrollCoursesController(enrollCoursesUseCase);
 
+const enrollmentReadAccessor = new EnrollmentReadAccessor(prisma);
 const userReadAccessor = new UserReadAccessor(prisma);
 const courseReadAccessor = new CourseReadAccessor(prisma);
-const courseMaterialsQueryUsecase = new CourseMaterialsQueryUseCase(courseReadAccessor, userReadAccessor);
+export const courseMaterialsQueryUsecase = new CourseMaterialsQueryUseCase(enrollmentReadAccessor, courseReadAccessor);
 export const courseMaterialsQueryController = new CourseMaterialsQueryController(courseMaterialsQueryUsecase);
 
-const enrollmentReadAccess = new EnrollmentReadAccessor(prisma);
 const lessonProgressRepository = new LessonProgressRepositoryPostgree(prisma);
 const lessonProgressReadAccessor = new LessonProgressReadAccessor(prisma)
-export const completeLessonUseCase = new CompleteLessonUseCase(courseRepository, enrollmentReadAccess, lessonProgressRepository, lessonProgressReadAccessor);
+export const completeLessonUseCase = new CompleteLessonUseCase(courseRepository, enrollmentReadAccessor, lessonProgressRepository, lessonProgressReadAccessor);
 export const completeLessonController = new CompleteLessonController(completeLessonUseCase);
 
 const auditLogRepository = new AuditLogRepository(prisma);

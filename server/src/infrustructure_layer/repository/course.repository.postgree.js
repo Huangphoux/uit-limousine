@@ -2,7 +2,7 @@ import { CourseMapper } from "../mapper/course.mapper.js";
 import { logger } from "../../utils/logger.js";
 import { CourseEntity, courseSchema } from "../../domain_layer/course/course.entity.js";
 import { buildQuery } from "../../utils/query-builder.js";
-import { rehydrate } from "../../domain_layer/domain_service/factory.js";
+import { rehydrate, toPersistence } from "../../domain_layer/domain_service/factory.js";
 
 export class CourseRepository {
     constructor(prisma) {
@@ -15,7 +15,7 @@ export class CourseRepository {
             select: CourseRepository.baseQuery,
         });
 
-        return rehydrate(CourseEntity, raw);
+        return CourseEntity.rehydrate(raw);
     }
 
     async findByFilter({ title, category, level, skip, take }) {
@@ -29,21 +29,21 @@ export class CourseRepository {
             take,
             include: { instructor: true },
         });
-        const courses = result.map(prismaCourse => CourseMapper.toDomain(prismaCourse));
-        return courses;
+
+        return result.map(CourseEntity.rehydrate);
     }
 
     async save(course) {
         const raw = await this.prisma.course.update({
             where: { id: course.id },
-            data: CourseMapper.toPersistence(course),
+            data: toPersistence(course),
         })
 
-        return CourseMapper.toDomain(raw);
+        return CourseEntity.rehydrate(raw);
     }
 
     async add(course) {
-        const persistenceData = this.factory.toPersistence(course);
+        const persistenceData = toPersistence(course);
 
         logger.debug("Creating course in DB", {
             courseId: course.id,
@@ -59,7 +59,7 @@ export class CourseRepository {
                 instructorId: raw.instructorId,
             });
 
-            return rehydrate(raw);
+            return CourseEntity.rehydrate(raw);
         }
         catch (error) {
             logger.error("Course creation failed", {

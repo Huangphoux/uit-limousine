@@ -1,5 +1,5 @@
 import { prisma, changeRoleUsecase } from "../../../src/composition-root"
-import { user, input } from "./change-role.test-data";
+import { user, input } from "./test-data";
 import { outputSchema } from "../../../src/application_layer/instructor/change-role.usecase.js";
 
 jest.setTimeout(20000);

@@ -51,7 +51,11 @@ export class CourseEntity {
     }
 
     static create(input) {
-        return Object.assign(new CourseEntity(), CourseEntity.schema.parse(input));
+        let parsedInput = CourseEntity.schema.parse(input);
+
+        // Business rules here
+
+        return Object.assign(new CourseEntity(), parsedInput);
     }
 
     static rehydrate(input) {

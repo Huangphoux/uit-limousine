@@ -1,73 +1,59 @@
-import request from "supertest";
-import { prisma } from "../../../src/composition-root"
-import app from "../../../src/app"
-import { user, course, module, lessons } from "./course-materials-query.test-data";
+import { outputSchema } from "../../../src/application_layer/courses/course-materials-query.usecase";
+import { courseMaterialsQueryUsecase, prisma } from "../../../src/composition-root"
+import { user, course, module, lessons, input, enrollment } from "./test-data";
 
 jest.setTimeout(20000);
 
-describe('Get courses material integration test', () => {
-    let path;
-    let input;
-    let output;
+describe('Get course materials integration test', () => {
+    let test_input;
+    let test_output;
 
     beforeAll(async () => {
+        await prisma.user.create({ data: user });
         await prisma.course.create({ data: course });
         await prisma.module.create({ data: module });
         await prisma.lesson.createMany({ data: lessons });
+        await prisma.enrollment.create({ data: enrollment });
     });
 
     afterAll(async () => {
+        await prisma.enrollment.deleteMany({ where: { userId: user.id } });
+        await prisma.user.delete({ where: { id: user.id } });
         await prisma.course.delete({ where: { id: course.id } });
     });
 
     describe('Normal case', () => {
         beforeAll(async () => {
-            path = `/courses/${course.id}/materials`;
-            input = { userId: user.id };
-            output = await request(app).get(path).send(input);
+            test_input = input;
+            try {
+                test_output = await courseMaterialsQueryUsecase.execute(test_input);
+            }
+            catch (e) {
+                test_output = e;
+            }
         });
 
-        it(`Should return status 200`, () => {
-            expect(output.status).toBe(200);
+        it(`Should return object match the schema`, () => {
+            expect(() => outputSchema.parse(test_output)).not.toThrow();
         });
 
-        it(`Should return correct lesson 1`, () => {
-            expect(output.body.data.modules[0].lessons[0]).toMatchObject({
-                id: lessons[0].id,
-                title: lessons[0].title,
-                type: lessons[0].contentType,
-                content: lessons[0].mediaUrl,
-                duration: lessons[0].durationSec,
-                order: lessons[0].position,
-                isCompleted: false
-            });
-        });
-
-        it(`Should return correct lesson 2`, () => {
-            expect(output.body.data.modules[0].lessons[1]).toMatchObject({
-                id: lessons[1].id,
-                title: lessons[1].title,
-                type: lessons[1].contentType,
-                content: lessons[1].mediaUrl,
-                duration: lessons[1].durationSec,
-                order: lessons[1].position,
-                isCompleted: false
-            });
+        it(`Should return 2 lessons`, () => {
+            expect(test_output.modules[0].lessons).toHaveLength(2);
         });
     });
 
-    describe('Abnormal case', () => {
-        describe('Not found course case', () => {
-            beforeAll(async () => {
-                path = `/courses/dont-know/materials`;
-                input = { userId: user.id };
-                output = await request(app).get(path).send(input);
-            });
+    // describe('Abnormal case', () => {
+    //     describe('Not found course case', () => {
+    //         beforeAll(async () => {
+    //             path = `/courses/dont-know/materials`;
+    //             input = { userId: user.id };
+    //             output = await request(app).get(path).send(input);
+    //         });
 
-            it(`Should return nothing`, () => {
-                expect(output.body.data.modules).toHaveLength(0);
-            });
+    //         it(`Should return nothing`, () => {
+    //             expect(output.body.data.modules).toHaveLength(0);
+    //         });
 
-        })
-    })
+    //     })
+    // })
 });

@@ -1,11 +1,18 @@
 export const user = {
     id: "get-course-materials",
+    email: "get-course-materials",
 }
 
 export const course = {
     id: "get-course-materials",
     title: "Introduction to JavaScript",
+    published: true,
 };
+
+export const enrollment = {
+    userId: user.id,
+    courseId: course.id,
+}
 
 export const module = {
     id: "get-course-materials",
@@ -33,3 +40,8 @@ export const lessons = [
         position: 2,
     },
 ];
+
+export const input = {
+    authId: user.id,
+    courseId: course.id,
+}

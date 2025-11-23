@@ -1,68 +1,46 @@
-export class CourseMaterialsQueryUseCaseInput {
-    userId;
-    courseId;
-}
+import z from "zod";
+import { buildQuery } from "../../utils/query-builder";
 
-export class CourseMaterialsQueryUseCaseOutput {
-    modules;
+const inputSchema = z.object({
+    authId: z.string(),
+    courseId: z.string(),
+})
 
-    static create(modules, progressMap) {
-        let result = new CourseMaterialsQueryUseCaseOutput();
-        result.modules = modules.map(module => ModuleOutput.create(module, progressMap));
-        return result;
-    }
-}
-
-class ModuleOutput {
-    id;
-    title;
-    lessons;
-
-    static create(module, progressMap) {
-        let result = new LessonOutput();
-        result.id = module.id;
-        result.title = module.title;
-        result.lessons = module.lessons.map(lesson => LessonOutput.create(lesson, progressMap));
-        return result;
-    }
-}
-
-class LessonOutput {
-    id;
-    title;
-    type;
-    content;
-    duration;
-    order;
-    isCompleted;
-
-    static create(lesson, progressMap) {
-        result = new LessonOutput();
-        result.id = lesson.id;
-        result.title = lesson.title;
-        result.type = lesson.contentType;
-        result.content = lesson.mediaUrl;
-        result.duration = lesson.durationSec;
-        result.order = lesson.position;
-
-        let progress = progressMap.get(lesson.id);
-        let progressValue = progress ? progress : 0;
-        result.isCompleted = progressValue == 1.0;
-
-        return result;
-    }
-}
+export const outputSchema = z.object({
+    modules: z.array(z.object({
+        id: z.string(),
+        title: z.string(),
+        order: z.number(),
+        lessons: z.array(z.object({
+            id: z.string(),
+            title: z.string(),
+            type: z.string().optional().nullable(),
+            content: z.string().optional().nullable(),
+            duration: z.number().optional().nullable(),
+            order: z.number(),
+            isCompleted: z.boolean(),
+        }))
+    }))
+})
 
 export class CourseMaterialsQueryUseCase {
-    constructor(courseReadAccessor, userReadAccessor) {
+    constructor(enrollmentReadAccessor, courseReadAccessor) {
+        this.enrollmentReadAccessor = enrollmentReadAccessor;
         this.courseReadAccessor = courseReadAccessor;
-        this.userReadAccessor = userReadAccessor;
     }
 
     async execute(input) {
-        const courseMaterials = await this.courseReadAccessor.getCourseMaterials(input.courseId);
-        const lessonProgresses = await this.userReadAccessor.getLessonProgresses(input.userId);
-        const progressMap = new Map(lessonProgresses.map(p => [p.id, p.progress]));
-        return CourseMaterialsQueryUseCaseOutput.create(courseMaterials, progressMap);
+        const parsedInput = inputSchema.parse(input);
+
+        const isPublished = await this.courseReadAccessor.isPublished(parsedInput.courseId);
+        if (!isPublished) throw Error(`Course has not been published`);
+
+        const enrolled = await this.enrollmentReadAccessor.isEnrolled(parsedInput.authId, parsedInput.courseId);
+        if (!enrolled) throw Error(`User has not enrolled the course`);
+
+        const courseMaterials = await this.courseReadAccessor.getCourseMaterials(parsedInput.courseId, parsedInput.authId);
+        console.dir(courseMaterials, { depth: null, colors: true });
+
+        return outputSchema.parse(courseMaterials);
     }
 }
