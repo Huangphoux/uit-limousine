@@ -8,6 +8,11 @@ export const course = {
     title: "complete-lesson",
 }
 
+export const enrollment = {
+    userId: user.id,
+    courseId: course.id,
+}
+
 export const module = {
     id: "complete-lesson",
     title: "complete-lesson",
@@ -23,5 +28,10 @@ export const lesson = {
 export const lessonProgress = {
     id: "complete-lesson",
     userId: user.id,
+    lessonId: lesson.id,
+}
+
+export const input = {
+    authId: user.id,
     lessonId: lesson.id,
 }

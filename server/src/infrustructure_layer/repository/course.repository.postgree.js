@@ -1,6 +1,6 @@
 import { CourseMapper } from "../mapper/course.mapper.js";
 import { logger } from "../../utils/logger.js";
-import { CourseEntity, courseSchema } from "../../domain_layer/course.entity.js";
+import { CourseEntity, courseSchema } from "../../domain_layer/course/course.entity.js";
 import { buildQuery } from "../../utils/query-builder.js";
 import { rehydrate } from "../../domain_layer/domain_service/factory.js";
 
@@ -72,6 +72,25 @@ export class CourseRepository {
 
             throw error;
         }
+    }
+
+    async findByLessonId(lessonId) {
+        const raw = await this.prisma.course.findFirst({
+            where: {
+                modules: {
+                    some: {
+                        lessons: {
+                            some: {
+                                id: lessonId,
+                            }
+                        }
+                    }
+                }
+            },
+            select: CourseRepository.baseQuery,
+        });
+
+        return CourseEntity.rehydrate(raw);
     }
 
     static baseQuery = buildQuery(courseSchema);

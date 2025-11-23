@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { ModuleEntity, moduleSchema } from "./module.entity.js";
 
 export const courseSchema = z.object({
     id: z.string().uuid({ message: "Invalid UUID for course ID" }).optional(),
@@ -25,7 +26,7 @@ export const courseSchema = z.object({
     // assignments: z.array(z.any()).optional(),
     // certificates: z.array(z.any()).optional(),
     // enrollments: z.array(z.any()).optional(),
-    // modules: z.array(z.any()).optional(),
+    modules: z.array(moduleSchema).optional(),
     // payments: z.array(z.any()).optional(),
     // reviews: z.array(z.any()).optional(),
     // threads: z.array(z.any()).optional(),
@@ -52,6 +53,21 @@ export class CourseEntity {
     static create(input) {
         return Object.assign(new CourseEntity(), CourseEntity.schema.parse(input));
     }
+
+    static rehydrate(input) {
+        if (!input) return null;
+
+        const entity = new CourseEntity();
+
+        if (input.modules) {
+            entity.modules = input.modules.map(ModuleEntity.rehydrate);
+        }
+
+        Object.assign(entity, { ...input, modules: entity.modules });
+
+        return entity;
+    }
+
 
     toJSON() {
         return { ...this };

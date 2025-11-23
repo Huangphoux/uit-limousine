@@ -31,6 +31,8 @@ import { GetUsersUsecase } from "./application_layer/instructor/get-users.usecas
 import { ChangeRoleUsecase } from "./application_layer/instructor/change-role.usecase.js";
 import { CreateCourseUsecase } from "./application_layer/courses/create-course.usecase.js";
 import { PaymentReadAccessor } from "./infrustructure_layer/read_accessor/payment.read-accessor.js";
+import { EnrollmentReadAccessor } from "./infrustructure_layer/read_accessor/enrollment.read-accessor.js";
+import { LessonProgressReadAccessor } from "./infrustructure_layer/read_accessor/lesson-progress.read-access.js";
 
 export const prisma = new PrismaClient();
 
@@ -60,8 +62,10 @@ const courseReadAccessor = new CourseReadAccessor(prisma);
 const courseMaterialsQueryUsecase = new CourseMaterialsQueryUseCase(courseReadAccessor, userReadAccessor);
 export const courseMaterialsQueryController = new CourseMaterialsQueryController(courseMaterialsQueryUsecase);
 
-const lessonProgressRepository = new LessonProgressRepositoryPostgree(prisma.lessonProgress);
-export const completeLessonUseCase = new CompleteLessonUseCase(userRepository, lessonProgressRepository);
+const enrollmentReadAccess = new EnrollmentReadAccessor(prisma);
+const lessonProgressRepository = new LessonProgressRepositoryPostgree(prisma);
+const lessonProgressReadAccessor = new LessonProgressReadAccessor(prisma)
+export const completeLessonUseCase = new CompleteLessonUseCase(courseRepository, enrollmentReadAccess, lessonProgressRepository, lessonProgressReadAccessor);
 export const completeLessonController = new CompleteLessonController(completeLessonUseCase);
 
 const auditLogRepository = new AuditLogRepository(prisma);

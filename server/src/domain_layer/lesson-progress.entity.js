@@ -1,59 +1,32 @@
+import z from "zod"
+
+const lessonProgressSchema = z.object({
+    id: z.string().optional(),
+    userId: z.string(),
+    lessonId: z.string(),
+    progress: z.number().default(0),
+    completedAt: z.date().default(() => new Date()),
+});
+
+
 export class LessonProgressEntity {
-    #id;
-    #userId;
-    #lessonId;
-    #progress;
-    #completedAt;
-
-    get id() {
-        return this.#id;
-    }
-    set id(value) {
-        this.#id = value;
-    }
-
-    get userId() {
-        return this.#userId;
-    }
-    set userId(value) {
-        this.#userId = value;
-    }
-
-    get lessonId() {
-        return this.#lessonId;
-    }
-    set lessonId(value) {
-        this.#lessonId = value;
-    }
-
-    get progress() {
-        return this.#progress;
-    }
-    set progress(value) {
-        if (value < 0 || value > 1.0)
-            return;
-
-        this.#progress = value;
-    }
-
-    get completedAt() {
-        return this.#completedAt;
-    }
-    set completedAt(value) {
-        this.#completedAt = value;
-    }
+    static schema = lessonProgressSchema;
 
     complete() {
         this.progress = 1.0;
         this.completedAt = new Date();
     }
 
-    static create(id, userId, lessonId) {
-        let entity = new LessonProgressEntity();
-        entity.id = id;
-        entity.userId = userId;
-        entity.lessonId = lessonId;
+    static create(input) {
+        const parsedInput = LessonProgressEntity.schema.parse(input);
 
-        return entity;
+        // Business rules here
+
+        return Object.assign(new LessonProgressEntity(), parsedInput);
+    }
+
+    static rehydrate(input) {
+        if (!input) return null;
+        return Object.assign(new LessonProgressEntity(), input);
     }
 }

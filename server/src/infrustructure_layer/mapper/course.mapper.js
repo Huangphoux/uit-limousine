@@ -1,4 +1,4 @@
-import { CourseEntity } from '../../domain_layer/course.entity.js';
+import { CourseEntity } from '../../domain_layer/course/course.entity.js';
 
 export class CourseMapper {
     static toDomain(raw) {

@@ -1,5 +1,5 @@
 import z from "zod"
-import { CourseEntity } from "../../domain_layer/course.entity.js";
+import { CourseEntity } from "../../domain_layer/course/course.entity.js";
 import { logger } from "../../utils/logger.js";
 import { Role } from "../../domain_layer/role.entity.js";
 
