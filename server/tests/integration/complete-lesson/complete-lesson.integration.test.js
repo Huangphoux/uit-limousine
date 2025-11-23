@@ -1,14 +1,11 @@
-import request from "supertest";
-import { prisma } from "../../../src/composition-root"
-import app from "../../../src/app"
+import { completeLessonUseCase, prisma } from "../../../src/composition-root"
 import { course, module, lesson, lessonProgress, user } from "./complete-lesson.test-data";
 
 jest.setTimeout(20000);
 
 describe('Complete lesson integration test', () => {
-    let path;
-    let input;
-    let output;
+    let test_input;
+    let test_output;
 
     beforeAll(async () => {
         await prisma.user.create({ data: user });
@@ -25,34 +22,38 @@ describe('Complete lesson integration test', () => {
 
     describe('Normal case', () => {
         beforeAll(async () => {
-            path = `/lessons/${lesson.id}/complete`;
-            input = { userId: user.id };
-            output = await request(app).post(path).send(input);
-        });
-
-        it(`Should return status 200`, () => {
-            expect(output.status).toBe(200);
+            test_input = { userId: user.id };
+            try {
+                test_output = await completeLessonUseCase.execute(test_input);
+            }
+            catch (e) {
+                test_output = e;
+            }
         });
 
         it(`Should return correct lesson id`, () => {
-            expect(output.body.data).toHaveProperty("lessonId", lesson.id);
+            expect(test_output).toHaveProperty("lessonId", lesson.id);
         });
 
         it(`Should return completed-at time`, () => {
-            expect(output.body.data).toHaveProperty("completedAt");
+            expect(test_output).toHaveProperty("completedAt");
         });
     });
 
-    describe('Normal case', () => {
+    describe('Abnormal case', () => {
         describe('Not found lesson case', () => {
             beforeAll(async () => {
-                path = `/lessons/dont-know/complete`;
-                input = { userId: user.id };
-                output = await request(app).post(path).send(input);
+                test_input = { userId: user.id };
+                try {
+                    test_output = await completeLessonUseCase.execute(test_input);
+                }
+                catch (e) {
+                    test_output = e;
+                }
             });
 
             it(`Should return error message`, () => {
-                expect(output.body).toHaveProperty("message", "User has not learnt yet, dont-know");
+                expect(test_output).toHaveProperty("message", "User has not learnt yet, dont-know");
             });
 
         })

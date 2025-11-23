@@ -1,5 +1,4 @@
 import { prisma, changeRoleUsecase } from "../../../src/composition-root"
-import { ZodError } from "zod"
 import { user, input } from "./change-role.test-data";
 import { outputSchema } from "../../../src/application_layer/instructor/change-role.usecase.js";
 

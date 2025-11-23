@@ -1,7 +1,7 @@
 export class UserEntity {
     id;
     email;
-    name;
+    username;
     password;
     createdAt;
     roles = [];
@@ -13,11 +13,17 @@ export class UserEntity {
         this.roles.push(role);
     }
 
+    hasRole(roleName) {
+        if (this.roles.some(r => r.name == roleName))
+            return true;
+        return false;
+    }
+
     static create(email, password, name) {
         let user = new UserEntity();
         user.email = email;
         user.password = password;
-        user.name = name;
+        user.username = name;
         return user;
     }
 }

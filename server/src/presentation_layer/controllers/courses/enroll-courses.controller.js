@@ -1,5 +1,3 @@
-import { EnrollCoursesUseCaseInput } from "../../../application_layer/courses/enroll-courses.usecase.js";
-
 export class EnrollCoursesController {
     #useCase;
 
@@ -11,9 +9,10 @@ export class EnrollCoursesController {
         try {
             console.log(`Call POST /courses/${req.params.courseId}/enroll`);
 
-            let input = new EnrollCoursesUseCaseInput();
-            input.userId = req.body.userId;
-            input.courseId = req.params.courseId;
+            let input = {
+                ...req.params,
+                ...req.body,
+            }
 
             const result = await this.#useCase.execute(input);
             res.json({

@@ -63,7 +63,7 @@ export class UserRepositoryPostgree {
         id: true,
         email: true,
         password: true,
-        name: true,
+        username: true,
         roles: {
             select: { role: true }
         },

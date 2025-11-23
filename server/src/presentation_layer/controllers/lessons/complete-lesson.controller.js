@@ -1,5 +1,3 @@
-import { CompleteLessonUseCaseInput } from "../../../application_layer/lessons/complete-lesson.usecase.js";
-
 export class CompleteLessonController {
     #useCase;
 
@@ -11,9 +9,10 @@ export class CompleteLessonController {
         try {
             console.log(`Call POST /lessons/${req.params.lessonId}/complete`);
 
-            let input = new CompleteLessonUseCaseInput();
-            input.userId = req.body.userId;
-            input.lessonId = req.params.lessonId;
+            let input = {
+                ...req.params,
+                ...req.body,
+            }
 
             const result = await this.#useCase.execute(input);
             res.json({

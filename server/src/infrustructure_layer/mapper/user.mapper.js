@@ -29,7 +29,7 @@ export class UserMapper {
         userEntity.id = prismaUser.id;
         userEntity.email = prismaUser.email;
         userEntity.password = prismaUser.password;
-        userEntity.name = prismaUser.name;
+        userEntity.username = prismaUser.username;
         userEntity.createdAt = prismaUser.createdAt;
         userEntity.roles = prismaUser.roles.map(prismaUserRole => RoleMapper.toDomain(prismaUserRole.role));
         return userEntity;

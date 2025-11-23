@@ -16,7 +16,7 @@ import { CourseRepository } from "./infrustructure_layer/repository/course.repos
 import { SearchCoursesUseCase } from "./application_layer/courses/search-courses.usecase.js";
 import { SearchCoursesController } from "./presentation_layer/controllers/courses/search-courses.controller.js";
 import { EnrollCoursesController } from "./presentation_layer/controllers/courses/enroll-courses.controller.js";
-import { EnrollCoursesUseCase } from "./application_layer/courses/enroll-courses.usecase.js";
+import { EnrollCourseUseCase } from "./application_layer/courses/enroll-course.usecase.js";
 import { EnrollmentRepositoryPostgree } from "./infrustructure_layer/repository/enrollment.repository.postgree.js";
 import { CourseMaterialsQueryController } from "./presentation_layer/controllers/courses/course-materials-query.controller.js";
 import { CourseMaterialsQueryUseCase } from "./application_layer/courses/course-materials-query.usecase.js";
@@ -29,6 +29,8 @@ import { ModifyCourseUsecase } from "./application_layer/courses/modify-course.u
 import { AuditLogRepository } from "./infrustructure_layer/repository/audit-log.repository.js";
 import { GetUsersUsecase } from "./application_layer/instructor/get-users.usecase.js";
 import { ChangeRoleUsecase } from "./application_layer/instructor/change-role.usecase.js";
+import { CreateCourseUsecase } from "./application_layer/courses/create-course.usecase.js";
+import { PaymentReadAccessor } from "./infrustructure_layer/read_accessor/payment.read-accessor.js";
 
 export const prisma = new PrismaClient();
 
@@ -44,12 +46,13 @@ const roleRepository = new RoleRepositoryPostgree(prisma.role);
 const registerUseCase = new RegisterUseCase(userRepository, roleRepository, config.bcrypt);
 export const registerController = new RegisterController(registerUseCase);
 
-export const courseRepository = new CourseRepository(prisma.course);
+export const courseRepository = new CourseRepository(prisma);
 const searchCoursesUseCase = new SearchCoursesUseCase(courseRepository);
 export const searchCoursesController = new SearchCoursesController(searchCoursesUseCase);
 
-const enrollmentRepository = new EnrollmentRepositoryPostgree(prisma.enrollment);
-const enrollCoursesUseCase = new EnrollCoursesUseCase(userRepository, courseRepository, enrollmentRepository);
+const paymentReadAccessor = new PaymentReadAccessor(prisma);
+const enrollmentRepository = new EnrollmentRepositoryPostgree(prisma);
+export const enrollCoursesUseCase = new EnrollCourseUseCase(courseRepository, paymentReadAccessor, enrollmentRepository);
 export const enrollCoursesController = new EnrollCoursesController(enrollCoursesUseCase);
 
 const userReadAccessor = new UserReadAccessor(prisma);
@@ -58,7 +61,7 @@ const courseMaterialsQueryUsecase = new CourseMaterialsQueryUseCase(courseReadAc
 export const courseMaterialsQueryController = new CourseMaterialsQueryController(courseMaterialsQueryUsecase);
 
 const lessonProgressRepository = new LessonProgressRepositoryPostgree(prisma.lessonProgress);
-const completeLessonUseCase = new CompleteLessonUseCase(userRepository, lessonProgressRepository);
+export const completeLessonUseCase = new CompleteLessonUseCase(userRepository, lessonProgressRepository);
 export const completeLessonController = new CompleteLessonController(completeLessonUseCase);
 
 const auditLogRepository = new AuditLogRepository(prisma);
@@ -66,3 +69,4 @@ export const modifyCourseUsecase = new ModifyCourseUsecase(courseRepository, aud
 
 export const getUsersUsecase = new GetUsersUsecase(userReadAccessor);
 export const changeRoleUsecase = new ChangeRoleUsecase(userRepository, roleRepository);
+export const createCourseUsecase = new CreateCourseUsecase(userRepository, courseRepository);

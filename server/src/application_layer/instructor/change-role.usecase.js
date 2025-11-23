@@ -34,29 +34,17 @@ export class ChangeRoleUsecase {
 
         user.addRole(role);
 
-        try {
-            const result = await this.userRepository.save(user);
+        const result = await this.userRepository.save(user);
 
-            logger.info('Change role completed successfully', {
-                id: result.id,
-                role: role.name,
-                correlationId: parsedInput.authId,
-            });
+        logger.info('Change role completed successfully', {
+            id: result.id,
+            role: role.name,
+            correlationId: parsedInput.authId,
+        });
 
-            return outputSchema.parse({
-                id: result.id,
-                roles: result.roles.map(r => r.name),
-            });
-        }
-        catch (error) {
-            logger.error('Failed to execute change role command', {
-                error_message: error.message,
-                stack_trace: error.stack,
-                input_id: parsedInput.id,
-                input_role: parsedInput.role,
-                correlationId: parsedInput.authId,
-            });
-            throw error;
-        }
+        return outputSchema.parse({
+            id: result.id,
+            roles: result.roles.map(r => r.name),
+        });
     }
 }
