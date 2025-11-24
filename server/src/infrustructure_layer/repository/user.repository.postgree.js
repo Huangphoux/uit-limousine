@@ -1,51 +1,51 @@
-import { UserMapper } from '../mapper/user.mapper.js';
 import { logger } from '../../utils/logger.js';
+import { buildQuery } from '../../utils/query-builder.js';
+import { UserEntity, userSchema } from '../../domain_layer/user.entity.js';
+import { toPersistence } from '../../domain_layer/domain_service/factory.js';
 
 export class UserRepositoryPostgree {
-    #userModel = null;
-
-    constructor(userModel) {
-        this.#userModel = userModel;
+    constructor(prisma) {
+        this.prisma = prisma;
     }
 
     async findById(id) {
-        const row = await this.#userModel.findUnique({
+        const raw = await this.prisma.user.findUnique({
             where: { id: id },
             select: UserRepositoryPostgree.baseQuery
         });
 
-        return UserMapper.toDomain(row);
+        return UserEntity.rehydrate(raw);
     }
 
     async findByEmail(email) {
-        const row = await this.#userModel.findUnique({
+        const raw = await this.prisma.user.findUnique({
             where: { email },
             select: UserRepositoryPostgree.baseQuery
         });
 
-        return UserMapper.toDomain(row);
+        return UserEntity.rehydrate(raw);
     }
 
     async create(user) {
-        const row = await this.#userModel.create({
-            data: UserMapper.toPersistence(user),
+        const raw = await this.prisma.user.create({
+            data: toPersistence(user),
             select: UserRepositoryPostgree.baseQuery
         });
 
-        return UserMapper.toDomain(row);
+        return UserEntity.rehydrate(raw);
     }
 
     async save(user) {
         logger.debug('Saving user', { userId: user.id, userData: user });
 
         try {
-            const row = await this.#userModel.update({
+            const raw = await this.prisma.user.update({
                 where: { id: user.id },
-                data: UserMapper.toPersistence(user),
+                data: toPersistence(user),
                 select: UserRepositoryPostgree.baseQuery,
             });
 
-            const domainUser = UserMapper.toDomain(row);
+            const domainUser = UserEntity.rehydrate(raw);
 
             logger.info('User saved successfully', { userId: domainUser.id });
             return domainUser;
@@ -59,13 +59,5 @@ export class UserRepositoryPostgree {
         }
     }
 
-    static baseQuery = {
-        id: true,
-        email: true,
-        password: true,
-        username: true,
-        roles: {
-            select: { role: true }
-        },
-    }
+    static baseQuery = buildQuery(userSchema);
 }

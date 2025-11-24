@@ -41,19 +41,4 @@ describe('Get course materials integration test', () => {
             expect(test_output.modules[0].lessons).toHaveLength(2);
         });
     });
-
-    // describe('Abnormal case', () => {
-    //     describe('Not found course case', () => {
-    //         beforeAll(async () => {
-    //             path = `/courses/dont-know/materials`;
-    //             input = { userId: user.id };
-    //             output = await request(app).get(path).send(input);
-    //         });
-
-    //         it(`Should return nothing`, () => {
-    //             expect(output.body.data.modules).toHaveLength(0);
-    //         });
-
-    //     })
-    // })
 });

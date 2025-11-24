@@ -1,7 +1,7 @@
 import { prisma, getUsersUsecase } from "../../../src/composition-root"
 import { outputSchema } from "../../../src/application_layer/instructor/get-users.usecase.js";
 import { ZodError } from "zod"
-import { user1, user2, input } from "./get-users.test-data.js";
+import { user1, user2, input } from "./test-data.js";
 
 jest.setTimeout(20000);
 

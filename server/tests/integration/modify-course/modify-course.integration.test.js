@@ -1,5 +1,5 @@
 import { prisma, modifyCourseUsecase } from "../../../src/composition-root"
-import { course, input, instructor } from "./modify-course.test-data"
+import { course, input, instructor } from "./test-data"
 import { outputSchema } from "../../../src/application_layer/courses/modify-course.usecase";
 import { ZodError } from "zod"
 

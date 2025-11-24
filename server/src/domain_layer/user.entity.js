@@ -1,10 +1,26 @@
+import { z } from "zod";
+import { RoleEntity, roleSchema } from "./role.entity.js";
+
+export const userRoleSchema = z.object({
+    role: roleSchema
+})
+
+export const userSchema = z.object({
+    id: z.string().optional(),
+    username: z.string().nullish(),
+    createdAt: z.date().default(() => new Date()),
+    email: z.string(),
+    updatedAt: z.date().default(() => new Date()),
+    avatarUrl: z.string().nullish(),
+    bio: z.string().nullish(),
+    name: z.string().nullish(),
+    password: z.string().nullish(),
+
+    roles: z.array(userRoleSchema).optional(),
+});
+
 export class UserEntity {
-    id;
-    email;
-    username;
-    password;
-    createdAt;
-    roles = [];
+    static schema = userSchema;
 
     addRole(role) {
         if (this.roles.some(r => r.id == role.id))
@@ -19,11 +35,19 @@ export class UserEntity {
         return false;
     }
 
-    static create(email, password, name) {
-        let user = new UserEntity();
-        user.email = email;
-        user.password = password;
-        user.username = name;
-        return user;
+    static create(input) {
+        let parsedInput = UserEntity.schema.parse(input);
+
+        // Business rules here
+
+        return Object.assign(new UserEntity(), parsedInput);
+    }
+
+    static rehydrate(input) {
+        if (!input) return null;
+        if (input.roles)
+            input.roles = input.roles.map(r => RoleEntity.rehydrate(r.role));
+
+        return Object.assign(new UserEntity(), input);
     }
 }

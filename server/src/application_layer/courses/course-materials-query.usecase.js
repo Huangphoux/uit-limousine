@@ -1,5 +1,4 @@
 import z from "zod";
-import { buildQuery } from "../../utils/query-builder";
 
 const inputSchema = z.object({
     authId: z.string(),

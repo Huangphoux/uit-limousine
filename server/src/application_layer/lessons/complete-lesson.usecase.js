@@ -1,5 +1,5 @@
 import z from "zod";
-import { LessonProgressEntity } from "../../domain_layer/lesson-progress.entity";
+import { LessonProgressEntity } from "../../domain_layer/lesson-progress.entity.js";
 
 const inputSchema = z.object({
     authId: z.string(),

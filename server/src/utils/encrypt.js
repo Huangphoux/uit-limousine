@@ -1,5 +1,6 @@
 import jwt from "jsonwebtoken";
 import z from "zod";
+import bcrypt from "bcrypt";
 // import { config } from "../config.js";
 
 const secret = "config.jwt.secret"
@@ -20,4 +21,12 @@ export function generateJWT(payload) {
 
 export function verifyJwt(token) {
     return jwt.verify(token, secret);
+}
+
+export function hashPassword(password, salt) {
+    return bcrypt.hashSync(password, salt);
+}
+
+export function verifyPassword(password, hashedPassword) {
+    return bcrypt.compareSync(password, hashedPassword);
 }

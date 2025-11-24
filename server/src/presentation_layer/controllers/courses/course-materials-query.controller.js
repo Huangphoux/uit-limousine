@@ -1,5 +1,3 @@
-import { CourseMaterialsQueryUseCaseInput } from "../../../application_layer/courses/course-materials-query.usecase.js";
-
 export class CourseMaterialsQueryController {
     #useCase;
 
@@ -11,9 +9,10 @@ export class CourseMaterialsQueryController {
         try {
             console.log(`Call GET /courses/${req.params.courseId}/materials`);
 
-            let input = new CourseMaterialsQueryUseCaseInput();
-            input.userId = req.body.userId;
-            input.courseId = req.params.courseId;
+            let input = {
+                ...req.params,
+                ...req.body,
+            }
 
             const result = await this.#useCase.execute(input);
             res.json({

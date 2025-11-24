@@ -1,30 +1,45 @@
-import bcrypt from "bcrypt";
 import { ERROR_CATALOG } from "../../../constants/errors.js";
-import { generateJWT } from "../../utils/encrypt.js";
+import { generateJWT, verifyPassword } from "../../utils/encrypt.js";
+import z from "zod";
+
+const inputSchema = z.object({
+    email: z.string(),
+    password: z.string(),
+})
+
+export const outputSchema = z.object({
+    accessToken: z.string(),
+    user: z.object({
+        id: z.string(),
+        email: z.string(),
+        fullname: z.string(),
+        role: z.array(z.string()),
+    })
+})
 
 export class LoginUseCase {
-    constructor(userRepository, tokenRepository) {
+    constructor(userRepository) {
         this.userRepository = userRepository;
-        this.tokenRepository = tokenRepository;
     }
 
-    async execute({ email, password }) {
-        const user = await this.userRepository.findByEmail(email);
+    async execute(input) {
+        const parsedInput = inputSchema.parse(input);
+
+        const user = await this.userRepository.findByEmail(parsedInput.email);
         if (!user) throw new Error(ERROR_CATALOG.LOGIN.message);
 
-        const isPasswordValid = await bcrypt.compare(password, user.password);
+        const isPasswordValid = verifyPassword(parsedInput.password, user.password);
         if (!isPasswordValid) throw new Error(ERROR_CATALOG.LOGIN.message);
 
         const accessJwt = generateJWT({ id: user.id, roles: user.roles.map(r => r.name) });
 
-        return {
+        return outputSchema.parse({
             accessToken: accessJwt,
             user: {
-                id: user.id,
-                email: user.email,
-                fullName: user.fullName,
-                role: user.role,
+                ...user,
+                fullname: user.username,
+                role: user.roles.map(r => r.name),
             }
-        };
+        });
     }
 }

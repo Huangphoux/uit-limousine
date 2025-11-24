@@ -1,12 +1,17 @@
+import z from "zod";
+
+export const roleSchema = z.object({
+    id: z.string().optional(),
+    name: z.string(),
+})
+
 export class RoleEntity {
-    #id;
-    #name;
+    static schema = roleSchema;
 
-    get id() { return this.#id; }
-    get name() { return this.#name; }
-
-    set id(value) { this.#id = value; }
-    set name(value) { this.#name = value; }
+    static rehydrate(input) {
+        if (!input) return null;
+        return Object.assign(new RoleEntity(), input);
+    }
 }
 
 export const Role = {
