@@ -1,18 +1,16 @@
-import { RoleMapper } from '../mapper/role.mapper.js';
+import { RoleEntity } from '../../domain_layer/role.entity.js';
 
 export class RoleRepositoryPostgree {
-    #roleModel;
-
-    constructor(roleModel) {
-        this.#roleModel = roleModel;
+    constructor(prisma) {
+        this.prisma = prisma;
     }
 
     async findByName(name) {
-        const row = await this.#roleModel.findUnique({
+        const row = await this.prisma.role.findUnique({
             where: { name: name },
             select: { id: true, name: true },
         });
 
-        return RoleMapper.toDomain(row);
+        return RoleEntity.rehydrate(row);
     }
 }

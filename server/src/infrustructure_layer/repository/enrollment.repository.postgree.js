@@ -1,4 +1,4 @@
-import { rehydrate, toPersistence } from "../../domain_layer/domain_service/factory.js";
+import { toPersistence } from "../../domain_layer/domain_service/factory.js";
 import { EnrollmentEntity, enrollmentSchema } from "../../domain_layer/enrollment.entity.js";
 import { buildQuery } from "../../utils/query-builder.js";
 
@@ -17,12 +17,12 @@ export class EnrollmentRepositoryPostgree {
             select: EnrollmentRepositoryPostgree.baseQuery,
         });
 
-        return rehydrate(EnrollmentEntity, raw);
+        return EnrollmentEntity.rehydrate(raw);
     }
 
     async add(entity) {
         const raw = await this.prisma.enrollment.create({ data: toPersistence(entity) });
-        return rehydrate(EnrollmentEntity, raw);
+        return EnrollmentEntity.rehydrate(raw);
     }
 
     static baseQuery = buildQuery(enrollmentSchema);

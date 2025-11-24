@@ -1,8 +1,7 @@
-import { CourseMapper } from "../mapper/course.mapper.js";
 import { logger } from "../../utils/logger.js";
 import { CourseEntity, courseSchema } from "../../domain_layer/course/course.entity.js";
 import { buildQuery } from "../../utils/query-builder.js";
-import { rehydrate, toPersistence } from "../../domain_layer/domain_service/factory.js";
+import { toPersistence } from "../../domain_layer/domain_service/factory.js";
 
 export class CourseRepository {
     constructor(prisma) {
@@ -58,6 +57,8 @@ export class CourseRepository {
                 courseId: raw.id,
                 instructorId: raw.instructorId,
             });
+
+            console.log(raw);
 
             return CourseEntity.rehydrate(raw);
         }

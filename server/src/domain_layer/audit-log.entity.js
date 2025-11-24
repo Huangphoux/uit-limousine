@@ -1,29 +1,28 @@
 import { z } from "zod";
 
-export class AuditLog {
-    id;
-    actorId;
-    action;
-    resource;
-    resourceId;
-    data;
-    createdAt;
+export const auditLogSchema = z.object({
+    id: z.string().nullable().default(null),
+    actorId: z.string().nullable().default(null),
+    action: z.string(),
+    resource: z.string().nullable().default(null),
+    resourceId: z.string().nullable().default(null),
+    data: z.json().nullable().default(null),
+    createdAt: z.date().default(() => new Date()),
+})
 
-    constructor(input) {
-        Object.assign(this, input);
-        this.createdAt = new Date();
-    }
+export class AuditLog {
+    static schema = auditLogSchema;
 
     static create(input) {
-        const parsedInput = createSchema.parse(input);
-        return new AuditLog(input);
+        const parsedInput = AuditLog.schema.parse(input);
+
+        // Business rules here
+
+        return Object.assign(new AuditLog(), input);
+    }
+
+    static rehydrate(input) {
+        if (!input) return null;
+        return Object.assign(new AuditLog(), input);
     }
 }
-
-const createSchema = z.object({
-    actorId: z.string(),
-    action: z.string(),
-    resource: z.string(),
-    resourceId: z.string(),
-    data: z.json()
-})

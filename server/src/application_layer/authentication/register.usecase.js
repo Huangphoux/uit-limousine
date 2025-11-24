@@ -1,9 +1,9 @@
-import bcrypt from 'bcrypt';
+import z from 'zod';
 import { UserEntity } from "../../domain_layer/user.entity.js";
+import { Role } from '../../domain_layer/role.entity.js';
 import { generateJWT, generateSalt, hashPassword } from '../../utils/encrypt.js';
 import { ERROR_CATALOG } from '../../../constants/errors.js';
-import z from 'zod';
-import { Role } from '../../domain_layer/role.entity.js';
+import { logger } from "../../utils/logger.js";
 
 const inputSchema = z.object({
     email: z.string(),
@@ -27,6 +27,7 @@ export class RegisterUseCase {
     }
 
     async execute(input) {
+        logger.debug("Executing register operation", input);
         const parsedInput = inputSchema.parse(input)
 
         const registeredEmail = await this.userRepository.findByEmail(parsedInput.email);
@@ -42,6 +43,8 @@ export class RegisterUseCase {
         const savedUser = await this.userRepository.add(user);
 
         const accessJwt = generateJWT({ id: user.id, roles: user.roles.map(r => r.name) });
+
+        logger.debug("Finish register operation");
 
         return outputSchema.parse({
             ...savedUser,

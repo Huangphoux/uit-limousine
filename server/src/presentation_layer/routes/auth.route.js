@@ -1,10 +1,10 @@
 import { Router } from "express";
-import { loginController, logoutController, registerController } from "../../composition-root.js";
+import { loginUseCase, registerUseCase } from "../../composition-root.js";
+import { controller } from "../controllers/generic.controller.js";
 
 const router = Router();
 
-router.post('/login', async (req, res) => { await loginController.execute(req, res); });
-router.post('/logout', async (req, res) => { await logoutController.execute(req, res) });
-router.post('/register', async (req, res) => { await registerController.execute(req, res) });
+router.post('/login', controller(loginUseCase));
+router.post('/register', controller(registerUseCase));
 
 export default router;

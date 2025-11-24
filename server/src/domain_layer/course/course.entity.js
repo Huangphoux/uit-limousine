@@ -2,7 +2,7 @@ import { z } from "zod";
 import { ModuleEntity, moduleSchema } from "./module.entity.js";
 
 export const courseSchema = z.object({
-    id: z.string().uuid({ message: "Invalid UUID for course ID" }).optional(),
+    id: z.string().nullable().default(null),
     title: z.string({ required_error: "Title is required" }).nonempty("Title cannot be empty"),
 
     // these fields can be string, null, or undefined
@@ -61,13 +61,13 @@ export class CourseEntity {
     static rehydrate(input) {
         if (!input) return null;
 
-        const entity = new CourseEntity();
-
         if (input.modules) {
-            entity.modules = input.modules.map(ModuleEntity.rehydrate);
+            input.modules = input.modules.map(ModuleEntity.rehydrate);
         }
 
-        Object.assign(entity, { ...input, modules: entity.modules });
+        const entity = new CourseEntity();
+
+        Object.assign(entity, input);
 
         return entity;
     }

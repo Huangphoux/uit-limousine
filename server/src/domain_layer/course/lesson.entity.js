@@ -2,7 +2,6 @@ import z from "zod";
 
 export const lessonSchema = z.object({
     id: z.string().optional(),
-    moduleId: z.string(),
     title: z.string(),
     content: z.string().optional(),
     mediaUrl: z.string().url().optional(),

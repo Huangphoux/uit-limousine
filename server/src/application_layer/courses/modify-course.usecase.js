@@ -1,5 +1,6 @@
 import z from "zod"
 import { AuditLog } from "../../domain_layer/audit-log.entity.js";
+import { logger } from "../../utils/logger.js";
 
 export const modifiedCourseDataSchema = z.object({
     title: z.string(),
@@ -25,6 +26,7 @@ export class ModifyCourseUsecase {
     }
 
     async execute(input) {
+        logger.debug("Executing Modify course operation", input);
         const parsedInput = inputSchema.parse(input);
 
         const course = await this.courseRepository.findById(parsedInput.id);
@@ -35,9 +37,9 @@ export class ModifyCourseUsecase {
 
         const oldCourseData = modifiedCourseDataSchema.parse(course);
 
-        course.update_title(parsedInput.title);
-        course.update_description(parsedInput.description);
-        course.update_price(parsedInput.price);
+        course.updateTitle(parsedInput.title);
+        course.updateDescription(parsedInput.description);
+        course.updatePrice(parsedInput.price);
 
         const savedCourse = await this.courseRepository.save(course);
 
@@ -54,6 +56,7 @@ export class ModifyCourseUsecase {
 
         const savedLog = await this.auditLogRepository.add(auditLog);
 
+        logger.debug("Finish Modify course operation");
         return outputSchema.parse(savedCourse);
     }
 }

@@ -1,6 +1,7 @@
+import z from "zod";
 import { ERROR_CATALOG } from "../../../constants/errors.js";
 import { generateJWT, verifyPassword } from "../../utils/encrypt.js";
-import z from "zod";
+import { logger } from "../../utils/logger.js";
 
 const inputSchema = z.object({
     email: z.string(),
@@ -23,6 +24,8 @@ export class LoginUseCase {
     }
 
     async execute(input) {
+        logger.debug('Executing login operation', input);
+
         const parsedInput = inputSchema.parse(input);
 
         const user = await this.userRepository.findByEmail(parsedInput.email);
@@ -32,6 +35,8 @@ export class LoginUseCase {
         if (!isPasswordValid) throw new Error(ERROR_CATALOG.LOGIN.message);
 
         const accessJwt = generateJWT({ id: user.id, roles: user.roles.map(r => r.name) });
+
+        logger.debug('Finish login operation');
 
         return outputSchema.parse({
             accessToken: accessJwt,

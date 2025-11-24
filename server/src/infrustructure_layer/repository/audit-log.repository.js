@@ -1,4 +1,6 @@
-import { AuditLogMapper } from "../mapper/audit-log.mapper.js";
+import { toPersistence } from "../../domain_layer/domain_service/factory.js";
+import { AuditLog } from "../../domain_layer/audit-log.entity.js";
+import { buildQuery } from "../../utils/query-builder.js";
 
 export class AuditLogRepository {
     constructor(prisma) {
@@ -7,18 +9,11 @@ export class AuditLogRepository {
 
     async add(log) {
         const raw = await this.prisma.AuditLog.create({
-            data: AuditLogMapper.toPersistence(log),
+            data: toPersistence(log),
+            select: AuditLogRepository.baseQuery
         });
-        return AuditLogMapper.toDomain(raw);
+        return AuditLog.rehydrate(raw);
     }
 
-    static baseQuery = {
-        id: true,
-        actorId: true,
-        action: true,
-        resource: true,
-        resourceId: true,
-        data: true,
-        createdAt: true,
-    }
+    static baseQuery = buildQuery(AuditLog.schema);
 }

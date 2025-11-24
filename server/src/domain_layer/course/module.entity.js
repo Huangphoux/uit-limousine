@@ -3,7 +3,6 @@ import { LessonEntity, lessonSchema } from "./lesson.entity.js";
 
 export const moduleSchema = z.object({
     id: z.string().optional(),
-    courseId: z.string(),
     title: z.string(),
     position: z.number().int().default(0),
     createdAt: z.date().default(() => new Date()),

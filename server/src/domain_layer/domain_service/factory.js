@@ -8,38 +8,54 @@ export function rehydrate(EntityClass, raw) {
     return Object.assign(new EntityClass(), raw);
 }
 
-export function toPersistence(entity) {
+export function toPersistence(entity, withRelations) {
     if (!entity) return null;
     const { id, ...persistable } = entity;
-    return persistable;
-}
 
-export function toPersistenceNonContainer(entity) {
-    if (!entity) return null;
-
-    const type = ["string", "number", "boolean"];
-    const result = {};
-    for (const [key, value] of Object.entries(entity)) {
-        if (value && type.includes(typeof value)) {
-            result[key] = value;
-        }
+    let result = {}
+    for (const [key, value] of Object.entries(persistable)) {
+        const r = dispatcher(value, withRelations);
+        if (!r) continue;
+        result[key] = r;
     }
+
     return result;
-}
 
-export function toPersistenceContainer(entity) {
-    if (!entity) return null;
+    function dispatcher(value, withRelations) {
+        if (!value) return null;
+        if (isPrimitive(value))
+            return toPersistenceNonContainer(value);
 
-    const type = ["array", "hash", "set"];
-    const result = {};
-    for (const [key, value] of Object.entries(entity)) {
-        if (value && type.includes(typeof value)) {
-            result[key] = {
-                createOrConnect: value.map(v => ({
-                
-                }))
-            };
-        }
+        if (!withRelations)
+            return null;
+        if (isContainer(value))
+            return toPersistenceContainer(value);
+
+        return null;
     }
-    return result;
+
+    function isPrimitive(value) {
+        return ["string", "number", "boolean"].includes(typeof value);
+    }
+
+    function isContainer(value) {
+        return Array.isArray(value);
+    }
+
+    function toPersistenceNonContainer(value) {
+        return value;
+    }
+
+    function toPersistenceContainer(value) {
+        if (!value.length) return null;
+        return {
+            connectOrCreate: value.map(v => ({
+                where: {
+                    id: v.id
+                },
+                create: toPersistence(v),
+            }))
+        };
+    }
 }
+

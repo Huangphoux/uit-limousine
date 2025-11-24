@@ -1,4 +1,5 @@
 import z from "zod";
+import { logger } from "../../utils/logger.js";
 
 const inputSchema = z.object({
     authId: z.string(),
@@ -29,6 +30,7 @@ export class CourseMaterialsQueryUseCase {
     }
 
     async execute(input) {
+        logger.debug("Executing Get Course Materials operation", input);
         const parsedInput = inputSchema.parse(input);
 
         const isPublished = await this.courseReadAccessor.isPublished(parsedInput.courseId);
@@ -38,8 +40,8 @@ export class CourseMaterialsQueryUseCase {
         if (!enrolled) throw Error(`User has not enrolled the course`);
 
         const courseMaterials = await this.courseReadAccessor.getCourseMaterials(parsedInput.courseId, parsedInput.authId);
-        console.dir(courseMaterials, { depth: null, colors: true });
 
+        logger.debug("Finish Get Course Materials operation");
         return outputSchema.parse(courseMaterials);
     }
 }

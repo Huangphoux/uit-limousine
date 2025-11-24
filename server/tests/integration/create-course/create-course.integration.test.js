@@ -27,7 +27,6 @@ describe('Create course integration test', () => {
         });
 
         it(`Should return object match the schema`, () => {
-            console.log(test_output);
             expect(() => outputSchema.parse(test_output)).not.toThrow();
         });
     });

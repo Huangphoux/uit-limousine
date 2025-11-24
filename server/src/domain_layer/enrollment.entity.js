@@ -27,4 +27,9 @@ export class EnrollmentEntity {
 
         return Object.assign(new EnrollmentEntity(), parsedInput);
     }
+
+    static rehydrate(input) {
+        if (!input) return null
+        return Object.assign(new EnrollmentEntity(), input);
+    }
 }

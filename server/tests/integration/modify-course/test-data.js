@@ -11,6 +11,12 @@ export const course = {
     instructorId: "modify course",
 }
 
+export const module = {
+    id: "modify course",
+    courseId: course.id,
+    title: "JavaScript Fundamentals",
+};
+
 export const input = {
     authId: instructor.id,
     id: "modify course",

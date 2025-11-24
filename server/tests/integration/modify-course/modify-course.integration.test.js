@@ -1,5 +1,5 @@
 import { prisma, modifyCourseUsecase } from "../../../src/composition-root"
-import { course, input, instructor } from "./test-data"
+import { course, module, input, instructor } from "./test-data"
 import { outputSchema } from "../../../src/application_layer/courses/modify-course.usecase";
 import { ZodError } from "zod"
 
@@ -9,6 +9,7 @@ describe('Modify course integration test', () => {
     beforeAll(async () => {
         await prisma.user.create({ data: instructor });
         await prisma.course.create({ data: course });
+        await prisma.module.create({ data: module });
     })
 
     afterAll(async () => {
@@ -28,6 +29,8 @@ describe('Modify course integration test', () => {
             catch (e) {
                 test_output = e;
             }
+
+            console.log(test_output);
         });
 
         it(`Should return object match the schema`, () => {

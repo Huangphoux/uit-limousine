@@ -18,16 +18,16 @@ export function generateJWT(payload) {
 }
 
 export function verifyJwt(token) {
-    return jwt.verify(token, secret);
+    return jwt.verify(token, config.jwt.secret);
 }
 
 export function generateSalt() {
-    return bcrypt.genSaltSync(config.bcrypt.saltRounds);
+    // return bcrypt.genSaltSync(config.bcrypt.saltRounds);
+    return 12;
 }
 
 export function hashPassword(password, salt) {
-    // return bcrypt.hashSync(password, salt);
-    return "fake-salt";
+    return bcrypt.hashSync(password, salt);
 }
 
 export function verifyPassword(password, hashedPassword) {

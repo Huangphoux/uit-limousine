@@ -6,7 +6,7 @@ export function authenticationMiddleware(
     next
 ) {
     try {
-        console.log("Call authentication middleware");
+        console.log("Calling authentication");
 
         const result = authenticate(req.headers.authorization);
         req.body.authId = result.id;
@@ -14,7 +14,7 @@ export function authenticationMiddleware(
 
         next();
 
-        console.log("Return authentication middleware");
+        console.log("Finish authentication");
     } catch (e) {
         console.error(e.message);
         res.status(401).jsend.fail(e.message);

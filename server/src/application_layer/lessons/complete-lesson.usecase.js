@@ -1,5 +1,6 @@
 import z from "zod";
 import { LessonProgressEntity } from "../../domain_layer/lesson-progress.entity.js";
+import { logger } from "../../utils/logger.js";
 
 const inputSchema = z.object({
     authId: z.string(),
@@ -21,6 +22,7 @@ export class CompleteLessonUseCase {
     }
 
     async execute(input) {
+        logger.debug("Executing Complete Lesson operation", input);
         const parsedInput = inputSchema.parse(input);
 
         const course = await this.courseRepository.findByLessonId(parsedInput.lessonId);
@@ -49,6 +51,7 @@ export class CompleteLessonUseCase {
             ? completeCount / courseLessonIds.length * 100
             : 0;
 
+        logger.debug("Finish Complete Lesson operation");
         return outputSchema.parse({
             lessonId: savedLessonProgress.lessonId,
             completedAt: savedLessonProgress.completedAt,

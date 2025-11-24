@@ -1,5 +1,6 @@
 import { EnrollmentEntity, enrollmentSchema } from "../../domain_layer/enrollment.entity.js";
 import z from "zod";
+import { logger } from "../../utils/logger.js";
 
 const inputSchema = z.object({
     authId: z.string(),
@@ -22,6 +23,7 @@ export class EnrollCourseUseCase {
     }
 
     async execute(input) {
+        logger.debug("Executing Enroll course operation", input);
         const parsedInput = inputSchema.parse(input);
 
         const course = await this.courseRepository.findById(parsedInput.courseId);
@@ -41,6 +43,7 @@ export class EnrollCourseUseCase {
 
         let savedEnrollment = await this.enrollmentRepository.add(enrollment);;
 
+        logger.debug("Finish Enroll course operation");
         return outputSchema.parse(savedEnrollment);
     }
 }
