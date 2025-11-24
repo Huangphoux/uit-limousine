@@ -2,8 +2,10 @@ import React from "react";
 import { Container, Row, Col, Button, Form, InputGroup, Spinner, Alert } from "react-bootstrap";
 import { useState, useEffect } from "react";
 import CourseCard from "../components/CourseCard";
+import ToastContainer from "../components/ToastContainer";
 import CourseDetailModal from "../components/CourseDetailModal";
 import { useCourses, defaultCourses } from "../hooks/useCourses";
+import { useNotificationContext } from "./NewPageLayout";
 
 const NewPage = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -14,6 +16,9 @@ const NewPage = () => {
   // Use the custom hook for course management
   const { courses, loading, error, fetchCourses, enrollInCourse, searchCourses } =
     useCourses(defaultCourses);
+
+  // Use the custom hook for notifications
+  const { notifications, addNotification } = useNotificationContext();
 
   // Initialize filtered courses
   useEffect(() => {
@@ -47,23 +52,26 @@ const NewPage = () => {
     setFilteredCourses(filtered);
   };
 
-  const handleEnroll = async (courseId) => {
-    const course = courses.find((c) => c.id === courseId);
-
-    if (course.enrolled) {
-      alert("You are already enrolled in this course!");
-      return;
-    }
-
-    const result = await enrollInCourse(courseId);
-    if (result.success) {
-      alert(`Successfully enrolled in "${course.title}"!`);
-      setFilteredCourses((prevFiltered) =>
-        prevFiltered.map((c) => (c.id === courseId ? { ...c, enrolled: true } : c))
-      );
-      setShowModal(false);
+  const handleEnroll = async (courseId, course, type) => {
+    if (type === "success") {
+      if (course.enrolled) {
+        addNotification("info", `You are already enrolled in "${course.title}"!`);
+        return;
+      }
+      const result = await enrollInCourse(courseId);
+      if (result.success) {
+        addNotification(type, course.title);
+        setFilteredCourses((prevFiltered) =>
+          prevFiltered.map((c) => (c.id === courseId ? { ...c, enrolled: true } : c))
+        );
+        setShowModal(false); // Close detail modal if open
+      } else {
+        addNotification("error", `Failed to enroll: ${result.error}`);
+      }
     } else {
-      alert(`Failed to enroll: ${result.error}`);
+      // Handle unsubscribe logic if needed, for now just show notification
+      addNotification(type, course.title);
+      // You might want to call an API to unsubscribe here
     }
   };
 
@@ -81,6 +89,9 @@ const NewPage = () => {
 
   return (
     <>
+      {/* Toast Notifications */}
+      <ToastContainer notifications={notifications} />
+
       {/* Custom Styles */}
       <style>
         {`

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Modal, Button } from "react-bootstrap";
 import PropTypes from "prop-types";
 import { useNavigate } from "react-router-dom";
+import { FaTimes } from "react-icons/fa";
 
 const CourseDetailModal = ({ course, show, onHide, onEnroll }) => {
   const [isEnrolled, setIsEnrolled] = useState(course?.enrolled || false);
@@ -100,10 +101,25 @@ const CourseDetailModal = ({ course, show, onHide, onEnroll }) => {
       >
         {/* Header */}
         <Modal.Header className="border-bottom" style={{ padding: "1rem 1.5rem" }}>
-          <Modal.Title style={{ fontSize: "0.875rem", color: "#6c757d", fontWeight: "500" }}>
+          <Modal.Title
+            className="w-100"
+            style={{ fontSize: "0.875rem", color: "#6c757d", fontWeight: "500" }}
+          >
             Course Details
           </Modal.Title>
-          <button type="button" className="btn-close" onClick={onHide} aria-label="Close" />
+          <Button
+            variant="light"
+            onClick={onHide}
+            className="p-1"
+            style={{
+              border: "none",
+              borderRadius: "50%",
+              width: "32px",
+              height: "32px",
+            }}
+          >
+            <FaTimes />
+          </Button>
         </Modal.Header>
 
         {/* Body */}

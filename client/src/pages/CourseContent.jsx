@@ -2,6 +2,7 @@ import React, { useState, useRef } from "react";
 import { Container, Row, Col, Button, ProgressBar } from "react-bootstrap";
 import { useParams, useNavigate } from "react-router-dom";
 import "./CourseContent.css";
+import AssignmentSubmissionUI from "./AssignmentSubmissionUI";
 
 const CourseContent = () => {
   const { courseId } = useParams();
@@ -414,8 +415,11 @@ const CourseContent = () => {
               </div>
 
               {/* Content Container - Adaptable for Video/Reading/Assignment */}
-              <div className="content-container">
-                {currentLessonData?.type === "video" && currentLessonData?.videoUrl ? (
+              {currentLessonData?.type === "assignment" ? (
+                <AssignmentSubmissionUI lesson={currentLessonData} onMarkAsFinished={handleMarkAsFinished} />
+              ) : (
+                <div className="content-container">
+                  {currentLessonData?.type === "video" && currentLessonData?.videoUrl ? (
                   <iframe
                     src={getYouTubeEmbedUrl(currentLessonData.videoUrl)}
                     title={currentLessonData.title}
@@ -424,15 +428,15 @@ const CourseContent = () => {
                     allowFullScreen
                     className="video-iframe"
                   />
-                ) : (
-                  <div className="content-placeholder">
-                    {currentLessonData?.type === "video" && (
-                      <>
-                        🎥 Video Player - {currentLessonData?.title}
-                        <div className="api-ready-note">Ready for video API integration</div>
-                      </>
-                    )}
-                    {currentLessonData?.type === "reading" && (
+                  ) : (
+                    <div className="content-placeholder">
+                      {currentLessonData?.type === "video" && (
+                        <>
+                          🎥 Video Player - {currentLessonData?.title}
+                          <div className="api-ready-note">Ready for video API integration</div>
+                        </>
+                      )}
+                      {currentLessonData?.type === "reading" && (
                       <>
                         📄 Reading Content - {currentLessonData?.title}
                         <div className="api-ready-note">
@@ -440,29 +444,25 @@ const CourseContent = () => {
                         </div>
                       </>
                     )}
-                    {currentLessonData?.type === "assignment" && (
-                      <>
-                        📝 Assignment - {currentLessonData?.title}
-                        <div className="api-ready-note">Ready for assignment API integration</div>
-                        {/* Assignment submit here */}
-                      </>
-                    )}
+                    </div>
+                  )}
                   </div>
-                )}
-              </div>
+              )}
 
               {/* Lesson Actions */}
-              <div className="lesson-actions">
-                {currentLessonData.isCompleted ? (
-                  <Button className="unmark-btn" onClick={handleMarkAsFinished}>
-                    ✕ Unmark
-                  </Button>
-                ) : (
-                  <Button className="mark-finished-btn" onClick={handleMarkAsFinished}>
-                    ✓ Mark as finished
-                  </Button>
-                )}
-              </div>
+              {currentLessonData?.type !== "assignment" && (
+                <div className="lesson-actions">
+                  {currentLessonData?.isCompleted ? (
+                    <Button className="unmark-btn" onClick={handleMarkAsFinished}>
+                      ✕ Unmark
+                    </Button>
+                  ) : (
+                    <Button className="mark-finished-btn" onClick={handleMarkAsFinished}>
+                      ✓ Mark as finished
+                    </Button>
+                  )}
+                </div>
+              )}
 
               {/* Navigation */}
               <div className="lesson-navigation">
