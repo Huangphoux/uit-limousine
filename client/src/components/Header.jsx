@@ -1,10 +1,11 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Container, Navbar, Nav, NavDropdown } from "react-bootstrap";
+import { Container, Navbar, Nav, NavDropdown, Button, Badge } from "react-bootstrap";
+import { FaBell } from "react-icons/fa";
 
-const Header = () => {
+const Header = ({ unreadCount, onBellClick }) => {
   const navigate = useNavigate();
-  const [userEmail] = useState("user@example.com");
+  const [userEmail] = useState("user@example.com"); // This can be replaced with actual user data
 
   const handleSignOut = () => {
     //handle Sign Out here...
@@ -35,6 +36,28 @@ const Header = () => {
             background-color: rgba(0,0,0,0.05) !important;
             color: #000 !important;
           }
+          .notification-bell {
+            position: relative;
+            cursor: pointer;
+            color: #000;
+            font-size: 1.25rem;
+          }
+          .notification-badge {
+            position: absolute;
+            top: -5px;
+            right: -10px;
+            padding: 2px 6px;
+            border-radius: 50%;
+            background: #dc3545;
+            color: white;
+            font-size: 0.7rem;
+            font-weight: bold;
+            border: 2px solid #EFF6FF;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 20px;
+          }
         `}
       </style>
       <Navbar
@@ -52,6 +75,14 @@ const Header = () => {
 
           <Navbar.Collapse id="basic-navbar-nav" style={{ backgroundColor: "#EFF6FF" }}>
             <Nav className="ms-auto">
+              <Nav.Item className="d-flex align-items-center me-3">
+                <div className="notification-bell" onClick={onBellClick}>
+                  <FaBell />
+                  {unreadCount > 0 && (
+                    <span className="notification-badge">{unreadCount}</span>
+                  )}
+                </div>
+              </Nav.Item>
               <NavDropdown
                 title={<span style={{ color: "#000" }}>{userEmail}</span>}
                 id="user-dropdown"

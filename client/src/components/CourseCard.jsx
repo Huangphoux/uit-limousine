@@ -26,7 +26,9 @@ const CourseCard = ({ course, onEnroll, onCardClick }) => {
   const handleEnrollClick = (e) => {
     e.stopPropagation(); // Prevent card click when clicking enroll button
     setIsEnrolled(true); // Immediately update local state to show new buttons
-    // No API call here - will be called when "View courses" is clicked
+    if (onEnroll) {
+      onEnroll(course.id, course, "success");
+    }
   };
 
   const handleCardClick = () => {
