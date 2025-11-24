@@ -1,7 +1,7 @@
 import z from "zod";
 
 export const roleSchema = z.object({
-    id: z.string().optional(),
+    id: z.string().default(null),
     name: z.string(),
 })
 

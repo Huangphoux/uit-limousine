@@ -37,7 +37,7 @@ export const loginUseCase = new LoginUseCase(userRepository);
 export const loginController = new LoginController(loginUseCase);
 
 const roleRepository = new RoleRepositoryPostgree(prisma.role);
-const registerUseCase = new RegisterUseCase(userRepository, roleRepository, config.bcrypt);
+export const registerUseCase = new RegisterUseCase(userRepository, roleRepository, config.bcrypt);
 export const registerController = new RegisterController(registerUseCase);
 
 export const courseRepository = new CourseRepository(prisma);

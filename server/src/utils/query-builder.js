@@ -12,9 +12,8 @@ export function buildQuery(schema) {
 
     for (const key of Object.keys(shape)) {
         let field = shape[key];
-        if (field instanceof z.ZodOptional) {
-            field = field.unwrap();
-        }
+        field = unwrap(field);
+
         if (field instanceof z.ZodObject) {
             select[key] = { select: buildQuery(field) };
         }
@@ -27,4 +26,12 @@ export function buildQuery(schema) {
     }
 
     return select;
+}
+
+export function unwrap(field) {
+    const type = ['optional', 'nullable', 'default']
+    while (type.includes(field.type)) {
+        field = field.unwrap();
+    }
+    return field
 }

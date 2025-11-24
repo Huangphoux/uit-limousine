@@ -2,21 +2,24 @@ import { z } from "zod";
 import { RoleEntity, roleSchema } from "./role.entity.js";
 
 export const userRoleSchema = z.object({
-    role: roleSchema
+    id: z.int().default(null),
+    userId: z.string(),
+    roleId: z.string(),
+    role: roleSchema.default(null),
 })
 
 export const userSchema = z.object({
-    id: z.string().optional(),
-    username: z.string().nullish(),
+    id: z.string().default(null),
+    username: z.string().default(null),
     createdAt: z.date().default(() => new Date()),
     email: z.string(),
     updatedAt: z.date().default(() => new Date()),
-    avatarUrl: z.string().nullish(),
-    bio: z.string().nullish(),
-    name: z.string().nullish(),
-    password: z.string().nullish(),
+    avatarUrl: z.string().default(null),
+    bio: z.string().default(null),
+    name: z.string().default(null),
+    password: z.string().default(null),
 
-    roles: z.array(userRoleSchema).optional(),
+    roles: z.array(userRoleSchema).default([]),
 });
 
 export class UserEntity {
@@ -35,12 +38,14 @@ export class UserEntity {
         return false;
     }
 
-    static create(input) {
+    static create(input, defaultRole) {
         let parsedInput = UserEntity.schema.parse(input);
 
         // Business rules here
+        entity = Object.assign(new UserEntity(), parsedInput);
+        entity.addRole(defaultRole);
 
-        return Object.assign(new UserEntity(), parsedInput);
+        return entity;
     }
 
     static rehydrate(input) {

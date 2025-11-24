@@ -1,7 +1,7 @@
 import { logger } from '../../utils/logger.js';
 import { buildQuery } from '../../utils/query-builder.js';
 import { UserEntity, userSchema } from '../../domain_layer/user.entity.js';
-import { toPersistence } from '../../domain_layer/domain_service/factory.js';
+import { create, toPersistence, toPersistenceNonContainer } from '../../domain_layer/domain_service/factory.js';
 
 export class UserRepositoryPostgree {
     constructor(prisma) {
@@ -26,9 +26,16 @@ export class UserRepositoryPostgree {
         return UserEntity.rehydrate(raw);
     }
 
-    async create(user) {
+    async add(user) {
         const raw = await this.prisma.user.create({
-            data: toPersistence(user),
+            data: {
+                ...toPersistenceNonContainer(user),
+                roles: {
+                    create: user.roles.map(r => ({
+                        roleId: r.id,
+                    }))
+                }
+            },
             select: UserRepositoryPostgree.baseQuery
         });
 
