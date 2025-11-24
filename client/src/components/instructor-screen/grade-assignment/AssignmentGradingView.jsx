@@ -18,6 +18,26 @@ import { FaCheckSquare, FaFileAlt, FaRegClock, FaSearch, FaUsers } from "react-i
 import "./AssignmentGradingView.css";
 import ScoringModal from "./ScoringModal";
 
+const formatDate = (date) => {
+  return new Date(date).toLocaleString("en-US", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
+
+const calculateAssignmentStats = (mockAssignments, courses) => {
+  const allSubmissions = mockAssignments.flatMap((a) => a.submissions);
+  const totalLearners =
+    courses?.reduce((sum, course) => sum + (course.enrolledStudents || 0), 0) || 0;
+  const allSubmitted = allSubmissions.length;
+  const notScored = allSubmissions.filter((s) => s.status === "SUBMITTED").length;
+  const alreadyScored = allSubmissions.filter((s) => s.status === "GRADED").length;
+  return { totalLearners, allSubmitted, notScored, alreadyScored };
+};
+
 const AssignmentGradingView = ({ courses }) => {
   const [selectedAssignment, setSelectedAssignment] = useState(null);
   const [showGradingModal, setShowGradingModal] = useState(false);
@@ -96,17 +116,7 @@ const AssignmentGradingView = ({ courses }) => {
     },
   ];
 
-  const calculateAssignmentStats = () => {
-    const allSubmissions = mockAssignments.flatMap((a) => a.submissions);
-    const totalLearners =
-      courses?.reduce((sum, course) => sum + (course.enrolledStudents || 0), 0) || 0;
-    const allSubmitted = allSubmissions.length;
-    const notScored = allSubmissions.filter((s) => s.status === "SUBMITTED").length;
-    const alreadyScored = allSubmissions.filter((s) => s.status === "GRADED").length;
-    return { totalLearners, allSubmitted, notScored, alreadyScored };
-  };
-
-  const stats = calculateAssignmentStats();
+  const stats = calculateAssignmentStats(mockAssignments, courses);
 
   const statsCards = [
     {
@@ -153,15 +163,6 @@ const AssignmentGradingView = ({ courses }) => {
     setGradingData({ grade: "", feedback: "" });
   };
 
-  const handleQuickScore = (percentage) => {
-    if (selectedSubmission) {
-      const maxPoints =
-        mockAssignments.find((a) => a.id === selectedSubmission.assignmentId)?.maxPoints || 100;
-      const score = Math.round((maxPoints * percentage) / 100);
-      setGradingData({ ...gradingData, grade: score.toString() });
-    }
-  };
-
   const handleSaveGrade = () => {
     setIsSaving(true);
     setTimeout(() => {
@@ -173,16 +174,6 @@ const AssignmentGradingView = ({ courses }) => {
       setIsSaving(false);
       handleCloseModal();
     }, 1000);
-  };
-
-  const formatDate = (date) => {
-    return new Date(date).toLocaleString("en-US", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
   };
 
   return (

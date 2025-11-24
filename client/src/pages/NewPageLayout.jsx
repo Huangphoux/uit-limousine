@@ -1,4 +1,4 @@
-import { Outlet, useOutletContext } from "react-router-dom";
+import { Outlet } from "react-router-dom";
 import { Container } from "react-bootstrap";
 import Header from "../components/Header";
 import useNotifications from "../hooks/useNotifications";
@@ -31,8 +31,3 @@ const NewPageLayout = () => {
 };
 
 export default NewPageLayout;
-
-// Custom hook to easily access the context in child components
-export function useNotificationContext() {
-  return useOutletContext();
-}

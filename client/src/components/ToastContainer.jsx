@@ -8,7 +8,7 @@ const Toast = ({ notification, onDismiss }) => {
     const timer = setTimeout(() => {
       setIsExiting(true);
       setTimeout(() => onDismiss(notification.id), 300);
-    }, 3000);
+    }, 2000);
 
     return () => clearTimeout(timer);
   }, [notification.id, onDismiss]);

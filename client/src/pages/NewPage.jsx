@@ -5,7 +5,7 @@ import CourseCard from "../components/CourseCard";
 import ToastContainer from "../components/ToastContainer";
 import CourseDetailModal from "../components/CourseDetailModal";
 import { useCourses, defaultCourses } from "../hooks/useCourses";
-import { useNotificationContext } from "./NewPageLayout";
+import { useNotificationContext } from "../hooks/useNotificationContext";
 
 const NewPage = () => {
   const [searchTerm, setSearchTerm] = useState("");

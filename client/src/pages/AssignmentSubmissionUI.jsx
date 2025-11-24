@@ -3,7 +3,7 @@ import { Card, Button, Form } from "react-bootstrap";
 import { BsCloudUpload, BsDownload, BsFileEarmarkText, BsTrophy, BsTag } from "react-icons/bs";
 import "./CourseContent.css";
 
-const AssignmentSubmissionUI = ({ lesson, onMarkAsFinished }) => {
+const AssignmentSubmissionUI = ({ lesson }) => {
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [isSubmitted, setIsSubmitted] = useState(false); // Bắt đầu với trạng thái chưa nộp
   const [submissionResult, setSubmissionResult] = useState(null);
