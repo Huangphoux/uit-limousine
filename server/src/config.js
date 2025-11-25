@@ -4,8 +4,8 @@ dotenv.config();
 
 export const config = {
     jwt: {
-        secret: process.env.JWT_SECRET,
-        expiry: process.env.JWT_EXPIRY,
+        secret: "fake-secret", //process.env.JWT_SECRET,
+        expiry: "1h", //process.env.JWT_EXPIRY,
     },
     bcrypt: {
         saltRounds: Number(process.env.BCRYPT_SALT_ROUNDS),

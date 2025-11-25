@@ -3,31 +3,6 @@ import request from 'supertest';
 import { prisma } from '../../../src/composition-root.js';
 import { course, user, userRole } from './search-courses.test-data.js';
 
-// {
-//   "success": true,
-//   "data": {
-//     "courses": [
-//       {
-//         "id": "uuid",
-//         "title": "Introduction to Node.js",
-//         "description": "Learn Node.js from scratch",
-//         "instructor": {
-//           "id": "uuid",
-//           "fullName": "Tran Van C"
-//         },
-//         "thumbnail": "https://cdn.example.com/thumbnails/course.jpg",
-//         "rating": 4.5,
-//         "enrollmentCount": 120,
-//         "price": 500000,
-//         "createdAt": "2025-01-01T00:00:00Z"
-//       }
-//     ],
-//     "total": 50,
-//     "page": 1,
-//     "totalPages": 5
-//   }
-// }
-
 jest.setTimeout(20000);
 
 describe('Search courses integration test', () => {

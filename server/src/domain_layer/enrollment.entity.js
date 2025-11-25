@@ -1,52 +1,35 @@
+import { z } from "zod";
+
+export const enrollmentStatusEnum = z.enum([
+    "ENROLLED",
+    "PENDING",
+    "COMPLETED",
+    "CANCELLED",
+]);
+
+export const enrollmentSchema = z.object({
+    id: z.string().optional(),
+    userId: z.string(),
+    courseId: z.string(),
+    status: enrollmentStatusEnum.default("ENROLLED"),
+    isPaid: z.boolean().default(false),
+    enrolledAt: z.date().default(() => new Date()),
+    completedAt: z.date().nullable().optional(),
+});
+
 export class EnrollmentEntity {
-    #id;
-    #userId;
-    #courseId;
-    #status;
-    #enrolledAt;
+    static schema = enrollmentSchema;
 
-    get id() {
-        return this.#id;
-    }
-    set id(value) {
-        this.#id = value;
+    static create(input) {
+        const parsedInput = EnrollmentEntity.schema.parse(input);
+
+        // Business rules here
+
+        return Object.assign(new EnrollmentEntity(), parsedInput);
     }
 
-    get userId() {
-        return this.#userId;
-    }
-    set userId(value) {
-        this.#userId = value;
-    }
-
-    get courseId() {
-        return this.#courseId;
-    }
-    set courseId(value) {
-        this.#courseId = value;
-    }
-
-    get status() {
-        return this.#status;
-    }
-    set status(value) {
-        this.#status = value;
-    }
-
-    get enrolledAt() {
-        return this.#enrolledAt;
-    }
-    set enrolledAt(value) {
-        this.#enrolledAt = value;
-    }
-
-    static create(userId, courseId) {
-        let enrollment = new EnrollmentEntity();
-        enrollment.userId = userId;
-        enrollment.courseId = courseId;
-        enrollment.status = "ENROLLED";
-        enrollment.enrolledAt = new Date();
-
-        return enrollment;
+    static rehydrate(input) {
+        if (!input) return null
+        return Object.assign(new EnrollmentEntity(), input);
     }
 }

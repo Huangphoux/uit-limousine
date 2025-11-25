@@ -1,25 +1,32 @@
-import { LessonProgressMapper } from "../mapper/lesson-progress.mapper.js";
+import { toPersistence } from "../../domain_layer/domain_service/factory.js";
+import { LessonProgressEntity } from "../../domain_layer/lesson-progress.entity.js";
 
 export class LessonProgressRepositoryPostgree {
-    #model;
-
-    constructor(model) {
-        this.#model = model;
+    constructor(prisma) {
+        this.prisma = prisma;
     }
 
-    async findByPairId(userId, lessonId) {
-        const row = await this.#model.findUnique({
+    async findByUserAndLessonId(userId, lessonId) {
+        const raw = await this.prisma.lessonProgress.findUnique({
             where: { userId_lessonId: { userId, lessonId } },
         });
 
-        return LessonProgressMapper.toDomain(row);
+        return LessonProgressEntity.rehydrate(raw);
+    }
+
+    async add(entity) {
+        const raw = await this.prisma.lessonProgress.create({
+            data: toPersistence(entity),
+        })
+
+        return LessonProgressEntity.rehydrate(raw);
     }
 
     async save(entity) {
-        const row = await this.#model.update({
+        const raw = await this.prisma.lessonProgress.update({
             where: { id: entity.id },
-            data: LessonProgressMapper.toPersistence(entity)
+            data: toPersistence(entity)
         });
-        return LessonProgressMapper.toDomain(row);
+        return LessonProgressEntity.rehydrate(raw);
     }
 }

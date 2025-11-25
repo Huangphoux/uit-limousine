@@ -1,43 +1,61 @@
-export class CompleteLessonUseCaseInput {
-    userId;
-    lessonId;
-}
+import z from "zod";
+import { LessonProgressEntity } from "../../domain_layer/lesson-progress.entity.js";
+import { logger } from "../../utils/logger.js";
 
-export class CompleteLessonUseCaseOutput {
-    lessonId;
-    completedAt;
-    courseProgress;
+const inputSchema = z.object({
+    authId: z.string(),
+    lessonId: z.string(),
+})
 
-    static create(lessonProgress, courseProgress) {
-        let result = new CompleteLessonUseCaseOutput();
-        result.lessonId = lessonProgress.lessonId;
-        result.completedAt = lessonProgress.completedAt;
-        result.courseProgress = courseProgress;
-
-        return result;
-    }
-}
+const outputSchema = z.object({
+    lessonId: z.string(),
+    completedAt: z.date(),
+    courseProgress: z.number(),
+})
 
 export class CompleteLessonUseCase {
-    #userRepository
-    #lessonProgressRepository;
-
-    constructor(userRepository, lessonProgressRepository) {
-        this.#userRepository = userRepository;
-        this.#lessonProgressRepository = lessonProgressRepository;
+    constructor(courseRepository, enrollmentReadAccess, lessonProgressRepository, lessonProgressReadAccessor) {
+        this.courseRepository = courseRepository;
+        this.enrollmentReadAccess = enrollmentReadAccess;
+        this.lessonProgressRepository = lessonProgressRepository;
+        this.lessonProgressReadAccessor = lessonProgressReadAccessor;
     }
 
     async execute(input) {
-        let user = await this.#userRepository.findById(input.userId);
-        if (!user) throw Error(`User not found, ${input.userId}`);
+        logger.debug("Executing Complete Lesson operation", input);
+        const parsedInput = inputSchema.parse(input);
 
-        let lessonProgress = await this.#lessonProgressRepository.findByPairId(input.userId, input.lessonId);
-        if (!lessonProgress) throw Error(`User has not learnt yet, ${input.lessonId}`);
+        const course = await this.courseRepository.findByLessonId(parsedInput.lessonId);
+        if (!course) throw Error(`Course not found`);
 
-        lessonProgress.complete();
+        const isEnrolled = await this.enrollmentReadAccess.isEnrolled(parsedInput.authId, course.id);
+        if (!isEnrolled) throw Error(`User has not enrolled the course`);
 
-        let savedLessonProgress = await this.#lessonProgressRepository.save(lessonProgress);
+        let lessonProgress = await this.lessonProgressRepository.findByUserAndLessonId(parsedInput.authId, parsedInput.lessonId);
+        let savedLessonProgress = null;
+        if (!lessonProgress) {
+            lessonProgress = LessonProgressEntity.create({ userId: parsedInput.authId, lessonId: parsedInput.lessonId });
+            lessonProgress.complete();
+            savedLessonProgress = await this.lessonProgressRepository.add(lessonProgress);
+        }
+        else {
+            lessonProgress.complete();
+            savedLessonProgress = await this.lessonProgressRepository.save(lessonProgress);
+        }
 
-        return CompleteLessonUseCaseOutput.create(savedLessonProgress, "Deo hieu thiet ke api kieu gi luon ???");
+        const courseLessonIds = course.modules.flatMap((m) =>
+            m.lessons.map((l) => l.id)
+        );
+        const completeCount = await this.lessonProgressReadAccessor.countComplete(courseLessonIds);
+        const courseProgress = courseLessonIds.length
+            ? completeCount / courseLessonIds.length * 100
+            : 0;
+
+        logger.debug("Finish Complete Lesson operation");
+        return outputSchema.parse({
+            lessonId: savedLessonProgress.lessonId,
+            completedAt: savedLessonProgress.completedAt,
+            courseProgress,
+        });
     }
 }
