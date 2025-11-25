@@ -1,0 +1,70 @@
+.stats-icon-wrapper {
+  width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.5rem;
+  color: white;
+  font-size: 1.5rem;
+  background-color: rgba(13, 110, 253, 0.6) !important;
+}
+
+.assignment-icon-wrapper {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.5rem;
+  flex-shrink: 0;
+  background-color: rgba(13, 110, 253, 0.6) !important;
+}
+
+.modal-icon-wrapper {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.5rem;
+  background-color: rgba(13, 110, 253, 0.6) !important;
+
+}
+
+.custom-table {
+  background-color: #f8f9fa !important;
+}
+
+.custom-table thead,
+.custom-table thead tr,
+.custom-table thead th {
+  background-color: #f8f9fa !important;
+}
+
+.custom-table tbody,
+.custom-table tbody tr,
+.custom-table tbody td {
+  background-color: #f8f9fa !important;
+}
+
+.custom-table tbody tr:hover,
+.custom-table tbody tr:hover td {
+  background-color: #f8f9fa !important;
+}
+.search-input-custom::placeholder {
+  color: #495057 !important; /* Xám đậm hơn */
+  opacity: 1;
+  font-weight: 600;
+}
+
+.search-input-custom::-webkit-input-placeholder {
+  color: #495057 !important;
+  font-weight: 600;
+}
+
+.search-input-custom::-moz-placeholder {
+  color: #495057 !important;
+  font-weight: 600;
+  opacity: 1;
+}

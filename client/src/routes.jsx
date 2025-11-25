@@ -8,6 +8,10 @@ import UserInfo from "./pages/UserInfo";
 import CourseContent from "./pages/CourseContent";
 import InstructorScreen from "./pages/InstructorScreen";
 import AdminScreen from "./pages/AdminScreen";
+import CourseCard from "./components/CourseCard";
+import CourseManagementCard from "./components/instructor-screen/course-management/CourseManagementCard";
+import CourseManagementView from "./components/instructor-screen/course-management/CourseManagementView";
+import AssignmentSubmit from "./pages/AssignmentSubmit"; // This now correctly points to the single component
 
 const routes = [
   {
@@ -15,10 +19,6 @@ const routes = [
     element: <App />,
     errorElement: <ErrorPage />,
     children: [
-      {
-        path: "",
-        element: <App />,
-      },
       {
         path: "login",
         element: <Login />,
@@ -29,11 +29,13 @@ const routes = [
       },
     ],
   },
+
   {
     path: "/user-info",
     element: <UserInfo />,
     errorElement: <ErrorPage />,
   },
+
   {
     path: "/new-page",
     element: <NewPageLayout />,
@@ -51,10 +53,16 @@ const routes = [
     errorElement: <ErrorPage />,
   },
   {
+    path: "/course/submit",
+    element: <AssignmentSubmit />,
+    errorElement: <ErrorPage />,
+  },
+  {
     path: "/instructor-screen",
     element: <InstructorScreen />,
     errorElement: <ErrorPage />,
   },
+
   {
     path: "/admin-screen",
     element: <AdminScreen />,
