@@ -1,3 +1,5 @@
+import { logger } from "../../utils/logger.js";
+
 export class SearchCoursesUseCase {
     #courseRepository;
 
@@ -6,6 +8,8 @@ export class SearchCoursesUseCase {
     }
 
     async execute({ search, category, level, page = 1, limit = 10 }) {
+        logger.debug("Executing Search Courses operation");
+
         let take = parseInt(limit);
         if (take < 0) take = 10;
         let skip = (parseInt(page) - 1) * limit;
@@ -17,6 +21,8 @@ export class SearchCoursesUseCase {
             skip: skip,
             take: take,
         });
+
+        logger.debug("Finish Search Courses operation");
         return {
             courses: result.map(courseEntity => ({
                 id: courseEntity.id,
