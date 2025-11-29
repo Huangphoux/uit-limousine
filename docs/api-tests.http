@@ -1,0 +1,324 @@
+### UIT Limousine API Testing
+### Base URL
+@baseUrl = http://localhost:3000
+@token = 
+@userId = 
+@courseId = 
+@lessonId = 
+@assignmentId = 
+@submissionId = 
+@applicationId = 
+@notificationId = 
+
+###############################################
+# 1. AUTHENTICATION APIs
+###############################################
+
+### 1.1. Register - Đăng ký tài khoản mới
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "student1@test.com",
+  "password": "password123",
+  "name": "Student Test 1"
+}
+
+### 1.2. Login - Đăng nhập
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "student1@test.com",
+  "password": "password123"
+}
+
+### 1.3. Login Admin
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@test.com",
+  "password": "admin123"
+}
+
+### 1.4. Login Instructor
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "instructor@test.com",
+  "password": "instructor123"
+}
+
+###############################################
+# 2. COURSE APIs
+###############################################
+
+### 2.1. Search Courses - Tìm kiếm khóa học (Public)
+GET {{baseUrl}}/courses
+Content-Type: application/json
+
+### 2.2. Search Courses with filters
+GET {{baseUrl}}/courses?search=python&category=programming&level=beginner&page=1&limit=10
+Content-Type: application/json
+
+### 2.3. Get Course by ID - Lấy chi tiết khóa học
+GET {{baseUrl}}/courses/{{courseId}}
+Content-Type: application/json
+
+### 2.4. Enroll in Course - Đăng ký khóa học (Authenticated)
+POST {{baseUrl}}/courses/{{courseId}}/enroll
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+### 2.5. Get Course Materials - Lấy tài liệu khóa học (Authenticated)
+GET {{baseUrl}}/courses/{{courseId}}/materials
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+### 2.6. Update Course - Cập nhật khóa học (Instructor)
+PUT {{baseUrl}}/courses/{{courseId}}
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "title": "Updated Course Title",
+  "shortDesc": "Updated short description",
+  "description": "Updated full description",
+  "level": "intermediate",
+  "price": 500000
+}
+
+### 2.7. Submit Assignment - Nộp bài tập
+POST {{baseUrl}}/courses/assignments/{{assignmentId}}/submit
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "content": "My assignment submission",
+  "fileUrl": "https://example.com/my-assignment.pdf"
+}
+
+###############################################
+# 3. LESSON APIs
+###############################################
+
+### 3.1. Complete Lesson - Đánh dấu bài học hoàn thành
+POST {{baseUrl}}/lessons/{{lessonId}}/complete
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+###############################################
+# 4. INSTRUCTOR APPLICATION APIs
+###############################################
+
+### 4.1. Apply as Instructor - Nộp đơn xin làm giảng viên
+POST {{baseUrl}}/instructor/apply
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "requestedCourseTitle": "Advanced JavaScript Programming",
+  "requestedCourseSummary": "A comprehensive course covering advanced JavaScript topics including async/await, closures, and design patterns",
+  "portfolioUrl": "https://github.com/myusername/portfolio"
+}
+
+### 4.2. Get All Applications - Lấy danh sách đơn xin (Admin)
+GET {{baseUrl}}/instructor/applications
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+### 4.3. Get All Applications with status filter
+GET {{baseUrl}}/instructor/applications?status=PENDING&page=1&limit=10
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+### 4.4. Get Application by ID - Xem chi tiết đơn
+GET {{baseUrl}}/instructor/applications/{{applicationId}}
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+### 4.5. Approve Application - Phê duyệt đơn (Admin)
+POST {{baseUrl}}/instructor/applications/{{applicationId}}/approve
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "note": "Approved. Good course proposal.",
+  "courseTitle": "Advanced JavaScript Programming",
+  "courseSlug": "advanced-javascript-programming",
+  "shortDesc": "Master advanced JavaScript concepts",
+  "description": "Complete course description here",
+  "price": 800000
+}
+
+### 4.6. Reject Application - Từ chối đơn (Admin)
+POST {{baseUrl}}/instructor/applications/{{applicationId}}/reject
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "note": "Course proposal needs more detail. Please provide complete syllabus."
+}
+
+###############################################
+# 5. GRADING APIs
+###############################################
+
+### 5.1. Grade Submission - Chấm bài
+POST {{baseUrl}}/grade/submissions/{{submissionId}}
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "grade": 85,
+  "feedback": "Good work! Well structured code with clear comments."
+}
+
+###############################################
+# 6. NOTIFICATION APIs
+###############################################
+
+### 6.1. Create Notification
+POST {{baseUrl}}/notifications
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "userId": "{{userId}}",
+  "title": "New Course Available",
+  "body": "A new course 'Advanced JavaScript' is now available",
+  "channel": "IN_APP"
+}
+
+### 6.2. Get User Notifications
+GET {{baseUrl}}/notifications
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+### 6.3. Get Unread Count
+GET {{baseUrl}}/notifications/unread-count
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+### 6.4. Mark Notification as Read
+PUT {{baseUrl}}/notifications/{{notificationId}}/read
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+### 6.5. Mark All as Read
+PUT {{baseUrl}}/notifications/read-all
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+### 6.6. Get Notification by ID
+GET {{baseUrl}}/notifications/{{notificationId}}
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+### 6.7. Delete Notification
+DELETE {{baseUrl}}/notifications/{{notificationId}}
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+###############################################
+# 7. ADMIN APIs
+###############################################
+
+### 7.1. Get All Users - Lấy danh sách users (Admin)
+GET {{baseUrl}}/admin/users
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+### 7.2. Get Users with filters
+GET {{baseUrl}}/admin/users?role=LEARNER&page=1&limit=10
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+### 7.3. Change User Role - Thay đổi role user (Admin)
+PUT {{baseUrl}}/admin/users/{{userId}}/role
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "roleId": 2
+}
+
+### 7.4. Create Course - Tạo khóa học (Admin)
+POST {{baseUrl}}/admin/courses
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "title": "Python for Data Science",
+  "slug": "python-data-science",
+  "shortDesc": "Learn Python for data analysis and visualization",
+  "description": "Complete course on Python for data science including pandas, numpy, matplotlib",
+  "category": "Data Science",
+  "level": "intermediate",
+  "language": "vi",
+  "price": 1200000,
+  "instructorId": "{{userId}}"
+}
+
+###############################################
+# 8. ERROR TESTING
+###############################################
+
+### 8.1. Test Invalid Token
+GET {{baseUrl}}/courses/test-course-id/materials
+Content-Type: application/json
+Authorization: Bearer invalid_token_here
+
+### 8.2. Test Missing Required Fields - Register
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "test@test.com"
+}
+
+### 8.3. Test Duplicate Email Registration
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "student1@test.com",
+  "password": "password123",
+  "name": "Duplicate User"
+}
+
+### 8.4. Test Invalid Login Credentials
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "student1@test.com",
+  "password": "wrongpassword"
+}
+
+### 8.5. Test Unauthorized Access (No Token)
+GET {{baseUrl}}/courses/test-course-id/materials
+Content-Type: application/json
+
+### 8.6. Test Non-existent Course
+GET {{baseUrl}}/courses/non-existent-course-id
+Content-Type: application/json
+
+### 8.7. Test Enroll without Authentication
+POST {{baseUrl}}/courses/test-course-id/enroll
+Content-Type: application/json
+
+### 8.8. Test Admin Endpoint without Admin Role
+GET {{baseUrl}}/admin/users
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+###############################################
+# 9. HEALTH CHECK
+###############################################
+
+### 9.1. Server Health Check
+GET {{baseUrl}}/health
+Content-Type: application/json
