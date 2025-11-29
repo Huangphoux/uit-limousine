@@ -403,7 +403,7 @@ Sau khi sửa lỗi, test lại bằng file `api-tests.http`:
 
 == 8. Kết luận
 
-Hệ thống hiện tại có **18 lỗi bảo mật nghiêm trọng** cần được sửa trước khi deploy lên production. Đa số lỗi liên quan đến thiếu authentication và authorization middleware.
+Hệ thống hiện tại có *18 lỗi bảo mật nghiêm trọng* cần được sửa trước khi deploy lên production. Đa số lỗi liên quan đến thiếu authentication và authorization middleware.
 
 *Thời gian ước tính để sửa:* 2-3 ngày làm việc
 
