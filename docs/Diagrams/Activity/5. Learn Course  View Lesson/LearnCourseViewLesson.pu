@@ -1,7 +1,7 @@
 @startuml
 title UC-05 Learn Course / View Lesson
 start
-:User selects Course -> Module -> Lesson;
+:User selects Course > Module > Lesson;
 partition "System" {
   :Verify enrollment & permission;
   if (allowed?) then (yes)
