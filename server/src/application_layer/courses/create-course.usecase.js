@@ -51,16 +51,22 @@ export class CreateCourseUsecase {
       savedCourseId: savedCourse.id,
     });
 
-    const output = outputSchema.parse({
-      ...savedCourse,
-      title: savedCourse.title, // Ensure title is included
+    const output = {
+      ...savedCourse.toJSON(), // Ensure all course fields are included
       instructor: {
         id: instructor.id,
         fullname: instructor.username || instructor.name || instructor.email.split("@")[0],
         role: Role.INSTRUCTOR,
       },
+    };
+
+    logger.debug("Preparing output for validation", {
+      outputKeys: Object.keys(output),
+      hasTitle: !!output.title,
+      hasInstructor: !!output.instructor,
     });
 
-    return output;
+    const validatedOutput = outputSchema.parse(output);
+    return validatedOutput;
   }
 }
