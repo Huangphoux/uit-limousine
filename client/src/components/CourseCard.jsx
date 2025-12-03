@@ -1,12 +1,17 @@
 import { Card, Button } from "react-bootstrap";
 import PropTypes from "prop-types";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
-const CourseCard = ({ course, onEnroll, onCardClick }) => {
+const CourseCard = ({ course, onCardClick }) => {
   const [imageError, setImageError] = useState(false);
   const [isEnrolled, setIsEnrolled] = useState(course.enrolled || false);
   const navigate = useNavigate();
+
+  // Sync local state with course prop when course changes
+  useEffect(() => {
+    setIsEnrolled(course.enrolled || false);
+  }, [course.enrolled]);
 
   // Default image placeholder - optimized size for 200px height
   const defaultImage = "/images/course-placeholder.svg";
@@ -23,13 +28,13 @@ const CourseCard = ({ course, onEnroll, onCardClick }) => {
     }
   };
 
-  const handleEnrollClick = (e) => {
-    e.stopPropagation(); // Prevent card click when clicking enroll button
-    setIsEnrolled(true); // Immediately update local state to show new buttons
-    if (onEnroll) {
-      onEnroll(course.id, course, "success");
-    }
-  };
+  // const handleEnrollClick = (e) => {
+  //   e.stopPropagation(); // Prevent card click when clicking enroll button
+  //   setIsEnrolled(true); // Immediately update local state to show new buttons
+  //   if (onEnroll) {
+  //     onEnroll(course.id, course, "success");
+  //   }
+  // };
 
   const handleCardClick = () => {
     if (onCardClick) {
@@ -224,7 +229,7 @@ const CourseCard = ({ course, onEnroll, onCardClick }) => {
             </div>
           </div>
 
-          <div className="mt-auto">
+          {/* <div className="mt-auto">
             {isEnrolled ? (
               <div className="d-flex flex-column gap-2">
                 <Button
@@ -286,7 +291,7 @@ const CourseCard = ({ course, onEnroll, onCardClick }) => {
                 Enroll Now
               </Button>
             )}
-          </div>
+          </div> */}
         </Card.Body>
       </Card>
     </>
