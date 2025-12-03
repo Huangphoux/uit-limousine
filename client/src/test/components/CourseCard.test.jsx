@@ -8,6 +8,7 @@ const renderWithRouter = (component) => {
   return render(<BrowserRouter>{component}</BrowserRouter>);
 };
 
+// Updated: CourseCard tests without buttons (2025-12-03)
 describe("CourseCard Component", () => {
   const mockCourse = {
     id: "1",
@@ -16,12 +17,12 @@ describe("CourseCard Component", () => {
     instructor: "Nguyễn Văn A",
     price: 500000,
     thumbnail: "/images/react.jpg",
-    image: "/images/react.jpg", // ✅ Thêm image property
+    image: "/images/react.jpg",
     level: "Beginner",
     duration: "10 giờ",
     enrolled: false,
     provider: "UIT",
-    category: "Programming", // ✅ Thêm category property
+    category: "Programming",
     students: 150,
     rating: 4.5,
     lessons: 25,
