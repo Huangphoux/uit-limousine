@@ -9,9 +9,9 @@ export default function Signup() {
 
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
-    username: "test",
-    email: "test@test",
-    password: "test",
+    fullName: "",
+    email: "",
+    password: "",
   });
 
   const handleChange = (e) => {
@@ -23,10 +23,12 @@ export default function Signup() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    console.log("Form submitted with data:", formData);
+    console.log("API_URL:", API_URL);
     setIsLoading(true);
 
     try {
-      const response = await fetch(`${API_URL}/api/sign-up`, {
+      const response = await fetch(`${API_URL}/auth/register`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -37,9 +39,13 @@ export default function Signup() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || "Signup failed");
+        throw new Error(data.error?.message || data.message || "Signup failed");
       }
 
+      // Show success message if available
+      if (data.message) {
+        console.log(data.message);
+      }
       navigate("/login");
     } catch (error) {
       console.error("Error:", error);
@@ -57,12 +63,12 @@ export default function Signup() {
 
           <Form onSubmit={handleSubmit}>
             <Form.Group className="mb-3" controlId="formName">
-              <Form.Label>Username</Form.Label>
+              <Form.Label>Full Name</Form.Label>
               <Form.Control
                 type="text"
-                placeholder="Enter username"
-                name="username"
-                value={formData.username}
+                placeholder="Enter full name"
+                name="fullName"
+                value={formData.fullName}
                 onChange={handleChange}
                 required
               />

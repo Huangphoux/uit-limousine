@@ -3,6 +3,8 @@ import ErrorPage from "./pages/ErrorPage";
 import NewPageLayout from "./pages/NewPageLayout";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
+import ForgetPassword from "./pages/ForgetPassword";
+import ResetPassword from "./pages/ResetPassword";
 import NewPage from "./pages/NewPage";
 import UserInfo from "./pages/UserInfo";
 import CourseContent from "./pages/CourseContent";
@@ -28,6 +30,18 @@ const routes = [
         element: <Signup />,
       },
     ],
+  },
+
+  {
+    path: "/forgot-password",
+    element: <ForgetPassword />,
+    errorElement: <ErrorPage />,
+  },
+
+  {
+    path: "/reset-password",
+    element: <ResetPassword />,
+    errorElement: <ErrorPage />,
   },
 
   {

@@ -14,8 +14,16 @@ const NewPage = () => {
   const [showModal, setShowModal] = useState(false);
 
   // Use the custom hook for course management
-  const { courses, loading, error, fetchCourses, enrollInCourse, searchCourses } =
-    useCourses(defaultCourses);
+  const {
+    courses,
+    loading,
+    error,
+    fetchCourses,
+    enrollInCourse,
+    unsubscribeFromCourse,
+    searchCourses,
+    setCourses,
+  } = useCourses(defaultCourses);
 
   // Use the custom hook for notifications
   const { notifications, addNotification } = useNotificationContext();
@@ -60,18 +68,29 @@ const NewPage = () => {
       }
       const result = await enrollInCourse(courseId);
       if (result.success) {
-        addNotification(type, course.title);
+        addNotification("success", course.title);
+        // Hook already updates courses, so just update filteredCourses to keep them in sync
         setFilteredCourses((prevFiltered) =>
           prevFiltered.map((c) => (c.id === courseId ? { ...c, enrolled: true } : c))
         );
-        setShowModal(false); // Close detail modal if open
       } else {
         addNotification("error", `Failed to enroll: ${result.error}`);
       }
+    } else if (type === "unsubscribe") {
+      // Handle unsubscribe using the hook function
+      const result = await unsubscribeFromCourse(courseId);
+      if (result.success) {
+        // Hook already updates courses, so just update filteredCourses to keep them in sync
+        setFilteredCourses((prevFiltered) =>
+          prevFiltered.map((c) => (c.id === courseId ? { ...c, enrolled: false } : c))
+        );
+        addNotification("unsubscribe", course.title);
+      } else {
+        addNotification("error", `Failed to unsubscribe: ${result.error}`);
+      }
     } else {
-      // Handle unsubscribe logic if needed, for now just show notification
+      // Handle other types of notifications
       addNotification(type, course.title);
-      // You might want to call an API to unsubscribe here
     }
   };
 

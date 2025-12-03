@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 
 const API_URL = import.meta.env.VITE_API_URL;
+const USE_MOCK_DATA = import.meta.env.VITE_USE_MOCK_DATA === "true" || !API_URL;
 
 // Custom hook for managing course data
 export const useCourses = (initialCourses = []) => {
@@ -39,6 +40,21 @@ export const useCourses = (initialCourses = []) => {
 
   // Enroll in a course
   const enrollInCourse = async (courseId) => {
+    // If using mock data, just update local state (for demo/development)
+    if (USE_MOCK_DATA) {
+      // Simulate API delay
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      // Update local state
+      setCourses((prevCourses) =>
+        prevCourses.map((course) =>
+          course.id === courseId ? { ...course, enrolled: true } : course
+        )
+      );
+      return { success: true };
+    }
+
+    // Real API call
     try {
       const response = await fetch(`${API_URL}/api/courses/${courseId}/enroll`, {
         method: "POST",
@@ -62,6 +78,50 @@ export const useCourses = (initialCourses = []) => {
       return { success: true };
     } catch (err) {
       console.error("Error enrolling in course:", err);
+      return { success: false, error: err.message };
+    }
+  };
+
+  // Unsubscribe from a course
+  const unsubscribeFromCourse = async (courseId) => {
+    // If using mock data, just update local state (for demo/development)
+    if (USE_MOCK_DATA) {
+      // Simulate API delay
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      // Update local state
+      setCourses((prevCourses) =>
+        prevCourses.map((course) =>
+          course.id === courseId ? { ...course, enrolled: false } : course
+        )
+      );
+      return { success: true };
+    }
+
+    // Real API call
+    try {
+      const response = await fetch(`${API_URL}/api/courses/${courseId}/unsubscribe`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to unsubscribe: ${response.statusText}`);
+      }
+
+      // Update local state
+      setCourses((prevCourses) =>
+        prevCourses.map((course) =>
+          course.id === courseId ? { ...course, enrolled: false } : course
+        )
+      );
+
+      return { success: true };
+    } catch (err) {
+      console.error("Error unsubscribing from course:", err);
       return { success: false, error: err.message };
     }
   };
@@ -115,6 +175,7 @@ export const useCourses = (initialCourses = []) => {
     error,
     fetchCourses,
     enrollInCourse,
+    unsubscribeFromCourse,
     searchCourses,
     filterByCategory,
     filterByLevel,

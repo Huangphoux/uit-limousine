@@ -1,16 +1,16 @@
-import { Form, Button, Container, Row, Col, Spinner } from "react-bootstrap";
+import { Form, Button, Container, Row, Col, Spinner, Alert } from "react-bootstrap";
 import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
-export default function Login() {
+export default function ForgetPassword() {
   const navigate = useNavigate();
 
   const [isLoading, setIsLoading] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
   const [formData, setFormData] = useState({
     email: "",
-    password: "",
   });
 
   // handleChange: update input field values
@@ -21,14 +21,14 @@ export default function Login() {
     });
   };
 
-  // handleSubmit: process data when the user clicks the button and call API
+  // handleSubmit: process data when the user clicks reset button
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Login attempt with:", formData);
-    setIsLoading(true); // Show spinner on login button
+    console.log("Forgot password request for:", formData.email);
+    setIsLoading(true);
 
     try {
-      const response = await fetch(`${API_URL}/auth/login`, {
+      const response = await fetch(`${API_URL}/auth/forgot-password`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -39,61 +39,56 @@ export default function Login() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error?.message || data.message || "Login failed");
+        throw new Error(data.error?.message || data.message || "Request failed");
       }
 
-      // Save user info and token to localStorage (following API spec format)
-      localStorage.setItem("accessToken", data.data.accessToken);
-      localStorage.setItem("refreshToken", data.data.refreshToken);
-      localStorage.setItem("user", JSON.stringify(data.data.user));
+      // Show success message
+      setShowSuccess(true);
 
-      // Navigate to user info page
-      navigate("/user-info");
+      // Reset form
+      setFormData({ email: "" });
     } catch (error) {
       console.error("Error:", error);
       if (error.message.includes("fetch")) {
         alert("Unable to connect to the server. Please check your internet connection.");
       } else {
-        alert("Login failed: " + error.message);
+        alert("Request failed: " + error.message);
       }
     } finally {
-      setIsLoading(false); // Disable loading state
+      setIsLoading(false);
     }
   };
 
   return (
-    <Container>
-      <Row className="justify-content-center">
+    <Container fluid className="d-flex align-items-center" style={{ minHeight: "100vh" }}>
+      <Row className="justify-content-center w-100">
         <Col xs={12} md={6} lg={5}>
-          <h3 className="text-center mb-4">Sign In</h3>
+          <h3 className="text-center mb-4">Forgot Password</h3>
+          <p className="text-center text-muted mb-4">
+            Enter your email address and we'll send you a link to reset your password.
+          </p>
+
+          {showSuccess && (
+            <Alert variant="success" className="mb-4">
+              <Alert.Heading>Email Sent!</Alert.Heading>
+              <p>
+                We've sent a password reset link to your email address. Please check your inbox and
+                follow the instructions to reset your password.
+              </p>
+            </Alert>
+          )}
 
           <Form onSubmit={handleSubmit}>
             <Form.Group className="mb-3" controlId="formEmail">
               <Form.Label>Email address</Form.Label>
               <Form.Control
                 type="email"
-                placeholder="Enter email"
+                placeholder="Enter your email"
                 name="email"
                 value={formData.email}
                 onChange={handleChange}
                 required
               />
-            </Form.Group>
-
-            <Form.Group className="mb-3" controlId="formPassword">
-              <Form.Label>Password</Form.Label>
-              <Form.Control
-                type="password"
-                placeholder="Enter password"
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                required
-              />
-            </Form.Group>
-
-            <Form.Group className="mb-3" controlId="formRememberMe">
-              <Form.Check type="checkbox" label="Remember me" />
             </Form.Group>
 
             <div className="d-grid">
@@ -108,18 +103,18 @@ export default function Login() {
                       aria-hidden="true"
                       className="me-2"
                     />
-                    <span className="visually-hidden">Signing in...</span>
-                    Signing in...
+                    <span className="visually-hidden">Sending...</span>
+                    Sending...
                   </>
                 ) : (
-                  "Sign In"
+                  "Reset Password"
                 )}
               </Button>
             </div>
 
             <div className="text-center mt-3">
-              <Link to="/forgot-password" className="text-decoration-none">
-                Forgot password?
+              <Link to="/login" className="text-decoration-none">
+                Back to Sign In
               </Link>
             </div>
 

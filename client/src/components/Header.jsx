@@ -3,13 +3,43 @@ import { Link, useNavigate } from "react-router-dom";
 import { Container, Navbar, Nav, NavDropdown, Button, Badge } from "react-bootstrap";
 import { FaBell } from "react-icons/fa";
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 const Header = ({ unreadCount, onBellClick }) => {
   const navigate = useNavigate();
   const [userEmail] = useState("user@example.com"); // This can be replaced with actual user data
 
-  const handleSignOut = () => {
-    //handle Sign Out here...
-    navigate("/");
+  const handleSignOut = async () => {
+    try {
+      const token = localStorage.getItem("accessToken");
+
+      if (token) {
+        // Call logout API
+        const response = await fetch(`${API_URL}/auth/logout`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.success) {
+          console.log("Logout successful:", data.message);
+        } else {
+          console.warn("Logout API failed:", data.error?.message || "Unknown error");
+        }
+      }
+    } catch (error) {
+      console.error("Logout error:", error);
+    } finally {
+      // Always clear local storage and navigate, regardless of API result
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("refreshToken");
+      localStorage.removeItem("user");
+      navigate("/");
+    }
   };
 
   return (
@@ -78,9 +108,7 @@ const Header = ({ unreadCount, onBellClick }) => {
               <Nav.Item className="d-flex align-items-center me-3">
                 <div className="notification-bell" onClick={onBellClick}>
                   <FaBell />
-                  {unreadCount > 0 && (
-                    <span className="notification-badge">{unreadCount}</span>
-                  )}
+                  {unreadCount > 0 && <span className="notification-badge">{unreadCount}</span>}
                 </div>
               </Nav.Item>
               <NavDropdown
