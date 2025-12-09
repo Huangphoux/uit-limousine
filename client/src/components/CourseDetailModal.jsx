@@ -18,10 +18,11 @@ const CourseDetailModal = ({ course, show, onHide, onEnroll }) => {
   if (!course) return null;
 
   const handleEnroll = () => {
-    setIsEnrolled(true); // Just update UI state, no API call
-    // Close modal after enrollment
-    onHide();
-    // No API call here - will be called when "View courses" is clicked
+    setIsEnrolled(true); // Update local state
+    if (onEnroll) {
+      onEnroll(course.id, course, "success"); // Call parent handler
+    }
+    // Close modal after enrollment will be handled by parent
   };
 
   const getLevelColor = (level) => {
@@ -285,9 +286,9 @@ const CourseDetailModal = ({ course, show, onHide, onEnroll }) => {
                   fontWeight: "700",
                   borderRadius: "0.75rem",
                   padding: "0.875rem",
-                  backgroundColor: "white",
+                  backgroundColor: "red",
                   borderColor: "#6c757d",
-                  color: "#6c757d",
+                  color: "#000",
                 }}
               >
                 Unsubscribe
