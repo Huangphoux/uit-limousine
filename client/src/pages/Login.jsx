@@ -48,7 +48,7 @@ export default function Login() {
       localStorage.setItem("user", JSON.stringify(data.data.user));
 
       // Navigate to user info page
-      navigate("/user-info");
+      navigate("/new-page");
     } catch (error) {
       console.error("Error:", error);
       if (error.message.includes("fetch")) {
