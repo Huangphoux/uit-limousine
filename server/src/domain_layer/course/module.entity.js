@@ -17,7 +17,7 @@ export class ModuleEntity {
 
         // Business rules here
 
-        return Object.assign(new EnrollmentEntity(), parsedInput);
+        return Object.assign(new ModuleEntity(), parsedInput);
     }
 
     static rehydrate(input) {

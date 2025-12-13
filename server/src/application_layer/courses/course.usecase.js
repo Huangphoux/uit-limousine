@@ -1,6 +1,6 @@
-import SubmissionRepository from '../../infrustructure_layer/repository/submission.repository.js';
-import AssignmentRepository from '../../infrustructure_layer/repository/assignment.repository.js';
-import EnrollmentRepository from '../../infrustructure_layer/repository/enrollment.repository.js';
+import SubmissionRepository from '../../infrastructure_layer/repository/submission.repository.js';
+import AssignmentRepository from '../../infrastructure_layer/repository/assignment.repository.js';
+import EnrollmentRepository from '../../infrastructure_layer/repository/enrollment.repository.js';
 import SubmissionEntity from '../../domain_layer/submission.entity.js';
 
 export default class CourseUseCase {

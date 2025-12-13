@@ -19,7 +19,7 @@ export class LessonEntity {
 
         // Business rules here
 
-        return Object.assign(new EnrollmentEntity(), parsedInput);
+        return Object.assign(new LessonEntity(), parsedInput);
     }
 
     static rehydrate(input) {

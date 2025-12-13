@@ -1,5 +1,5 @@
 import GradeUseCase from '../../../application_layer/grade/grade.usecase.js';
-import GradeMapper from '../../../infrustructure_layer/mapper/grade.mapper.js';
+import GradeMapper from '../../../infrastructure_layer/mapper/grade.mapper.js';
 
 const gradeUseCase = new GradeUseCase();
 

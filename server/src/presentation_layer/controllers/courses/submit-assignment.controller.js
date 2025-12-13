@@ -1,5 +1,5 @@
 import CourseUseCase from '../../../application_layer/courses/course.usecase.js';
-import SubmissionMapper from '../../../infrustructure_layer/mapper/submission.mapper.js';
+import SubmissionMapper from '../../../infrastructure_layer/mapper/submission.mapper.js';
 
 const courseUseCase = new CourseUseCase();
 

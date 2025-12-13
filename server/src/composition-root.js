@@ -1,20 +1,20 @@
 import { PrismaClient } from "@prisma/client";
 
-import { UserRepositoryPostgree } from "./infrustructure_layer/repository/user.repository.postgree.js";
-import { RoleRepositoryPostgree } from "./infrustructure_layer/repository/role.repository.postgree.js";
-import { EnrollmentRepositoryPostgree } from "./infrustructure_layer/repository/enrollment.repository.postgree.js";
-import { LessonProgressRepositoryPostgree } from "./infrustructure_layer/repository/lesson-progress.repository.postgree.js";
-import { AuditLogRepository } from "./infrustructure_layer/repository/audit-log.repository.js";
+import { UserRepositoryPostgree } from "./infrastructure_layer/repository/user.repository.postgree.js";
+import { RoleRepositoryPostgree } from "./infrastructure_layer/repository/role.repository.postgree.js";
+import { EnrollmentRepositoryPostgree } from "./infrastructure_layer/repository/enrollment.repository.postgree.js";
+import { LessonProgressRepositoryPostgree } from "./infrastructure_layer/repository/lesson-progress.repository.postgree.js";
+import { AuditLogRepository } from "./infrastructure_layer/repository/audit-log.repository.js";
 
-import { CourseReadAccessor } from "./infrustructure_layer/read_accessor/course.read-accessor.js";
-import { UserReadAccessor } from "./infrustructure_layer/read_accessor/user.read-accessor.js";
-import { PaymentReadAccessor } from "./infrustructure_layer/read_accessor/payment.read-accessor.js";
-import { LessonProgressReadAccessor } from "./infrustructure_layer/read_accessor/lesson-progress.read-access.js";
-import { EnrollmentReadAccessor } from "./infrustructure_layer/read_accessor/enrollment.read-accessor.js";
+import { CourseReadAccessor } from "./infrastructure_layer/read_accessor/course.read-accessor.js";
+import { UserReadAccessor } from "./infrastructure_layer/read_accessor/user.read-accessor.js";
+import { PaymentReadAccessor } from "./infrastructure_layer/read_accessor/payment.read-accessor.js";
+import { LessonProgressReadAccessor } from "./infrastructure_layer/read_accessor/lesson-progress.read-access.js";
+import { EnrollmentReadAccessor } from "./infrastructure_layer/read_accessor/enrollment.read-accessor.js";
 
 import { LoginUseCase } from "./application_layer/authentication/login.usecase.js";
 import { RegisterUseCase } from "./application_layer/authentication/register.usecase.js";
-import { CourseRepository } from "./infrustructure_layer/repository/course.repository.postgree.js";
+import { CourseRepository } from "./infrastructure_layer/repository/course.repository.postgree.js";
 import { SearchCoursesUseCase } from "./application_layer/courses/search-courses.usecase.js";
 import { EnrollCourseUseCase } from "./application_layer/courses/enroll-course.usecase.js";
 import { CourseMaterialsQueryUseCase } from "./application_layer/courses/course-materials-query.usecase.js";

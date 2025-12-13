@@ -1,4 +1,4 @@
-import GradeRepository from '../../infrustructure_layer/repository/grade.repository.js';
+import GradeRepository from '../../infrastructure_layer/repository/grade.repository.js';
 import GradeEntity from '../../domain_layer/grade.entity.js';
 
 export default class GradeUseCase {
