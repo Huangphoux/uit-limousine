@@ -24,20 +24,27 @@ export class LoginUseCase {
   }
 
   async execute(input) {
-    logger.debug("Executing login operation", input);
-
     const parsedInput = inputSchema.parse(input);
+    const log = logger.child({
+      task: "Logging in",
+    })
+    log.info("Task started");
 
     const user = await this.userRepository.findByEmail(parsedInput.email);
-    if (!user) throw new Error(ERROR_CATALOG.LOGIN.message);
+    if (!user) {
+      log.warn("Task failed: invalid email");
+      throw new Error(ERROR_CATALOG.LOGIN.message);
+    }
 
     const isPasswordValid = verifyPassword(parsedInput.password, user.password);
-    if (!isPasswordValid) throw new Error(ERROR_CATALOG.LOGIN.message);
+    if (!isPasswordValid) {
+      log.warn("Task failed: invalid password");
+      throw new Error(ERROR_CATALOG.LOGIN.message);
+    }
 
     const accessJwt = generateJWT({ id: user.id, roles: user.roles.map((r) => r.name) });
 
-    logger.debug("Finish login operation");
-
+    logger.debug("Task completed");
     return outputSchema.parse({
       accessToken: accessJwt,
       user: {
