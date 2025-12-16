@@ -44,7 +44,7 @@ export class LoginUseCase {
 
     const accessJwt = generateJWT({ id: user.id, roles: user.roles.map((r) => r.name) });
 
-    logger.debug("Task completed");
+    log.info("Task completed");
     return outputSchema.parse({
       accessToken: accessJwt,
       user: {

@@ -8,7 +8,10 @@ export class SearchCoursesUseCase {
     }
 
     async execute({ search, category, level, page = 1, limit = 10 }) {
-        logger.debug("Executing Search Courses operation");
+        const log = logger.child({
+            task: "Searching course"
+        });
+        log.info("Task started");
 
         let take = parseInt(limit);
         if (take < 0) take = 10;
@@ -22,7 +25,7 @@ export class SearchCoursesUseCase {
             take: take,
         });
 
-        logger.debug("Finish Search Courses operation");
+        log.info("Task completed");
         return {
             courses: result.map(courseEntity => ({
                 id: courseEntity.id,

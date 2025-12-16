@@ -26,14 +26,24 @@ export class ModifyCourseUsecase {
     }
 
     async execute(input) {
-        logger.debug("Executing Modify course operation", input);
         const parsedInput = inputSchema.parse(input);
+        const log = logger.child({
+            task: "Modifying course",
+            instructorId: parsedInput.authId,
+            courseId: parsedInput.id,
+        })
+        log.info("Task started");
 
         const course = await this.courseRepository.findById(parsedInput.id);
-        if (!course) throw Error(`Course not found, ${parsedInput.id}`);
+        if (!course) {
+            log.warn("Task failed: invalid course id");
+            throw Error(`Course not found, ${parsedInput.id}`);
+        }
 
-        if (course.instructorId !== parsedInput.authId)
+        if (course.instructorId !== parsedInput.authId) {
+            log.warn("Task failed: unauthorized instructor id");
             throw Error(`Unauthorized instructor, ${parsedInput.authId}`);
+        }
 
         const oldCourseData = modifiedCourseDataSchema.parse(course);
 
@@ -56,7 +66,7 @@ export class ModifyCourseUsecase {
 
         const savedLog = await this.auditLogRepository.add(auditLog);
 
-        logger.debug("Finish Modify course operation");
+        log.info("Task completed");
         return outputSchema.parse(savedCourse);
     }
 }

@@ -25,11 +25,11 @@ export class GetUsersUsecase {
 
     async execute(input) {
         const parsedInput = inputSchema.parse(input);
-        logger.debug('Executing findUsers operation', {
-            role: parsedInput.role,
-            page: parsedInput.page,
-            limit: parsedInput.limit,
+        const log = logger.child({
+            task: "Getting users",
+            adminId: parsedInput.authId,
         });
+        log.info("Task started");
 
         try {
             const result = await this.userReadAccessor.findUsers({
@@ -39,25 +39,17 @@ export class GetUsersUsecase {
                 select: covertShemaToSelect(outputSchema.shape.users.element.shape),
             });
 
-            logger.info('User search completed successfully', {
-                role: parsedInput.role,
-                total_users_found: result.total,
-                page: parsedInput.page,
-                limit: parsedInput.limit
-            });
-
             const output = outputSchema.parse(result);
             output.page = parsedInput.page;
             output.totalPages = Math.ceil(output.total / parsedInput.limit);
 
+            log.info("Task completed");
             return output;
         }
         catch (error) {
-            logger.error('Failed to execute findUsers command', {
+            logger.error('Task failed', {
                 error_message: error.message,
                 stack_trace: error.stack,
-                input_role: parsedInput.role,
-                input_page: parsedInput.page
             });
             throw error;
         }

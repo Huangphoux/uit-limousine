@@ -22,14 +22,24 @@ export class CompleteLessonUseCase {
     }
 
     async execute(input) {
-        logger.debug("Executing Complete Lesson operation", input);
         const parsedInput = inputSchema.parse(input);
+        const log = logger.child({
+            task: "Completing lesson",
+            studentId: parsedInput.authId,
+        });
+        log.info("Task started");
 
         const course = await this.courseRepository.findByLessonId(parsedInput.lessonId);
-        if (!course) throw Error(`Course not found`);
+        if (!course) {
+            log.warn("Task failed: invalid lesson id");
+            throw Error(`Course not found`);
+        }
 
         const isEnrolled = await this.enrollmentReadAccess.isEnrolled(parsedInput.authId, course.id);
-        if (!isEnrolled) throw Error(`User has not enrolled the course`);
+        if (!isEnrolled) {
+            log.warn("Task failed: unenrolled course");
+            throw Error(`User has not enrolled the course`);
+        }
 
         let lessonProgress = await this.lessonProgressRepository.findByUserAndLessonId(parsedInput.authId, parsedInput.lessonId);
         let savedLessonProgress = null;
@@ -51,7 +61,7 @@ export class CompleteLessonUseCase {
             ? completeCount / courseLessonIds.length * 100
             : 0;
 
-        logger.debug("Finish Complete Lesson operation");
+        log.info("Task completed");
         return outputSchema.parse({
             lessonId: savedLessonProgress.lessonId,
             completedAt: savedLessonProgress.completedAt,
