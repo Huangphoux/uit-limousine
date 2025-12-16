@@ -14,6 +14,8 @@ const NewPage = () => {
   const [filteredCourses, setFilteredCourses] = useState([]);
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [showModal, setShowModal] = useState(false);
+  const [loadingCourseDetail, setLoadingCourseDetail] = useState(false);
+  const [courseDetailError, setCourseDetailError] = useState(null);
 
   // Use the custom hook for course management
   const {
@@ -105,9 +107,83 @@ const NewPage = () => {
     }
   };
 
-  const handleCardClick = (course) => {
-    setSelectedCourse(course);
+  const handleCardClick = async (course) => {
     setShowModal(true);
+    setLoadingCourseDetail(true);
+    setCourseDetailError(null);
+    setSelectedCourse(null);
+
+    try {
+      const token = localStorage.getItem("token");
+      const headers = {
+        "Content-Type": "application/json",
+      };
+
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+
+      const response = await fetch(`${API_URL}/courses/${course.id}`, {
+        method: "GET",
+        headers: headers,
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch course details: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+
+      // Debug: Log the actual API response
+      console.log("API Response:", result);
+
+      // Check if we have a valid course object (API returns course directly, not wrapped in success/data)
+      if (result && result.id) {
+        // Map API response to the format expected by the modal
+        const courseDetail = {
+          id: result.id,
+          title: result.title,
+          provider: result.instructor?.fullName || "Unknown Instructor",
+          category: course.category || "General",
+          description: result.description || result.shortDesc || "No description available",
+          rating: result.rating || 0,
+          students: result.students || 0,
+          level: result.level || "BEGINNER",
+          duration: course.duration || "N/A",
+          image: result.coverImage || course.image,
+          enrolled: course.enrolled || false,
+          instructor: result.instructor?.fullName || "Unknown Instructor",
+          price: result.price || 0,
+          isPaid: course.isPaid || false,
+          // Additional details from API
+          slug: result.slug,
+          shortDesc: result.shortDesc,
+          language: result.language,
+          modules: result.modules || [],
+          reviewCount: result.reviews?.length || 0,
+          published: result.published,
+          publishDate: result.publishDate,
+          createdAt: result.createdAt,
+          updatedAt: result.updatedAt,
+          instructorBio: result.instructor?.bio,
+          instructorAvatar: result.instructor?.avatarUrl,
+          coverImage: result.coverImage,
+        };
+
+        console.log("Mapped Course Detail:", courseDetail);
+
+        setSelectedCourse(courseDetail);
+      } else {
+        throw new Error("Invalid response format: Missing course ID");
+      }
+    } catch (error) {
+      console.error("Error fetching course details:", error);
+      setCourseDetailError(error.message);
+      // Fallback to the basic course data from the card
+      setSelectedCourse(course);
+    } finally {
+      setLoadingCourseDetail(false);
+    }
   };
 
   const handleCloseModal = () => {
@@ -496,6 +572,8 @@ const NewPage = () => {
           show={showModal}
           onHide={handleCloseModal}
           onEnroll={handleEnroll}
+          loading={loadingCourseDetail}
+          error={courseDetailError}
         />
       </div>
     </>
