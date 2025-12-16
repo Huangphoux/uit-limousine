@@ -6,16 +6,37 @@ import { FaTimes } from "react-icons/fa";
 
 const CourseDetailModal = ({ course, show, onHide, onEnroll }) => {
   const [isEnrolled, setIsEnrolled] = useState(course?.enrolled || false);
+  const [isPaid, setIsPaid] = useState(course?.isPaid || false);
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const navigate = useNavigate();
 
   // Sync local state with course prop when course changes
   useEffect(() => {
     if (course) {
       setIsEnrolled(course.enrolled || false);
+      setIsPaid(course.isPaid || false);
     }
   }, [course]);
 
   if (!course) return null;
+
+  const handlePayment = async () => {
+    setIsProcessingPayment(true);
+
+    // Simulate payment processing
+    setTimeout(() => {
+      setIsPaid(true);
+      setIsProcessingPayment(false);
+
+      // TODO: Call API to update payment status
+      console.log("Payment confirmed for course:", course.id);
+
+      // Optionally notify parent component
+      if (onEnroll) {
+        onEnroll(course.id, { ...course, isPaid: true }, "payment");
+      }
+    }, 1500);
+  };
 
   const handleEnroll = () => {
     setIsEnrolled(true); // Update local state
@@ -244,6 +265,201 @@ const CourseDetailModal = ({ course, show, onHide, onEnroll }) => {
               {course.description}
             </p>
           </div>
+
+          {/* Price Section */}
+          {course.price !== undefined && course.price !== null && (
+            <div className="mb-4">
+              <div className="d-flex align-items-center gap-2 mb-2">
+                <svg
+                  style={{ width: "20px", height: "20px", color: "#495057" }}
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z" />
+                  <path
+                    fillRule="evenodd"
+                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+                <h5
+                  className="mb-0"
+                  style={{ fontWeight: "700", color: "#212529", fontSize: "1.125rem" }}
+                >
+                  Giá khóa học
+                </h5>
+              </div>
+              <div
+                className="d-flex align-items-center gap-3"
+                style={{
+                  padding: "1rem",
+                  backgroundColor: "#f8f9fa",
+                  borderRadius: "0.75rem",
+                  border: "2px solid #e9ecef",
+                }}
+              >
+                <span
+                  style={{
+                    fontSize: "1.75rem",
+                    fontWeight: "700",
+                    color: course.price === 0 ? "#28a745" : "#007bff",
+                  }}
+                >
+                  {course.price === 0 ? "FREE" : `${course.price.toLocaleString()}VNĐ`}
+                </span>
+                {course.isPaid ? (
+                  <span
+                    style={{
+                      padding: "0.25rem 0.75rem",
+                      backgroundColor: "#d4edda",
+                      color: "#155724",
+                      borderRadius: "1rem",
+                      fontSize: "0.875rem",
+                      fontWeight: "600",
+                    }}
+                  >
+                    ✓ Đã thanh toán
+                  </span>
+                ) : course.price > 0 ? (
+                  <span
+                    style={{
+                      padding: "0.25rem 0.75rem",
+                      backgroundColor: "#fff3cd",
+                      color: "#856404",
+                      borderRadius: "1rem",
+                      fontSize: "0.875rem",
+                      fontWeight: "600",
+                    }}
+                  >
+                    Chưa thanh toán
+                  </span>
+                ) : null}
+              </div>
+            </div>
+          )}
+
+          {/* Payment Methods Section - Only show if not paid and price > 0 */}
+          {course.price > 0 && !isPaid && (
+            <div className="mb-4">
+              <div className="d-flex align-items-center gap-2 mb-3">
+                <svg
+                  style={{ width: "20px", height: "20px", color: "#495057" }}
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z" />
+                  <path
+                    fillRule="evenodd"
+                    d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+                <h5
+                  className="mb-0"
+                  style={{ fontWeight: "700", color: "#212529", fontSize: "1.125rem" }}
+                >
+                  Phương thức thanh toán
+                </h5>
+              </div>
+              <div className="d-flex flex-column gap-2">
+                <div
+                  style={{
+                    padding: "1rem",
+                    backgroundColor: "#f8f9fa",
+                    borderRadius: "0.5rem",
+                    border: "1px solid #dee2e6",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.75rem",
+                  }}
+                >
+                  <div
+                    style={{
+                      width: "40px",
+                      height: "40px",
+                      backgroundColor: "#007bff",
+                      borderRadius: "0.5rem",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: "white",
+                      fontWeight: "700",
+                    }}
+                  >
+                    💳
+                  </div>
+                  <div>
+                    <div style={{ fontWeight: "600", color: "#212529" }}>Credit/Debit Card</div>
+                    <div style={{ fontSize: "0.875rem", color: "#6c757d" }}>
+                      Visa, Mastercard, AmEx
+                    </div>
+                  </div>
+                </div>
+                <div
+                  style={{
+                    padding: "1rem",
+                    backgroundColor: "#f8f9fa",
+                    borderRadius: "0.5rem",
+                    border: "1px solid #dee2e6",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.75rem",
+                  }}
+                >
+                  <div
+                    style={{
+                      width: "40px",
+                      height: "40px",
+                      backgroundColor: "#00457C",
+                      borderRadius: "0.5rem",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: "white",
+                      fontWeight: "700",
+                    }}
+                  >
+                    PP
+                  </div>
+                  <div>
+                    <div style={{ fontWeight: "600", color: "#212529" }}>PayPal</div>
+                    <div style={{ fontSize: "0.875rem", color: "#6c757d" }}>Fast & secure</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Payment Confirm Button */}
+              <div className="mt-3">
+                <Button
+                  variant="success"
+                  size="lg"
+                  className="w-100"
+                  onClick={handlePayment}
+                  disabled={isProcessingPayment}
+                  style={{
+                    fontWeight: "700",
+                    borderRadius: "0.75rem",
+                    padding: "0.875rem",
+                    backgroundColor: isProcessingPayment ? "#6c757d" : "#28a745",
+                    borderColor: isProcessingPayment ? "#6c757d" : "#28a745",
+                  }}
+                >
+                  {isProcessingPayment ? (
+                    <>
+                      <span
+                        className="spinner-border spinner-border-sm me-2"
+                        role="status"
+                        aria-hidden="true"
+                      ></span>
+                      Processing...
+                    </>
+                  ) : (
+                    "✓ Confirm Payment"
+                  )}
+                </Button>
+              </div>
+            </div>
+          )}
         </Modal.Body>
 
         {/* Footer */}
@@ -295,19 +511,44 @@ const CourseDetailModal = ({ course, show, onHide, onEnroll }) => {
               </Button>
             </div>
           ) : (
-            <Button
-              variant="primary"
-              size="lg"
-              className="w-100"
-              onClick={handleEnroll}
-              style={{
-                fontWeight: "700",
-                borderRadius: "0.75rem",
-                padding: "0.875rem",
-              }}
-            >
-              Enroll Now
-            </Button>
+            <>
+              {course.price > 0 && !isPaid ? (
+                <div className="w-100">
+                  <Button
+                    variant="secondary"
+                    size="lg"
+                    className="w-100 mb-2"
+                    disabled
+                    style={{
+                      fontWeight: "700",
+                      borderRadius: "0.75rem",
+                      padding: "0.875rem",
+                      opacity: 0.6,
+                      cursor: "not-allowed",
+                    }}
+                  >
+                    🔒 Enroll Now (Payment Required)
+                  </Button>
+                  <small style={{ color: "#6c757d", display: "block", textAlign: "center" }}>
+                    Please complete payment to enroll
+                  </small>
+                </div>
+              ) : (
+                <Button
+                  variant="primary"
+                  size="lg"
+                  className="w-100"
+                  onClick={handleEnroll}
+                  style={{
+                    fontWeight: "700",
+                    borderRadius: "0.75rem",
+                    padding: "0.875rem",
+                  }}
+                >
+                  Enroll Now
+                </Button>
+              )}
+            </>
           )}
         </Modal.Footer>
       </Modal>
@@ -329,6 +570,8 @@ CourseDetailModal.propTypes = {
     image: PropTypes.string,
     enrolled: PropTypes.bool.isRequired,
     instructor: PropTypes.string,
+    price: PropTypes.number,
+    isPaid: PropTypes.bool,
   }),
   show: PropTypes.bool.isRequired,
   onHide: PropTypes.func.isRequired,

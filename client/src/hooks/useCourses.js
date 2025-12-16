@@ -199,6 +199,8 @@ export const defaultCourses = [
     duration: "3 months",
     image: "https://via.placeholder.com/300x200/007bff/ffffff?text=AI+ML",
     enrolled: false,
+    price: 299,
+    isPaid: false,
   },
   {
     id: 2,
@@ -212,6 +214,8 @@ export const defaultCourses = [
     duration: "2 months",
     image: "https://via.placeholder.com/300x200/28a745/ffffff?text=Python",
     enrolled: false,
+    price: 0,
+    isPaid: true,
   },
   {
     id: 3,
@@ -225,6 +229,8 @@ export const defaultCourses = [
     duration: "4 months",
     image: "https://via.placeholder.com/300x200/17a2b8/ffffff?text=Data+Science",
     enrolled: true,
+    price: 399,
+    isPaid: true,
   },
   {
     id: 4,
@@ -238,6 +244,8 @@ export const defaultCourses = [
     duration: "6 weeks",
     image: "https://via.placeholder.com/300x200/fd7e14/ffffff?text=Marketing",
     enrolled: false,
+    price: 149,
+    isPaid: true,
   },
   {
     id: 5,
@@ -251,6 +259,8 @@ export const defaultCourses = [
     duration: "5 months",
     image: "https://via.placeholder.com/300x200/6f42c1/ffffff?text=UI%2FUX",
     enrolled: false,
+    price: 249,
+    isPaid: false,
   },
   {
     id: 6,
@@ -264,6 +274,8 @@ export const defaultCourses = [
     duration: "8 months",
     image: "https://via.placeholder.com/300x200/dc3545/ffffff?text=Full+Stack",
     enrolled: false,
+    price: 499,
+    isPaid: false,
   },
   {
     id: 7,
@@ -277,5 +289,7 @@ export const defaultCourses = [
     duration: "8 months",
     image: "https://via.placeholder.com/300x200/dc3545/ffffff?text=Full+Stack",
     enrolled: true,
+    price: 0,
+    isPaid: true,
   },
 ];

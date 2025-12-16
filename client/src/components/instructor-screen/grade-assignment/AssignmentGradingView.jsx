@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   InputGroup,
   Container,
@@ -38,7 +38,16 @@ const calculateAssignmentStats = (mockAssignments, courses) => {
   return { totalLearners, allSubmitted, notScored, alreadyScored };
 };
 
-const AssignmentGradingView = ({ courses }) => {
+// Props:
+// - compact: hide list/stats/back button and show detail directly
+// - forceDetail: auto-select an assignment when mounting
+// - preselectAssignmentIndex: which assignment index to open in detail
+const AssignmentGradingView = ({
+  courses,
+  compact = false,
+  forceDetail = false,
+  preselectAssignmentIndex = 0,
+}) => {
   const [selectedAssignment, setSelectedAssignment] = useState(null);
   const [showGradingModal, setShowGradingModal] = useState(false);
   const [selectedSubmission, setSelectedSubmission] = useState(null);
@@ -118,6 +127,15 @@ const AssignmentGradingView = ({ courses }) => {
 
   const stats = calculateAssignmentStats(mockAssignments, courses);
 
+  // If asked to force detail view, preselect an assignment on mount
+  useEffect(() => {
+    if (forceDetail && !selectedAssignment && mockAssignments.length > 0) {
+      const idx = Math.max(0, Math.min(preselectAssignmentIndex, mockAssignments.length - 1));
+      setSelectedAssignment(mockAssignments[idx]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [forceDetail, preselectAssignmentIndex]);
+
   const statsCards = [
     {
       title: "All submitted",
@@ -183,34 +201,36 @@ const AssignmentGradingView = ({ courses }) => {
           color: black;
         }
       `}</style>
-      {/* Stats Cards */}
-      <Row className="mb-4 g-4">
-        {statsCards.map((stat, idx) => (
-          <Col key={idx} sm={6} md={3}>
-            <Card className="shadow-sm" style={{ backgroundColor: "rgba(191,239,249)" }}>
-              <Card.Body className="d-flex align-items-center justify-content-between">
-                <div>
-                  <div className="small text-black">{stat.title}</div>
-                  <div className="fs-2 fw-bold text-black mb-0">{stat.value}</div>
-                </div>
-                <div
-                  className={`rounded d-flex align-items-center justify-content-center`}
-                  style={{
-                    backgroundColor: stat.bgColor,
-                    minWidth: "56px",
-                    minHeight: "56px",
-                    fontSize: "1.5rem",
-                  }}
-                >
-                  {stat.icon}
-                </div>
-              </Card.Body>
-            </Card>
-          </Col>
-        ))}
-      </Row>
+      {/* Stats Cards (hidden in compact mode) */}
+      {!compact && (
+        <Row className="mb-4 g-4">
+          {statsCards.map((stat, idx) => (
+            <Col key={idx} sm={6} md={3}>
+              <Card className="shadow-sm" style={{ backgroundColor: "rgba(191,239,249)" }}>
+                <Card.Body className="d-flex align-items-center justify-content-between">
+                  <div>
+                    <div className="small text-black">{stat.title}</div>
+                    <div className="fs-2 fw-bold text-black mb-0">{stat.value}</div>
+                  </div>
+                  <div
+                    className={`rounded d-flex align-items-center justify-content-center`}
+                    style={{
+                      backgroundColor: stat.bgColor,
+                      minWidth: "56px",
+                      minHeight: "56px",
+                      fontSize: "1.5rem",
+                    }}
+                  >
+                    {stat.icon}
+                  </div>
+                </Card.Body>
+              </Card>
+            </Col>
+          ))}
+        </Row>
+      )}
 
-      {!selectedAssignment ? (
+      {!selectedAssignment && !compact ? (
         <>
           <div
             className="mb-4 p-4 rounded shadow-sm"
@@ -366,82 +386,88 @@ const AssignmentGradingView = ({ courses }) => {
         </>
       ) : (
         <>
-          <Button
-            variant="outline-secondary"
-            onClick={handleBackToList}
-            className="mb-3"
-            style={{
-              color: "#212529",
-              fontWeight: "600",
-              borderColor: "#6c757d",
-            }}
-          >
-            ← Back to Assignments
-          </Button>
-          <div className="bg-white p-3 rounded shadow-sm mb-4 p-2">
-            <h4 className="fw-bold mb-1">{selectedAssignment.title}</h4>
-            <p className="text-black mb-0">{selectedAssignment.courseName}</p>
-          </div>
+          {!compact && (
+            <Button
+              variant="outline-secondary"
+              onClick={handleBackToList}
+              className="mb-3"
+              style={{
+                color: "#212529",
+                fontWeight: "600",
+                borderColor: "#6c757d",
+              }}
+            >
+              ← Back to Assignments
+            </Button>
+          )}
+          {selectedAssignment && (
+            <div className="bg-white p-3 rounded shadow-sm mb-4 p-2">
+              <h4 className="fw-bold mb-1">{selectedAssignment.title}</h4>
+              <p className="text-black mb-0">{selectedAssignment.courseName}</p>
+            </div>
+          )}
 
           <Card className="shadow-sm">
-            <Table responsive hover className="mb-0 custom-table">
-              <thead className="table-light">
-                <tr>
-                  <th className="p-3">Student</th>
-                  <th className="p-3">Submitted At</th>
-                  <th className="p-3">File</th>
-                  <th className="p-3">Status</th>
-                  <th className="p-3">Grade</th>
-                  <th className="p-3">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {selectedAssignment.submissions.map((submission) => (
-                  <tr key={submission.id}>
-                    <td className="p-3">
-                      <div className="fw-bold text-black">{submission.studentName}</div>
-                      <div className="small fw-bold text-black">{submission.studentEmail}</div>
-                    </td>
-                    <td className="p-3 small text-black">{formatDate(submission.submittedAt)}</td>
-                    <td className="p-3">
-                      <div className="d-flex align-items-center gap-2">
-                        <span className="text-primary fs-5">📄</span>
-                        <div>
-                          <div className="small text-black">{submission.fileUrl}</div>
-                          <div className="small text-black">{submission.fileSize}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="p-3">
-                      <Badge
-                        bg={submission.status === "GRADED" ? "success-light" : "warning-light"}
-                        text={submission.status === "GRADED" ? "success" : "warning"}
-                      >
-                        {submission.status === "GRADED" ? "Graded" : "Not Scored"}
-                      </Badge>
-                    </td>
-                    <td className="p-3">
-                      {submission.grade !== null ? (
-                        <span className="fw-bold text-black">
-                          {submission.grade}/{selectedAssignment.maxPoints}
-                        </span>
-                      ) : (
-                        <span className="text-black">-</span>
-                      )}
-                    </td>
-                    <td className="p-3">
-                      <Button
-                        size="sm"
-                        variant="primary"
-                        onClick={() => handleGradeSubmission(submission)}
-                      >
-                        {submission.status === "GRADED" ? "View/Edit" : "Grade"}
-                      </Button>
-                    </td>
+            {selectedAssignment && (
+              <Table responsive hover className="mb-0 custom-table">
+                <thead className="table-light">
+                  <tr>
+                    <th className="p-3">Student</th>
+                    <th className="p-3">Submitted At</th>
+                    <th className="p-3">File</th>
+                    <th className="p-3">Status</th>
+                    <th className="p-3">Grade</th>
+                    <th className="p-3">Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </Table>
+                </thead>
+                <tbody>
+                  {selectedAssignment.submissions.map((submission) => (
+                    <tr key={submission.id}>
+                      <td className="p-3">
+                        <div className="fw-bold text-black">{submission.studentName}</div>
+                        <div className="small fw-bold text-black">{submission.studentEmail}</div>
+                      </td>
+                      <td className="p-3 small text-black">{formatDate(submission.submittedAt)}</td>
+                      <td className="p-3">
+                        <div className="d-flex align-items-center gap-2">
+                          <span className="text-primary fs-5">📄</span>
+                          <div>
+                            <div className="small text-black">{submission.fileUrl}</div>
+                            <div className="small text-black">{submission.fileSize}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="p-3">
+                        <Badge
+                          bg={submission.status === "GRADED" ? "success-light" : "warning-light"}
+                          text={submission.status === "GRADED" ? "success" : "warning"}
+                        >
+                          {submission.status === "GRADED" ? "Graded" : "Not Scored"}
+                        </Badge>
+                      </td>
+                      <td className="p-3">
+                        {submission.grade !== null ? (
+                          <span className="fw-bold text-black">
+                            {submission.grade}/{selectedAssignment.maxPoints}
+                          </span>
+                        ) : (
+                          <span className="text-black">-</span>
+                        )}
+                      </td>
+                      <td className="p-3">
+                        <Button
+                          size="sm"
+                          variant="primary"
+                          onClick={() => handleGradeSubmission(submission)}
+                        >
+                          {submission.status === "GRADED" ? "View/Edit" : "Grade"}
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </Table>
+            )}
           </Card>
         </>
       )}

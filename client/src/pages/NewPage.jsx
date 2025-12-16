@@ -88,6 +88,15 @@ const NewPage = () => {
       } else {
         addNotification("error", `Failed to unsubscribe: ${result.error}`);
       }
+    } else if (type === "payment") {
+      // Handle payment confirmation - update isPaid status
+      setCourses((prevCourses) =>
+        prevCourses.map((c) => (c.id === courseId ? { ...c, isPaid: true } : c))
+      );
+      setFilteredCourses((prevFiltered) =>
+        prevFiltered.map((c) => (c.id === courseId ? { ...c, isPaid: true } : c))
+      );
+      addNotification("success", `Payment confirmed for "${course.title}"!`);
     } else {
       // Handle other types of notifications
       addNotification(type, course.title);
@@ -226,6 +235,7 @@ const NewPage = () => {
             paddingRight: "40px",
             paddingTop: "60px",
             paddingBottom: "60px",
+            background: "#f8f9fa",
           }}
         >
           {/* Header Section */}
