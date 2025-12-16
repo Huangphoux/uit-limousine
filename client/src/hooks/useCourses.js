@@ -9,30 +9,72 @@ export const useCourses = (initialCourses = []) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Fetch courses from API
-  const fetchCourses = async () => {
+  // Fetch courses from API (UC-4.1)
+  const fetchCourses = async (params = {}) => {
     setLoading(true);
     setError(null);
 
     try {
-      const response = await fetch(`${API_URL}/api/courses`, {
+      // Build query string from params
+      const queryParams = new URLSearchParams();
+      if (params.search) queryParams.append("search", params.search);
+      if (params.category) queryParams.append("category", params.category);
+      if (params.page) queryParams.append("page", params.page);
+      if (params.limit) queryParams.append("limit", params.limit);
+
+      const queryString = queryParams.toString();
+      const url = `${API_URL}/courses${queryString ? `?${queryString}` : ""}`;
+
+      // Get token if available (optional for guests)
+      const token = localStorage.getItem("accessToken");
+      const headers = {
+        "Content-Type": "application/json",
+      };
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+
+      const response = await fetch(url, {
         method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          // Add authorization header if needed
-          // "Authorization": `Bearer ${localStorage.getItem("token")}`,
-        },
+        headers,
       });
 
       if (!response.ok) {
-        throw new Error(`Failed to fetch courses: ${response.statusText}`);
+        const errorData = await response.json();
+        throw new Error(
+          errorData.error?.message || `Failed to fetch courses: ${response.statusText}`
+        );
       }
 
       const data = await response.json();
-      setCourses(data.courses || data); // Handle different response formats
+
+      console.log("API Response:", data);
+
+      // Handle API response format - backend returns 'status' instead of 'success'
+      const isSuccess = data.success === true || data.status === "success";
+
+      if (isSuccess && data.data) {
+        const coursesArray = data.data.courses || [];
+        console.log("Courses fetched:", coursesArray.length, coursesArray);
+        setCourses(coursesArray);
+        return {
+          success: true,
+          courses: coursesArray,
+          pagination: data.data.pagination,
+        };
+      } else {
+        console.error("Response validation failed:", {
+          status: data.status,
+          success: data.success,
+          hasData: !!data.data,
+          fullResponse: data,
+        });
+        throw new Error("Invalid response format");
+      }
     } catch (err) {
       setError(err.message);
       console.error("Error fetching courses:", err);
+      return { success: false, error: err.message };
     } finally {
       setLoading(false);
     }

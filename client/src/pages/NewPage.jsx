@@ -4,8 +4,10 @@ import { useState, useEffect } from "react";
 import CourseCard from "../components/CourseCard";
 import ToastContainer from "../components/ToastContainer";
 import CourseDetailModal from "../components/CourseDetailModal";
-import { useCourses, defaultCourses } from "../hooks/useCourses";
+import { useCourses } from "../hooks/useCourses";
 import { useNotificationContext } from "../hooks/useNotificationContext";
+
+const API_URL = import.meta.env.VITE_API_URL;
 
 const NewPage = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -23,7 +25,7 @@ const NewPage = () => {
     unsubscribeFromCourse,
     searchCourses,
     setCourses,
-  } = useCourses(defaultCourses);
+  } = useCourses([]);
 
   // Use the custom hook for notifications
   const { notifications, addNotification } = useNotificationContext();
@@ -33,10 +35,10 @@ const NewPage = () => {
     setFilteredCourses(courses);
   }, [courses]);
 
-  // Uncomment this to fetch courses from API on component mount
-  // useEffect(() => {
-  //   fetchCourses();
-  // }, []);
+  // Fetch courses from API on component mount
+  useEffect(() => {
+    fetchCourses();
+  }, []);
 
   // Debounced search effect - triggers 1 second after user stops typing
   useEffect(() => {
@@ -391,7 +393,7 @@ const NewPage = () => {
                       />
                     </svg>
                     <div>
-                      <strong>Error loading courses</strong>
+                      <strong className="home-card-error">Error loading courses</strong>
                       <p className="mb-0 mt-1">{error}</p>
                     </div>
                   </div>
@@ -420,7 +422,8 @@ const NewPage = () => {
                     boxShadow: "0 4px 12px rgba(32, 201, 151, 0.3)",
                   }}
                 >
-                  You have enrolled in {courses.filter((course) => course.enrolled).length} courses
+                  You have enrolled in{" "}
+                  {courses.filter((course) => course && course.enrolled).length} courses
                 </div>
               </div>
             </Col>
@@ -428,24 +431,26 @@ const NewPage = () => {
 
           {/* Courses Grid */}
           <Row className="courses-grid">
-            {filteredCourses.map((course, index) => (
-              <Col
-                key={course.id}
-                lg={4}
-                md={6}
-                className="mb-4"
-                style={{
-                  animation: `fadeInUp 0.6s ease-out ${index * 0.1}s backwards`,
-                }}
-              >
-                <CourseCard
-                  course={course}
-                  onEnroll={handleEnroll}
-                  onCardClick={handleCardClick}
-                  darkTheme={true}
-                />
-              </Col>
-            ))}
+            {filteredCourses
+              .filter((course) => course && course.id)
+              .map((course, index) => (
+                <Col
+                  key={course.id}
+                  lg={4}
+                  md={6}
+                  className="mb-4"
+                  style={{
+                    animation: `fadeInUp 0.6s ease-out ${index * 0.1}s backwards`,
+                  }}
+                >
+                  <CourseCard
+                    course={course}
+                    onEnroll={handleEnroll}
+                    onCardClick={handleCardClick}
+                    darkTheme={true}
+                  />
+                </Col>
+              ))}
           </Row>
 
           {/* No Results */}
