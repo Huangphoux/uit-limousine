@@ -4,14 +4,18 @@ import { useState, useEffect } from "react";
 import CourseCard from "../components/CourseCard";
 import ToastContainer from "../components/ToastContainer";
 import CourseDetailModal from "../components/CourseDetailModal";
-import { useCourses, defaultCourses } from "../hooks/useCourses";
+import { useCourses } from "../hooks/useCourses";
 import { useNotificationContext } from "../hooks/useNotificationContext";
+
+const API_URL = import.meta.env.VITE_API_URL;
 
 const NewPage = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredCourses, setFilteredCourses] = useState([]);
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [showModal, setShowModal] = useState(false);
+  const [loadingCourseDetail, setLoadingCourseDetail] = useState(false);
+  const [courseDetailError, setCourseDetailError] = useState(null);
 
   // Use the custom hook for course management
   const {
@@ -23,7 +27,7 @@ const NewPage = () => {
     unsubscribeFromCourse,
     searchCourses,
     setCourses,
-  } = useCourses(defaultCourses);
+  } = useCourses([]);
 
   // Use the custom hook for notifications
   const { notifications, addNotification } = useNotificationContext();
@@ -33,10 +37,10 @@ const NewPage = () => {
     setFilteredCourses(courses);
   }, [courses]);
 
-  // Uncomment this to fetch courses from API on component mount
-  // useEffect(() => {
-  //   fetchCourses();
-  // }, []);
+  // Fetch courses from API on component mount
+  useEffect(() => {
+    fetchCourses();
+  }, []);
 
   // Debounced search effect - triggers 1 second after user stops typing
   useEffect(() => {
@@ -88,15 +92,98 @@ const NewPage = () => {
       } else {
         addNotification("error", `Failed to unsubscribe: ${result.error}`);
       }
+    } else if (type === "payment") {
+      // Handle payment confirmation - update isPaid status
+      setCourses((prevCourses) =>
+        prevCourses.map((c) => (c.id === courseId ? { ...c, isPaid: true } : c))
+      );
+      setFilteredCourses((prevFiltered) =>
+        prevFiltered.map((c) => (c.id === courseId ? { ...c, isPaid: true } : c))
+      );
+      addNotification("success", `Payment confirmed for "${course.title}"!`);
     } else {
       // Handle other types of notifications
       addNotification(type, course.title);
     }
   };
 
-  const handleCardClick = (course) => {
-    setSelectedCourse(course);
+  const handleCardClick = async (course) => {
     setShowModal(true);
+    setLoadingCourseDetail(true);
+    setCourseDetailError(null);
+    setSelectedCourse(null);
+
+    try {
+      const token = localStorage.getItem("token");
+      const headers = {
+        "Content-Type": "application/json",
+      };
+
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+
+      const response = await fetch(`${API_URL}/courses/${course.id}`, {
+        method: "GET",
+        headers: headers,
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch course details: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+
+      // Debug: Log the actual API response
+      console.log("API Response:", result);
+
+      // Check if we have a valid course object (API returns course directly, not wrapped in success/data)
+      if (result && result.id) {
+        // Map API response to the format expected by the modal
+        const courseDetail = {
+          id: result.id,
+          title: result.title,
+          provider: result.instructor?.fullName || "Unknown Instructor",
+          category: course.category || "General",
+          description: result.description || result.shortDesc || "No description available",
+          rating: result.rating || 0,
+          students: result.students || 0,
+          level: result.level || "BEGINNER",
+          duration: course.duration || "N/A",
+          image: result.coverImage || course.image,
+          enrolled: course.enrolled || false,
+          instructor: result.instructor?.fullName || "Unknown Instructor",
+          price: result.price || 0,
+          isPaid: course.isPaid || false,
+          // Additional details from API
+          slug: result.slug,
+          shortDesc: result.shortDesc,
+          language: result.language,
+          modules: result.modules || [],
+          reviewCount: result.reviews?.length || 0,
+          published: result.published,
+          publishDate: result.publishDate,
+          createdAt: result.createdAt,
+          updatedAt: result.updatedAt,
+          instructorBio: result.instructor?.bio,
+          instructorAvatar: result.instructor?.avatarUrl,
+          coverImage: result.coverImage,
+        };
+
+        console.log("Mapped Course Detail:", courseDetail);
+
+        setSelectedCourse(courseDetail);
+      } else {
+        throw new Error("Invalid response format: Missing course ID");
+      }
+    } catch (error) {
+      console.error("Error fetching course details:", error);
+      setCourseDetailError(error.message);
+      // Fallback to the basic course data from the card
+      setSelectedCourse(course);
+    } finally {
+      setLoadingCourseDetail(false);
+    }
   };
 
   const handleCloseModal = () => {
@@ -226,6 +313,7 @@ const NewPage = () => {
             paddingRight: "40px",
             paddingTop: "60px",
             paddingBottom: "60px",
+            background: "#f8f9fa",
           }}
         >
           {/* Header Section */}
@@ -381,7 +469,7 @@ const NewPage = () => {
                       />
                     </svg>
                     <div>
-                      <strong>Error loading courses</strong>
+                      <strong className="home-card-error">Error loading courses</strong>
                       <p className="mb-0 mt-1">{error}</p>
                     </div>
                   </div>
@@ -410,7 +498,8 @@ const NewPage = () => {
                     boxShadow: "0 4px 12px rgba(32, 201, 151, 0.3)",
                   }}
                 >
-                  You have enrolled in {courses.filter((course) => course.enrolled).length} courses
+                  You have enrolled in{" "}
+                  {courses.filter((course) => course && course.enrolled).length} courses
                 </div>
               </div>
             </Col>
@@ -418,24 +507,26 @@ const NewPage = () => {
 
           {/* Courses Grid */}
           <Row className="courses-grid">
-            {filteredCourses.map((course, index) => (
-              <Col
-                key={course.id}
-                lg={4}
-                md={6}
-                className="mb-4"
-                style={{
-                  animation: `fadeInUp 0.6s ease-out ${index * 0.1}s backwards`,
-                }}
-              >
-                <CourseCard
-                  course={course}
-                  onEnroll={handleEnroll}
-                  onCardClick={handleCardClick}
-                  darkTheme={true}
-                />
-              </Col>
-            ))}
+            {filteredCourses
+              .filter((course) => course && course.id)
+              .map((course, index) => (
+                <Col
+                  key={course.id}
+                  lg={4}
+                  md={6}
+                  className="mb-4"
+                  style={{
+                    animation: `fadeInUp 0.6s ease-out ${index * 0.1}s backwards`,
+                  }}
+                >
+                  <CourseCard
+                    course={course}
+                    onEnroll={handleEnroll}
+                    onCardClick={handleCardClick}
+                    darkTheme={true}
+                  />
+                </Col>
+              ))}
           </Row>
 
           {/* No Results */}
@@ -481,6 +572,8 @@ const NewPage = () => {
           show={showModal}
           onHide={handleCloseModal}
           onEnroll={handleEnroll}
+          loading={loadingCourseDetail}
+          error={courseDetailError}
         />
       </div>
     </>

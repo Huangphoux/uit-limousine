@@ -1,11 +1,26 @@
 import { Link, Outlet } from "react-router-dom";
 import { Container, Navbar, Nav } from "react-bootstrap";
 
-
-
 const App = () => {
   return (
     <>
+      <style>
+        {`
+            .bg-body-tertiary {
+              background: white !important;
+              color: black !important;
+              border-bottom: 2px solid #d9d9d9 !important;
+            }
+            .bg-body-tertiary .navbar-brand {
+              color: black !important;
+              font-size: 1.4rem;
+              font-weight: bold;
+            }
+            .bg-body-tertiary .nav-link {
+              color: black !important;
+            }
+          `}
+      </style>
       <Navbar expand="lg" fixed="top" className="bg-body-tertiary">
         <Container>
           <Navbar.Brand as={Link} to="/">

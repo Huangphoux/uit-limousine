@@ -13,7 +13,8 @@ import AdminScreen from "./pages/AdminScreen";
 import CourseCard from "./components/CourseCard";
 import CourseManagementCard from "./components/instructor-screen/course-management/CourseManagementCard";
 import CourseManagementView from "./components/instructor-screen/course-management/CourseManagementView";
-import AssignmentSubmit from "./pages/AssignmentSubmit"; // This now correctly points to the single component
+import EditCourseView from "./components/instructor-screen/course-management/EditCourseView";
+import AssignmentSubmit from "./pages/AssignmentSubmit";
 
 const routes = [
   {
@@ -51,7 +52,7 @@ const routes = [
   },
 
   {
-    path: "/new-page",
+    path: "/courses",
     element: <NewPageLayout />,
     errorElement: <ErrorPage />,
     children: [
@@ -74,6 +75,12 @@ const routes = [
   {
     path: "/instructor-screen",
     element: <InstructorScreen />,
+    errorElement: <ErrorPage />,
+  },
+
+  {
+    path: "/instructor/edit-course",
+    element: <EditCourseView />,
     errorElement: <ErrorPage />,
   },
 

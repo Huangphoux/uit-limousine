@@ -102,10 +102,28 @@ export default function ResetPassword() {
 
   if (showSuccess) {
     return (
-      <Container fluid className="d-flex align-items-center" style={{ minHeight: "100vh" }}>
-        <Row className="justify-content-center w-100">
-          <Col xs={12} md={6} lg={5}>
-            <Alert variant="success" className="text-center">
+      <>
+        <style>{`
+          .auth-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem 0;
+          }
+
+          .auth-card {
+            background: white;
+            border-radius: 1.5rem;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+            padding: 3rem 2.5rem;
+            max-width: 480px;
+            width: 100%;
+          }
+        `}</style>
+        <div className="auth-container">
+          <div className="auth-card">
+            <Alert variant="success" className="text-center mb-0">
               <Alert.Heading>Password Reset Successful!</Alert.Heading>
               <p>
                 Your password has been successfully reset. You will be redirected to the login page
@@ -115,22 +133,140 @@ export default function ResetPassword() {
                 Go to Login
               </Link>
             </Alert>
-          </Col>
-        </Row>
-      </Container>
+          </div>
+        </div>
+      </>
     );
   }
 
   return (
-    <Container fluid className="d-flex align-items-center" style={{ minHeight: "100vh" }}>
-      <Row className="justify-content-center w-100">
-        <Col xs={12} md={6} lg={5}>
-          <h3 className="text-center mb-4">Reset Password</h3>
-          <p className="text-center text-muted mb-4">Enter your new password below.</p>
+    <>
+      <style>{`
+        .auth-container {
+          min-height: 100vh;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 2rem 0;
+        }
+
+        .auth-card {
+          background: white;
+          border-radius: 1.5rem;
+          box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+          padding: 3rem 2.5rem;
+          max-width: 480px;
+          width: 100%;
+        }
+
+        .auth-title {
+          color: #1a1a1a;
+          font-weight: 700;
+          font-size: 2rem;
+          margin-bottom: 0.5rem;
+          text-align: center;
+        }
+
+        .auth-subtitle {
+          color: #6c757d;
+          font-size: 0.95rem;
+          text-align: center;
+          margin-bottom: 2rem;
+        }
+
+        .auth-label {
+          color: #1a1a1a;
+          font-weight: 600;
+          font-size: 0.9rem;
+          margin-bottom: 0.5rem;
+        }
+
+        .auth-input {
+          border: 2px solid #e9ecef;
+          border-radius: 0.75rem;
+          padding: 0.75rem 1rem;
+          font-size: 1rem;
+          transition: all 0.3s ease;
+          background: #f8f9fa !important;
+          color: #212529 !important;
+        }
+
+        .auth-input:focus {
+          background: white !important;
+          border-color: #007bff;
+          box-shadow: 0 0 0 4px rgba(0, 123, 255, 0.1);
+          color: #212529 !important;
+        }
+
+        .auth-input::placeholder {
+          color: #adb5bd !important;
+        }
+
+        .auth-input:-webkit-autofill,
+        .auth-input:-webkit-autofill:hover,
+        .auth-input:-webkit-autofill:focus,
+        .auth-input:-webkit-autofill:active {
+          -webkit-box-shadow: 0 0 0 30px #f8f9fa inset !important;
+          -webkit-text-fill-color: #212529 !important;
+          transition: background-color 5000s ease-in-out 0s;
+        }
+
+        .auth-button {
+          border-radius: 0.75rem;
+          padding: 0.875rem;
+          font-weight: 600;
+          font-size: 1rem;
+          transition: all 0.3s ease;
+          border: none;
+          background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+        }
+
+        .auth-button:hover:not(:disabled) {
+          transform: translateY(-2px);
+          box-shadow: 0 8px 20px rgba(0, 123, 255, 0.4);
+        }
+
+        .auth-button:active:not(:disabled) {
+          transform: translateY(0);
+        }
+
+        .auth-link {
+          color: #007bff;
+          text-decoration: none;
+          font-weight: 500;
+          transition: color 0.2s ease;
+        }
+
+        .auth-link:hover {
+          color: #0056b3;
+          text-decoration: underline;
+        }
+
+        .auth-help-text {
+          color: #6c757d;
+          font-size: 0.875rem;
+          margin-top: 0.25rem;
+        }
+
+        @media (max-width: 576px) {
+          .auth-card {
+            padding: 2rem 1.5rem;
+            border-radius: 1rem;
+          }
+          
+          .auth-title {
+            font-size: 1.75rem;
+          }
+        }
+      `}</style>
+      <div className="auth-container">
+        <div className="auth-card">
+          <h1 className="auth-title">Reset Password</h1>
+          <p className="auth-subtitle">Enter your new password below.</p>
 
           <Form onSubmit={handleSubmit}>
             <Form.Group className="mb-3" controlId="formPassword">
-              <Form.Label>New Password</Form.Label>
+              <Form.Label className="auth-label">New Password</Form.Label>
               <Form.Control
                 type="password"
                 placeholder="Enter new password"
@@ -139,14 +275,15 @@ export default function ResetPassword() {
                 onChange={handleChange}
                 required
                 minLength={6}
+                className="auth-input"
               />
-              <Form.Text className="text-muted">
+              <Form.Text className="auth-help-text">
                 Password must be at least 6 characters long.
               </Form.Text>
             </Form.Group>
 
-            <Form.Group className="mb-3" controlId="formConfirmPassword">
-              <Form.Label>Confirm New Password</Form.Label>
+            <Form.Group className="mb-4" controlId="formConfirmPassword">
+              <Form.Label className="auth-label">Confirm New Password</Form.Label>
               <Form.Control
                 type="password"
                 placeholder="Confirm new password"
@@ -155,12 +292,13 @@ export default function ResetPassword() {
                 onChange={handleChange}
                 required
                 isInvalid={!!passwordError}
+                className="auth-input"
               />
               <Form.Control.Feedback type="invalid">{passwordError}</Form.Control.Feedback>
             </Form.Group>
 
             <div className="d-grid">
-              <Button variant="primary" type="submit" size="lg" disabled={isLoading}>
+              <Button className="auth-button" type="submit" size="lg" disabled={isLoading}>
                 {isLoading ? (
                   <>
                     <Spinner
@@ -171,7 +309,6 @@ export default function ResetPassword() {
                       aria-hidden="true"
                       className="me-2"
                     />
-                    <span className="visually-hidden">Changing...</span>
                     Changing Password...
                   </>
                 ) : (
@@ -181,13 +318,13 @@ export default function ResetPassword() {
             </div>
 
             <div className="text-center mt-3">
-              <Link to="/login" className="text-decoration-none">
+              <Link to="/login" className="auth-link">
                 Back to Sign In
               </Link>
             </div>
           </Form>
-        </Col>
-      </Row>
-    </Container>
+        </div>
+      </div>
+    </>
   );
 }
