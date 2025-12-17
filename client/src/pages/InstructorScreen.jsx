@@ -1,16 +1,18 @@
 import React, { useState, useEffect } from "react";
 import { Container, Row, Col, Card } from "react-bootstrap";
+import { useNavigate } from "react-router-dom";
 import { FaBook, FaChartLine, FaFileAlt, FaUsers, FaRegClock } from "react-icons/fa";
 import Header from "../components/Header";
 import CreateCourseModal from "../components/CreateCourseModal";
 import EditCourseModal from "../components/instructor-screen/course-management/EditCourseModal";
 import CourseManagementView from "../components/instructor-screen/course-management/CourseManagementView";
 import AssignmentGradingView from "../components/instructor-screen/grade-assignment/AssignmentGradingView";
-import { IoMdCheckmarkCircleOutline } from "react-icons/io";
 
 const InstructorScreen = () => {
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeTab, setActiveTab] = useState("course-management"); // "assignment-grading" or "course-management"
+  // const [activeTab, setActiveTab] = useState("course-management");
+  // "assignment-grading" or "course-management"
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState(null);
@@ -97,8 +99,7 @@ const InstructorScreen = () => {
 
   const handleEditCourse = (courseData) => {
     console.log("Edit course:", courseData);
-    setSelectedCourse(courseData);
-    setShowEditModal(true);
+    navigate("/instructor/edit-course", { state: { courseData } });
   };
 
   const handleCloseEditModal = () => {
@@ -137,9 +138,9 @@ const InstructorScreen = () => {
     setCourses(courses.filter((course) => course.id !== courseData.id));
   };
 
-  const handleTabSwitch = (tab) => {
-    setActiveTab(tab);
-  };
+  // const handleTabSwitch = (tab) => {
+  //   setActiveTab(tab);
+  // };
 
   // Initialize filtered courses
   useEffect(() => {
@@ -265,7 +266,7 @@ const InstructorScreen = () => {
           style={{ minHeight: "100vh" }}
         >
           {/* Tab Navigation */}
-          <div className="mb-4 d-flex justify-content-center tab-section">
+          {/* <div className="mb-4 d-flex justify-content-center tab-section">
             <div
               className="d-flex rounded-3 p-1 shadow-sm"
               style={{
@@ -310,7 +311,7 @@ const InstructorScreen = () => {
                 </div>
               </div>
             </div>
-          </div>
+          </div> */}
 
           {/* Content Section */}
           <Row>
@@ -318,25 +319,23 @@ const InstructorScreen = () => {
               <Card className="border-0 shadow-sm" style={{ backgroundColor: "white" }}>
                 <Card.Body className="p-4" style={{ color: "black" }}>
                   {/* Course Management */}
-                  {activeTab === "course-management" && (
-                    <CourseManagementView
-                      searchQuery={searchQuery}
-                      setSearchQuery={setSearchQuery}
-                      courses={courses}
-                      filteredCourses={filteredCourses}
-                      setFilteredCourses={setFilteredCourses}
-                      loading={loading}
-                      onCreateCourse={handleCreateCourse}
-                      onEditCourse={handleEditCourse}
-                      onPublishCourse={handlePublishCourse}
-                      onDeleteCourse={handleDeleteCourse}
-                    />
-                  )}
 
-                  {/* Assignment Grading */}
-                  {activeTab === "assignment-grading" && (
+                  <CourseManagementView
+                    searchQuery={searchQuery}
+                    setSearchQuery={setSearchQuery}
+                    courses={courses}
+                    filteredCourses={filteredCourses}
+                    setFilteredCourses={setFilteredCourses}
+                    loading={loading}
+                    onCreateCourse={handleCreateCourse}
+                    onEditCourse={handleEditCourse}
+                    onPublishCourse={handlePublishCourse}
+                    onDeleteCourse={handleDeleteCourse}
+                  />
+
+                  {/* {activeTab === "assignment-grading" && (
                     <AssignmentGradingView courses={courses} />
-                  )}
+                  )} */}
                 </Card.Body>
               </Card>
             </Col>

@@ -1,13 +1,15 @@
-import React, { useState } from "react";
+import React from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Container, Navbar, Nav, NavDropdown, Button, Badge } from "react-bootstrap";
 import { FaBell } from "react-icons/fa";
+import { useAuth } from "../hooks/useAuth";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
 const Header = ({ unreadCount, onBellClick }) => {
   const navigate = useNavigate();
-  const [userEmail] = useState("user@example.com"); // This can be replaced with actual user data
+  const { user, logout } = useAuth();
+  const userEmail = user?.email || "Guest";
 
   const handleSignOut = async () => {
     try {
@@ -34,10 +36,8 @@ const Header = ({ unreadCount, onBellClick }) => {
     } catch (error) {
       console.error("Logout error:", error);
     } finally {
-      // Always clear local storage and navigate, regardless of API result
-      localStorage.removeItem("accessToken");
-      localStorage.removeItem("refreshToken");
-      localStorage.removeItem("user");
+      // Use AuthContext logout function
+      logout();
       navigate("/");
     }
   };
@@ -71,6 +71,7 @@ const Header = ({ unreadCount, onBellClick }) => {
             cursor: pointer;
             color: #000;
             font-size: 1.25rem;
+            top: 8%;
           }
           .notification-badge {
             position: absolute;
@@ -97,7 +98,11 @@ const Header = ({ unreadCount, onBellClick }) => {
         style={{ color: "#000", backgroundColor: "#EFF6FF", borderBottom: "1px solid #ddd" }}
       >
         <Container>
-          <Navbar.Brand as={Link} to="/" style={{ color: "#000" }}>
+          <Navbar.Brand
+            as={Link}
+            to="/courses"
+            style={{ color: "#000", fontSize: "1.4rem", fontWeight: "bold" }}
+          >
             Limousine !
           </Navbar.Brand>
 
@@ -117,7 +122,7 @@ const Header = ({ unreadCount, onBellClick }) => {
                 align="end"
                 menuVariant="light"
               >
-                <NavDropdown.Item style={{ color: "#000", backgroundColor: "#EFF6FF" }}>
+                {/* <NavDropdown.Item style={{ color: "#000", backgroundColor: "#EFF6FF" }}>
                   Item 1
                 </NavDropdown.Item>
                 <NavDropdown.Item style={{ color: "#000", backgroundColor: "#EFF6FF" }}>
@@ -125,7 +130,7 @@ const Header = ({ unreadCount, onBellClick }) => {
                 </NavDropdown.Item>
                 <NavDropdown.Item style={{ color: "#000", backgroundColor: "#EFF6FF" }}>
                   Item 3
-                </NavDropdown.Item>
+                </NavDropdown.Item> */}
                 <NavDropdown.Item
                   onClick={handleSignOut}
                   style={{ color: "#000", backgroundColor: "#EFF6FF" }}

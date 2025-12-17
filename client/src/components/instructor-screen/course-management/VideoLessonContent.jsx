@@ -1,0 +1,88 @@
+import { Form } from "react-bootstrap";
+
+const VideoLessonContent = ({ lessonForm, onFormChange, onFileUpload, onRemoveFile }) => {
+  return (
+    <>
+      {/* Description */}
+      <div className="edit-description-section">
+        <h3 className="edit-content-section-title">📖 Description</h3>
+        <textarea
+          rows={4}
+          className="edit-description-textarea"
+          value={lessonForm.description || ""}
+          onChange={(e) => onFormChange("description", e.target.value)}
+          placeholder="Add video description (optional)"
+        />
+      </div>
+
+      {/* Video URL */}
+      <div className="edit-url-section">
+        <h3 className="edit-content-section-title">🔗 Video URL</h3>
+        <Form.Control
+          type="text"
+          className="edit-url-input"
+          value={lessonForm.videoUrl || ""}
+          onChange={(e) => onFormChange("videoUrl", e.target.value)}
+          placeholder="Enter YouTube, Vimeo, or other video URL"
+          style={{ color: "#000", backgroundColor: "#d9d9d9", WebkitTextFillColor: "#000" }}
+        />
+      </div>
+
+      {/* File Upload for Video */}
+      <div className="edit-upload-section">
+        <h3 className="edit-section-title">Or upload video file:</h3>
+        <div className="edit-upload-area">
+          <div className="edit-upload-icon">☁️⬆️</div>
+          <input
+            type="file"
+            id="videoFileUpload"
+            accept="video/*"
+            onChange={onFileUpload}
+            style={{ display: "none" }}
+          />
+          <label htmlFor="videoFileUpload" className="edit-upload-btn">
+            Choose video file
+          </label>
+          <p className="edit-upload-text">Or drag'n drop video here</p>
+          <p className="edit-upload-limit">
+            Accepted formats: MP4, AVI, MOV, WMV - Maximum size: 500MB
+          </p>
+        </div>
+
+        {/* Uploaded files list */}
+        {lessonForm.files && lessonForm.files.length > 0 && (
+          <div className="edit-files-list">
+            {lessonForm.files.map((file, index) => (
+              <div key={index} className="edit-file-item">
+                <span className="edit-file-icon">🎥</span>
+                <span className="edit-file-name">{file.name}</span>
+                <button
+                  className="edit-file-remove"
+                  onClick={() => onRemoveFile(index)}
+                  title="Remove file"
+                >
+                  ✕
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Duration */}
+      {/* <div className="edit-duration-section">
+        <h3 className="edit-content-section-title">⏱️ Video Duration</h3>
+        <Form.Control
+          type="text"
+          className="edit-duration-input"
+          value={lessonForm.duration}
+          onChange={(e) => onFormChange("duration", e.target.value)}
+          placeholder="e.g., 10:30 (mm:ss)"
+        />
+        <small className="text-muted">Format: minutes:seconds (e.g., 10:30)</small>
+      </div> */}
+    </>
+  );
+};
+
+export default VideoLessonContent;
