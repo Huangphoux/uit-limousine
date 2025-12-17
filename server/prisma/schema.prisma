@@ -32,6 +32,7 @@ model User {
   tokens                Token[]
   roles                 UserRole[]
   LessonProgress        LessonProgress[]
+  resetTokens           ResetToken[]
 }
 
 model Token {
@@ -287,6 +288,14 @@ model FileMeta {
   size      Int?
   mimeType  String?
   createdAt DateTime @default(now())
+}
+
+model ResetToken {
+  id      String @id @default(uuid())
+  userId  String
+  tokenId String
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 enum EnrollmentStatus {

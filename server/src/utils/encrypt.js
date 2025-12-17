@@ -1,6 +1,7 @@
 import jwt from "jsonwebtoken";
 import z from "zod";
 import bcrypt from "bcrypt";
+import { randomUUID } from "crypto";
 import { config } from "../config.js";
 
 export const bearerTokenHeaderSchema = z.string().regex(
@@ -13,8 +14,8 @@ export const authenticationTokenSchema = z.object({
     roles: z.array(z.number()),
 });
 
-export function generateJWT(payload) {
-    return jwt.sign(payload, config.jwt.secret, { expiresIn: config.jwt.expiry });
+export function generateJWT(payload, expiry = config.jwt.expiry) {
+    return jwt.sign(payload, config.jwt.secret, { expiresIn: expiry });
 }
 
 export function verifyJwt(token) {
@@ -22,8 +23,7 @@ export function verifyJwt(token) {
 }
 
 export function generateSalt() {
-    // return bcrypt.genSaltSync(config.bcrypt.saltRounds);
-    return 12;
+    return bcrypt.genSaltSync(config.bcrypt.saltRounds);
 }
 
 export function hashPassword(password, salt) {
@@ -32,4 +32,8 @@ export function hashPassword(password, salt) {
 
 export function verifyPassword(password, hashedPassword) {
     return bcrypt.compareSync(password, hashedPassword);
+}
+
+export function generateUUID() {
+    return randomUUID();
 }

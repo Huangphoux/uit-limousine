@@ -30,9 +30,9 @@ export class SearchCoursesUseCase {
         description: courseEntity.description,
         instructor: courseEntity.instructor
           ? {
-              id: courseEntity.instructor.id,
-              fullName: courseEntity.instructor.name,
-            }
+            id: courseEntity.instructor.id,
+            fullName: courseEntity.instructor.name,
+          }
           : null,
         thumbnail: courseEntity.coverImg,
         rating: 4.5,

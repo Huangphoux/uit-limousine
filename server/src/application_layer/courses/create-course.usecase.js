@@ -27,29 +27,26 @@ export class CreateCourseUsecase {
 
   async execute(input) {
     const parsedInput = inputSchema.parse(input);
-    logger.debug("Executing create course operation", {
-      title: parsedInput.title,
+    const log = logger.child({
+      task: "Creating course",
+      adminId: parsedInput.authId,
       instructorId: parsedInput.instructorId,
-      correlationId: parsedInput.authId,
-    });
+    })
+    log.info("Task started");
 
     const instructor = await this.userRepository.findById(parsedInput.instructorId);
-    if (!instructor) throw Error(`User not found, ${parsedInput.id}`);
-    logger.debug("Fetched instructor", {
-      instructorFound: !!instructor,
-      instructorId: parsedInput.instructorId,
-    });
-    if (!instructor.hasRole(Role.INSTRUCTOR)) throw Error(`Unauthorized user, ${instructor.id}`);
+    if (!instructor) {
+      log.warn("Task failed: invalid instructor id");
+      throw Error(`User not found, ${parsedInput.id}`);
+    }
+    if (!instructor.hasRole(Role.INSTRUCTOR)) {
+      log.warn("Task failed: invalid instructor role");
+      throw Error(`Unauthorized user, ${instructor.id}`);
+    }
 
     const course = CourseEntity.create(parsedInput);
-    logger.debug("Mapped input to CourseEntity", {
-      courseId: course.id,
-    });
 
     const savedCourse = await this.courseRepository.add(course);
-    logger.debug("Course saved successfully", {
-      savedCourseId: savedCourse.id,
-    });
 
     const output = {
       ...savedCourse.toJSON(), // Ensure all course fields are included
@@ -60,13 +57,9 @@ export class CreateCourseUsecase {
       },
     };
 
-    logger.debug("Preparing output for validation", {
-      outputKeys: Object.keys(output),
-      hasTitle: !!output.title,
-      hasInstructor: !!output.instructor,
-    });
-
     const validatedOutput = outputSchema.parse(output);
+    log.info("Task completed");
+
     return validatedOutput;
   }
 }

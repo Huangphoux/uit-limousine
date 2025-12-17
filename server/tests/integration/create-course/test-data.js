@@ -1,5 +1,3 @@
-import { Role } from "../../../src/domain_layer/role.entity";
-
 export const instructor = {
     id: "create course",
     username: "create course",
