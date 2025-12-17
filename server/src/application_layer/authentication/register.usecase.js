@@ -27,14 +27,23 @@ export class RegisterUseCase {
     }
 
     async execute(input) {
-        logger.debug("Executing register operation", input);
         const parsedInput = inputSchema.parse(input)
+        const log = logger.child({
+            task: "Registering account",
+        })
+        log.info("Task started");
 
         const registeredEmail = await this.userRepository.findByEmail(parsedInput.email);
-        if (registeredEmail) throw Error(ERROR_CATALOG.REGISTER.message);
+        if (registeredEmail) {
+            log.warn("Task failed: invalid email");
+            throw Error(ERROR_CATALOG.REGISTER.message);
+        }
 
         const defaultRole = await this.roleRepository.findByName(Role.LEARNER);
-        if (!defaultRole) throw Error(`Role not found`);
+        if (!defaultRole) {
+            log.warn("Task failed: invalid role");
+            throw Error(`Role not found`);
+        }
 
         const hashedPassword = hashPassword(parsedInput.password, generateSalt());
 
@@ -44,8 +53,7 @@ export class RegisterUseCase {
 
         const accessJwt = generateJWT({ id: user.id, roles: user.roles.map(r => r.name) });
 
-        logger.debug("Finish register operation");
-
+        logger.info("Task completed");
         return outputSchema.parse({
             ...savedUser,
             fullName: savedUser.name,

@@ -36,6 +36,10 @@ export class UserEntity {
     return false;
   }
 
+  changePassword(newPasswordHashed) {
+    this.password = newPasswordHashed;
+  }
+
   static create(input, defaultRole) {
     let parsedInput = UserEntity.schema.parse(input);
 

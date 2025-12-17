@@ -20,28 +20,30 @@ export class ChangeRoleUsecase {
 
     async execute(input) {
         const parsedInput = inputSchema.parse(input);
-        logger.debug('Executing change role operation', {
-            id: parsedInput.id,
-            role: parsedInput.role,
-            correlationId: parsedInput.authId,
+        const log = logger.child({
+            task: "Changing role",
+            adminId: parsedInput.authId,
+            userId: parsedInput.id,
         });
+        log.info("Task started");
 
         const user = await this.userRepository.findById(parsedInput.id);
-        if (!user) throw Error(`User not found, ${parsedInput.id}`);
+        if (!user) {
+            log.warn("Task failed: invalid user id");
+            throw Error(`User not found, ${parsedInput.id}`);
+        }
 
         const role = await this.roleRepository.findByName(parsedInput.role);
-        if (!role) throw Error(`Role not found, ${parsedInput.role}`);
+        if (!role) {
+            log.warn("Task failed: invalid role");
+            throw Error(`Role not found, ${parsedInput.role}`);
+        }
 
         user.addRole(role);
 
         const result = await this.userRepository.save(user);
 
-        logger.info('Change role completed successfully', {
-            id: result.id,
-            role: role.name,
-            correlationId: parsedInput.authId,
-        });
-
+        log.info("Task completed");
         return outputSchema.parse({
             id: result.id,
             roles: result.roles.map(r => r.name),
