@@ -24,9 +24,9 @@ export const outputSchema = z.object({
 })
 
 export class CourseMaterialsQueryUseCase {
-    constructor(enrollmentReadAccessor, courseReadAccessor) {
-        this.enrollmentReadAccessor = enrollmentReadAccessor;
-        this.courseReadAccessor = courseReadAccessor;
+    constructor(courseRead, userRead) {
+        this.courseRead = courseRead;
+        this.userRead = userRead;
     }
 
     async execute(input) {
@@ -38,19 +38,15 @@ export class CourseMaterialsQueryUseCase {
         });
         log.info("Task started");
 
-        const isPublished = await this.courseReadAccessor.isPublished(parsedInput.courseId);
-        if (!isPublished) {
+        const isPublished = await this.courseRead.isPublished(parsedInput.courseId);
+        const isInstructor = await this.userRead.isInstructor(parsedInput.authId);
+        if (!isPublished && !isInstructor) {
             log.warn("Task failed: unpublished course");
             throw Error(`Course has not been published`);
         }
 
-        const enrolled = await this.enrollmentReadAccessor.isEnrolled(parsedInput.authId, parsedInput.courseId);
-        if (!enrolled) {
-            log.warn("Task failed: unenrolled course");
-            throw Error(`User has not enrolled the course`);
-        }
-
-        const courseMaterials = await this.courseReadAccessor.getCourseMaterials(parsedInput.courseId, parsedInput.authId);
+        const courseMaterials = await this.courseRead.getCourseMaterials(parsedInput.courseId, parsedInput.authId);
+        console.log(courseMaterials)
 
         log.info("Task completed");
         return outputSchema.parse(courseMaterials);
