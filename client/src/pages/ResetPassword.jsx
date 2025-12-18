@@ -76,9 +76,12 @@ export default function ResetPassword() {
       });
 
       const data = await response.json();
+      console.log(data);
 
       if (!response.ok) {
-        throw new Error(data.error?.message || data.message || "Reset failed");
+        // Handle jsend error response format: { status: 'fail', data: 'error message' }
+        const errorMessage = data.data || data.error?.message || data.message || "Reset failed";
+        throw new Error(errorMessage);
       }
 
       // Show success message

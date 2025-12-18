@@ -11,6 +11,7 @@ import {
   FaPaperPlane,
   FaEyeSlash,
 } from "react-icons/fa";
+import { toast } from "sonner";
 
 const CourseManagementCard = ({ courseData, onEdit, onPublish, onDelete }) => {
   const {
@@ -153,7 +154,9 @@ const CourseManagementCard = ({ courseData, onEdit, onPublish, onDelete }) => {
             <Col xs={6}>
               <div className="d-flex align-items-center" style={{ color: "#000" }}>
                 <FaUsers className=" me-1" size={12} />
-                <span className="small text-black">{enrolledStudents}</span>
+                <span className="small text-black">
+                  {enrolledStudents ? enrolledStudents : "N/A"}
+                </span>
               </div>
             </Col>
             <Col xs={6}>

@@ -7,7 +7,7 @@ export class SearchCoursesUseCase {
     this.#courseRepository = courseRepository;
   }
 
-  async execute({ search, category, level, page = 1, limit = 10 }) {
+  async execute({ search, category, level, page = 1, limit = 10, instructorId } = {}) {
     logger.debug("Executing Search Courses operation");
 
     let take = parseInt(limit);
@@ -20,6 +20,7 @@ export class SearchCoursesUseCase {
       level: level,
       skip: skip,
       take: take,
+      instructorId: instructorId,
     });
 
     logger.debug("Finish Search Courses operation");

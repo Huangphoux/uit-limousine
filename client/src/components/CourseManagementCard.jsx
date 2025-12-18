@@ -4,6 +4,7 @@ import { FaEdit, FaEye, FaTrash, FaUsers, FaClock, FaStar } from "react-icons/fa
 
 const CourseManagementCard = ({ courseData, onEdit, onPublish, onDelete }) => {
   const { title, description, image, enrolledStudents, duration, status, rating } = courseData;
+  const defaultImage = "images/course-placeholder.svg";
 
   const getStatusBadge = () => {
     return (
@@ -39,7 +40,7 @@ const CourseManagementCard = ({ courseData, onEdit, onPublish, onDelete }) => {
         {getStatusBadge()}
         <Card.Img
           variant="top"
-          src={image}
+          src={image ? image : defaultImage}
           style={{
             height: "140px",
             objectFit: "cover",

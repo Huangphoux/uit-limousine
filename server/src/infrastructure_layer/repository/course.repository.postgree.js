@@ -4,95 +4,99 @@ import { buildQuery } from "../../utils/query-builder.js";
 import { toPersistence } from "../../domain_layer/domain_service/factory.js";
 
 export class CourseRepository {
-    constructor(prisma) {
-        this.prisma = prisma;
+  constructor(prisma) {
+    this.prisma = prisma;
+  }
+
+  async findById(id) {
+    const raw = await this.prisma.course.findUnique({
+      where: { id: id },
+      select: CourseRepository.baseQuery,
+    });
+
+    return CourseEntity.rehydrate(raw);
+  }
+
+  async findByFilter({ title, category, level, skip, take }) {
+    const where = {};
+    if (title) where.title = title;
+    if (category) where.category = category;
+    if (level) where.level = level;
+    // allow filtering by instructorId when provided
+    if (arguments[0] && arguments[0].instructorId) where.instructorId = arguments[0].instructorId;
+
+    const result = await this.prisma.course.findMany({
+      where,
+      skip,
+      take,
+      include: { instructor: true },
+    });
+
+    return result.map(CourseEntity.rehydrate);
+  }
+
+  async save(course) {
+    // include relations (modules/lessons) when persisting
+    const raw = await this.prisma.course.update({
+      where: { id: course.id },
+      data: toPersistence(course, true),
+    });
+
+    return CourseEntity.rehydrate(raw);
+  }
+
+  async add(course) {
+    // include relations (modules/lessons) when creating
+    const persistenceData = toPersistence(course, true);
+
+    logger.debug("Creating course in DB", {
+      courseId: course.id,
+      instructorId: course.instructorId,
+      payload: persistenceData,
+    });
+
+    try {
+      const raw = await this.prisma.course.create({ data: persistenceData });
+
+      logger.info("Course created", {
+        courseId: raw.id,
+        instructorId: raw.instructorId,
+      });
+
+      console.log(raw);
+
+      return CourseEntity.rehydrate(raw);
+    } catch (error) {
+      logger.error("Course creation failed", {
+        error_message: error.message,
+        stack_trace: error.stack,
+        courseId: course.id,
+        instructorId: course.instructorId,
+        payload: persistenceData,
+      });
+
+      throw error;
     }
+  }
 
-    async findById(id) {
-        const raw = await this.prisma.course.findUnique({
-            where: { id: id },
-            select: CourseRepository.baseQuery,
-        });
-
-        return CourseEntity.rehydrate(raw);
-    }
-
-    async findByFilter({ title, category, level, skip, take }) {
-        const result = await this.prisma.course.findMany({
-            where: {
-                title: title,
-                category: category,
-                level: level,
+  async findByLessonId(lessonId) {
+    const raw = await this.prisma.course.findFirst({
+      where: {
+        modules: {
+          some: {
+            lessons: {
+              some: {
+                id: lessonId,
+              },
             },
-            skip,
-            take,
-            include: { instructor: true },
-        });
+          },
+        },
+      },
+      select: CourseRepository.baseQuery,
+    });
 
-        return result.map(CourseEntity.rehydrate);
-    }
+    return CourseEntity.rehydrate(raw);
+  }
 
-    async save(course) {
-        const raw = await this.prisma.course.update({
-            where: { id: course.id },
-            data: toPersistence(course),
-        })
-
-        return CourseEntity.rehydrate(raw);
-    }
-
-    async add(course) {
-        const persistenceData = toPersistence(course);
-
-        logger.debug("Creating course in DB", {
-            courseId: course.id,
-            instructorId: course.instructorId,
-            payload: persistenceData,
-        });
-
-        try {
-            const raw = await this.prisma.course.create({ data: persistenceData });
-
-            logger.info("Course created", {
-                courseId: raw.id,
-                instructorId: raw.instructorId,
-            });
-
-            console.log(raw);
-
-            return CourseEntity.rehydrate(raw);
-        }
-        catch (error) {
-            logger.error("Course creation failed", {
-                error_message: error.message,
-                stack_trace: error.stack,
-                courseId: course.id,
-                instructorId: course.instructorId,
-                payload: persistenceData,
-            });
-
-            throw error;
-        }
-    }
-
-    async findByLessonId(lessonId) {
-        const raw = await this.prisma.course.findFirst({
-            where: {
-                modules: {
-                    some: {
-                        lessons: {
-                            some: {
-                                id: lessonId,
-                            }
-                        }
-                    }
-                }
-            },
-            select: CourseRepository.baseQuery,
-        });
-
-        return CourseEntity.rehydrate(raw);
-    }
-
-    static baseQuery = buildQuery(courseSchema);
+  static baseQuery = buildQuery(courseSchema);
 }

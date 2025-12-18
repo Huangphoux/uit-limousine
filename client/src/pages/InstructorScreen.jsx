@@ -7,6 +7,7 @@ import CreateCourseModal from "../components/CreateCourseModal";
 import EditCourseModal from "../components/instructor-screen/course-management/EditCourseModal";
 import CourseManagementView from "../components/instructor-screen/course-management/CourseManagementView";
 import AssignmentGradingView from "../components/instructor-screen/grade-assignment/AssignmentGradingView";
+import { useCourses } from "../hooks/useCourses";
 
 const InstructorScreen = () => {
   const navigate = useNavigate();
@@ -16,66 +17,45 @@ const InstructorScreen = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [filteredCourses, setFilteredCourses] = useState([]);
 
   // Course Management Part
   // Sample course data
-  const [courses, setCourses] = useState([
-    {
-      id: 1,
-      title: "Coding basic",
-      description: "Learn how to code",
-      image: "public/images/course-placeholder.svg",
-      enrolledStudents: 0,
-      duration: "3 months",
-      status: "Draft",
-      rating: 0,
-      durationWeeks: "12",
-      durationDays: "90",
-      durationHours: "180",
-    },
-    {
-      id: 2,
-      title: "Advanced JavaScript",
-      description: "Master advanced JavaScript concepts",
-      image: "public/images/course-placeholder.svg",
-      enrolledStudents: 25,
-      duration: "2 months",
-      status: "Published",
-      rating: 4.5,
-      durationWeeks: "8",
-      durationDays: "60",
-      durationHours: "120",
-    },
-    {
-      id: 3,
-      title: "React Fundamentals",
-      description: "Learn the basics of React development",
-      image: "public/images/course-placeholder.svg",
-      enrolledStudents: 12,
-      duration: "6 weeks",
-      status: "Wait for approval",
-      rating: 0,
-      durationWeeks: "6",
-      durationDays: "42",
-      durationHours: "90",
-    },
-    {
-      id: 4,
-      title: "Python for Beginners",
-      description: "Introduction to Python programming",
-      image: "public/images/course-placeholder.svg",
-      enrolledStudents: 0,
-      duration: "4 months",
-      status: "Denied",
-      rating: 0,
-      denialReason: "abc",
-      durationWeeks: "16",
-      durationDays: "120",
-      durationHours: "240",
-    },
-  ]);
+  const {
+    courses,
+    loading,
+    error,
+    fetchCourses,
+    enrollInCourse,
+    unsubscribeFromCourse,
+    searchCourses,
+    setCourses,
+  } = useCourses([]);
+
+  useEffect(() => {
+    fetchCourses({ onlyMyCourses: true });
+  }, []);
+
+  // Refresh courses when returning from edit page
+  useEffect(() => {
+    const checkAndRefresh = () => {
+      try {
+        const flag = localStorage.getItem("courses_needs_refresh");
+        if (flag === "1") {
+          fetchCourses();
+          localStorage.removeItem("courses_needs_refresh");
+        }
+      } catch (e) {
+        // ignore
+        console.log(e);
+      }
+    };
+
+    window.addEventListener("focus", checkAndRefresh);
+    // run once in case already flagged
+    checkAndRefresh();
+    return () => window.removeEventListener("focus", checkAndRefresh);
+  }, [fetchCourses]);
 
   const placeholderStyle = {
     "--placeholder-color": "#ddd",
@@ -148,34 +128,26 @@ const InstructorScreen = () => {
   }, [courses]);
 
   // Simulate loading effect
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 1500);
-    return () => clearTimeout(timer);
-  }, []);
+  // useEffect(() => {
+  //   const timer = setTimeout(() => {
+  //     setLoading(false);
+  //   }, 1500);
+  //   return () => clearTimeout(timer);
+  // }, []);
 
   // Debounced search effect - triggers 1 second after user stops typing
+  // Thay thế useEffect dòng 120-139
   useEffect(() => {
     const debounceTimer = setTimeout(() => {
       if (searchQuery.trim() === "") {
-        // If search is empty, show all courses
-        setFilteredCourses(courses);
+        fetchCourses({ onlyMyCourses: true }); // Lấy tất cả do instructor
       } else {
-        // Perform search after 1 second delay
-        const filtered = courses.filter(
-          (course) =>
-            course.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            course.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            course.status.toLowerCase().includes(searchQuery.toLowerCase())
-        );
-        setFilteredCourses(filtered);
+        fetchCourses({ search: searchQuery, onlyMyCourses: true }); // Gọi API search limited to instructor
       }
     }, 1000);
 
-    // Cleanup: clear the timeout if user types again before 1 second
     return () => clearTimeout(debounceTimer);
-  }, [searchQuery, courses]);
+  }, [searchQuery]);
 
   return (
     <>

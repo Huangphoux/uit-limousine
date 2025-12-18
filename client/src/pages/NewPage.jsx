@@ -32,15 +32,15 @@ const NewPage = () => {
   // Use the custom hook for notifications
   const { notifications, addNotification } = useNotificationContext();
 
-  // Initialize filtered courses
-  useEffect(() => {
-    setFilteredCourses(courses);
-  }, [courses]);
-
   // Fetch courses from API on component mount
   useEffect(() => {
     fetchCourses();
   }, []);
+
+  // Initialize filtered courses
+  useEffect(() => {
+    setFilteredCourses(courses);
+  }, [courses]);
 
   // Debounced search effect - triggers 1 second after user stops typing
   useEffect(() => {

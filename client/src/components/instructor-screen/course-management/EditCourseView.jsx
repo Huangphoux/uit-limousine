@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Container, Row, Col, Button, Form } from "react-bootstrap";
+import { Container, Row, Col, Button, Form, Modal } from "react-bootstrap";
 import { useNavigate, useLocation } from "react-router-dom";
 import { FiFolderPlus } from "react-icons/fi";
 import { MdDeleteOutline } from "react-icons/md";
@@ -9,34 +9,136 @@ import ReadingLessonContent from "./ReadingLessonContent";
 import AssignmentLessonContent from "./AssignmentLessonContent";
 import AssignmentGradingDetail from "./AssignmentGradingDetail";
 
-// import Header from "../../Header";
 import "./EditCourseView.css";
+import { toast } from "sonner";
+const API_URL = import.meta.env.VITE_API_URL;
 
 const EditCourseView = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const mainContentRef = useRef(null);
   const [assignmentActiveTab, setAssignmentActiveTab] = useState("edit");
+  const [showCourseSettingsModal, setShowCourseSettingsModal] = useState(false);
 
   const [courseData, setCourseData] = useState({
     title: "Demo Course",
     instructor: "Instructor Name",
     modules: [],
   });
+  const [loading, setLoading] = useState(false);
 
-  // Load course data from navigation state
+  // Fetch course details from API
+  const fetchCourseDetails = async (courseId) => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem("accessToken");
+      const userStr = localStorage.getItem("user");
+
+      const user = JSON.parse(userStr);
+      const myAuthId = user.id;
+
+      const response = await fetch(`${API_URL}/courses/${courseId}/materials`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const result = await response.json();
+      console.log("API Response:", result);
+
+      if (!response.ok) {
+        const errorMessage =
+          result.data || result.error?.message || result.message || "Failed to load course";
+        throw new Error(errorMessage);
+      }
+
+      // Handle API response for course materials (UC-6.1)
+      // Response format: { status: 'success', data: { modules: [...] } }
+      if (result.status === "success" && result.data) {
+        const materials = result.data;
+
+        // We need to fetch additional course info from the course detail endpoint
+        // since materials endpoint only returns modules
+        const courseResponse = await fetch(`${API_URL}/courses/${courseId}`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        const courseResult = await courseResponse.json();
+
+        if (!courseResponse.ok) {
+          throw new Error("Failed to load course details");
+        }
+
+        // Course detail response format
+        let course;
+        if (courseResult.data && typeof courseResult.data === "object") {
+          course = courseResult.data;
+        } else if (courseResult.id) {
+          course = courseResult;
+        } else {
+          throw new Error("Invalid course data format");
+        }
+
+        // Normalize lesson type values from backend to UI labels
+        const normalizedModules = (materials.modules || []).map((m) => ({
+          ...m,
+          lessons: (m.lessons || []).map((l) => ({
+            ...l,
+            type: mapContentTypeToUI(l.type || l.contentType || l.contentType),
+          })),
+        }));
+
+        setCourseData({
+          id: course.id,
+          title: course.title || "Untitled Course",
+          description: course.description || course.shortDesc || "",
+          instructor: course.instructor?.fullName || "Instructor Name",
+          image: course.thumbnail || course.image || "",
+          status: course.published ? "published" : "draft",
+          modules: normalizedModules,
+          level: course.level || "",
+          language: course.language,
+          price: course.price,
+          rating: course.rating,
+          enrollmentCount: course.enrollmentCount,
+        });
+      } else {
+        throw new Error("Invalid API response format");
+      }
+    } catch (error) {
+      console.error("Error fetching course:", error);
+      toast.error("Failed to load course details: " + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Load course data from navigation state or fetch from API
   useEffect(() => {
     if (location.state?.courseData) {
       const course = location.state.courseData;
-      setCourseData({
-        id: course.id,
-        title: course.title,
-        description: course.description,
-        instructor: "Instructor Name", // You can get this from context/auth
-        image: course.image,
-        status: course.status,
-        modules: course.modules || [],
-      });
+
+      // If we have a course ID, fetch full details from API
+      if (course.id) {
+        fetchCourseDetails(course.id);
+      } else {
+        // Fallback: use data from navigation state
+        setCourseData({
+          id: course.id,
+          title: course.title,
+          description: course.description,
+          instructor: "Instructor Name",
+          image: course.image,
+          status: course.status,
+          modules: course.modules || [],
+        });
+      }
     }
   }, [location.state]);
 
@@ -51,6 +153,24 @@ const EditCourseView = () => {
     description: "",
     files: [],
   });
+
+  // Map between backend contentType values and UI labels
+  const mapContentTypeToUI = (contentType) => {
+    if (!contentType) return "Video";
+    const ct = String(contentType).toLowerCase();
+    if (ct === "video") return "Video";
+    if (ct === "article") return "Reading";
+    if (ct === "file" || ct === "assignment") return "Assignment";
+    return ct.charAt(0).toUpperCase() + ct.slice(1);
+  };
+
+  const mapUIToContentType = (uiType) => {
+    if (!uiType) return "video";
+    if (uiType === "Video") return "video";
+    if (uiType === "Reading") return "article";
+    if (uiType === "Assignment") return "file";
+    return String(uiType).toLowerCase();
+  };
 
   // Add new module
   const handleAddModule = () => {
@@ -418,9 +538,142 @@ const EditCourseView = () => {
     return lessonIndex < module.lessons.length - 1 || moduleIndex < courseData.modules.length - 1;
   };
 
+  const handleSaveCourse = async (e) => {
+    e.preventDefault();
+    try {
+      const token = localStorage.getItem("accessToken");
+      const userStr = localStorage.getItem("user");
+
+      if (!token || !userStr) {
+        toast.error("Please login first to update course.");
+        return;
+      }
+
+      const user = JSON.parse(userStr);
+      const authId = user.id;
+
+      // Deep snapshot for logging
+      const course = JSON.parse(JSON.stringify(courseData));
+
+      console.log("Save Course Debug:");
+      console.log("- User ID (authId):", authId);
+      console.log("- Course ID:", course.id);
+      console.log("- Full courseData snapshot:", course);
+
+      // Prepare modules data for backend - transform to match backend schema
+      const modulesData = course.modules.map((module, moduleIndex) => ({
+        id: module.id,
+        title: module.title,
+        position: moduleIndex,
+        lessons: (module.lessons || []).map((lesson, lessonIndex) => ({
+          id: lesson.id,
+          title: lesson.title,
+          content: lesson.description || lesson.content || "",
+          mediaUrl: lesson.videoUrl || lesson.mediaUrl || "",
+          contentType: mapUIToContentType(lesson.type) || "video",
+          durationSec: lesson.duration ? parseDurationToSeconds(lesson.duration) : null,
+          position: lessonIndex,
+        })),
+      }));
+
+      // Backend now accepts: authId, id, title, description, price, level, language, coverImage, modules
+      const payload = {
+        authId,
+        id: course.id,
+        title: course.title || "Untitled Course",
+        description: course.description || "",
+        price: typeof course.price === "number" ? course.price : Number(course.price) || 0,
+        level: course.level || null,
+        language: course.language || null,
+        coverImage: course.thumbnail || course.image || course.coverImage || null,
+        modules: modulesData,
+      };
+
+      console.log("Sending payload:", payload);
+
+      const response = await fetch(`${API_URL}/courses/${courseData.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await response.json();
+      console.log("Save response:", data);
+
+      if (!response.ok) {
+        const errorMessage =
+          data.data || data.error?.message || data.message || "Update course failed";
+        throw new Error(errorMessage);
+      }
+
+      toast.success("Course updated successfully!");
+      // signal parent page to refresh course list
+      try {
+        localStorage.setItem("courses_needs_refresh", "1");
+      } catch (e) {
+        /* ignore */
+        console.log(e);
+      }
+      navigate(-1);
+    } catch (error) {
+      console.error("Error saving course:", error);
+      toast.error("Failed to update course: " + error.message);
+    }
+  };
+
+  // Helper function to parse duration string to seconds
+  const parseDurationToSeconds = (duration) => {
+    if (typeof duration === "number") return duration;
+    if (!duration || typeof duration !== "string") return null;
+
+    const parts = duration.split(":");
+    if (parts.length === 2) {
+      // Format: MM:SS
+      return parseInt(parts[0]) * 60 + parseInt(parts[1]);
+    } else if (parts.length === 3) {
+      // Format: HH:MM:SS
+      return parseInt(parts[0]) * 3600 + parseInt(parts[1]) * 60 + parseInt(parts[2]);
+    }
+    return null;
+  };
+
   return (
     <>
       <div style={{ minHeight: "100vh", background: "#f8f9fa" }}>
+        {/* Loading State */}
+        {loading && (
+          <div
+            style={{
+              position: "fixed",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: "rgba(255, 255, 255, 0.9)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: 9999,
+            }}
+          >
+            <div className="text-center">
+              <div
+                className="spinner-border text-primary"
+                role="status"
+                style={{ width: "3rem", height: "3rem" }}
+              >
+                <span className="visually-hidden">Loading...</span>
+              </div>
+              <div className="mt-3">
+                <h5 style={{ color: "#6c757d" }}>Loading course details...</h5>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Header */}
         <div className="edit-course-header">
           <Container fluid>
@@ -437,54 +690,26 @@ const EditCourseView = () => {
                 </div>
               </Col>
               <Col md={6}>
-                {/* <div
+                <div
                   className="d-flex justify-content-end align-items-center"
                   style={{ gap: "0.75rem" }}
                 >
-                  <span style={{ fontSize: "0.9rem", color: "#333" }}>Progress</span>
-                  <span style={{ fontSize: "0.9rem", color: "#333" }}>
-                    {Math.round(
-                      (courseData.modules.reduce(
-                        (acc, mod) => acc + mod.lessons.filter((l) => l.isCompleted).length,
-                        0
-                      ) /
-                        Math.max(
-                          courseData.modules.reduce((acc, mod) => acc + mod.lessons.length, 0),
-                          1
-                        )) *
-                        100
-                    )}
-                    %
-                  </span>
-                  <div
+                  <button
+                    className="btn btn-outline-primary"
+                    onClick={() => setShowCourseSettingsModal(true)}
                     style={{
-                      width: "120px",
-                      height: "8px",
-                      backgroundColor: "#e0e0e0",
-                      borderRadius: "10px",
-                      overflow: "hidden",
+                      padding: "0.5rem 1rem",
+                      borderRadius: "0.375rem",
+                      fontWeight: "500",
                     }}
                   >
-                    <div
-                      style={{
-                        height: "100%",
-                        backgroundColor: "#2196f3",
-                        transition: "width 0.3s ease",
-                        width: `${Math.round(
-                          (courseData.modules.reduce(
-                            (acc, mod) => acc + mod.lessons.filter((l) => l.isCompleted).length,
-                            0
-                          ) /
-                            Math.max(
-                              courseData.modules.reduce((acc, mod) => acc + mod.lessons.length, 0),
-                              1
-                            )) *
-                            100
-                        )}%`,
-                      }}
-                    />
-                  </div>
-                </div> */}
+                    <i className="bi bi-gear me-1"></i>
+                    Course Settings
+                  </button>
+                  <button className="edit-save-btn" onClick={(e) => handleSaveCourse(e)}>
+                    Save
+                  </button>
+                </div>
               </Col>
             </Row>
           </Container>
@@ -940,6 +1165,137 @@ const EditCourseView = () => {
           </Col>
         </Row>
       </div>
+
+      {/* Course Settings Modal */}
+      <Modal
+        show={showCourseSettingsModal}
+        onHide={() => setShowCourseSettingsModal(false)}
+        size="lg"
+        centered
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>Course Settings</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Form>
+            <Form.Group className="mb-3">
+              <Form.Label>Course Title *</Form.Label>
+              <Form.Control
+                type="text"
+                placeholder="Enter course title"
+                value={courseData.title || ""}
+                onChange={(e) => setCourseData({ ...courseData, title: e.target.value })}
+              />
+            </Form.Group>
+
+            <Form.Group className="mb-3">
+              <Form.Label>Description</Form.Label>
+              <Form.Control
+                as="textarea"
+                rows={4}
+                placeholder="Enter course description"
+                value={courseData.description || ""}
+                onChange={(e) => setCourseData({ ...courseData, description: e.target.value })}
+              />
+            </Form.Group>
+
+            <Row>
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Price ($)</Form.Label>
+                  <Form.Control
+                    type="number"
+                    placeholder="0"
+                    min="0"
+                    step="0.01"
+                    value={courseData.price || 0}
+                    onChange={(e) =>
+                      setCourseData({ ...courseData, price: parseFloat(e.target.value) || 0 })
+                    }
+                  />
+                  <Form.Text className="text-muted">Set to 0 for free course</Form.Text>
+                </Form.Group>
+              </Col>
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Level</Form.Label>
+                  <Form.Select
+                    value={courseData.level || "Beginner"}
+                    onChange={(e) => setCourseData({ ...courseData, level: e.target.value })}
+                  >
+                    <option value="Beginner">Beginner</option>
+                    <option value="Intermediate">Intermediate</option>
+                    <option value="Advanced">Advanced</option>
+                  </Form.Select>
+                </Form.Group>
+              </Col>
+            </Row>
+
+            <Row>
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Language</Form.Label>
+                  <Form.Control
+                    type="text"
+                    placeholder="e.g., English, Vietnamese"
+                    value={courseData.language || ""}
+                    onChange={(e) => setCourseData({ ...courseData, language: e.target.value })}
+                  />
+                </Form.Group>
+              </Col>
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Thumbnail URL</Form.Label>
+                  <Form.Control
+                    type="text"
+                    placeholder="https://example.com/image.jpg"
+                    value={courseData.thumbnail || courseData.image || ""}
+                    onChange={(e) =>
+                      setCourseData({
+                        ...courseData,
+                        thumbnail: e.target.value,
+                        image: e.target.value,
+                      })
+                    }
+                  />
+                </Form.Group>
+              </Col>
+            </Row>
+
+            {(courseData.thumbnail || courseData.image) && (
+              <div className="mb-3 text-center">
+                <img
+                  src={courseData.thumbnail || courseData.image}
+                  alt="Course thumbnail preview"
+                  style={{
+                    maxWidth: "100%",
+                    maxHeight: "200px",
+                    borderRadius: "0.375rem",
+                    objectFit: "cover",
+                  }}
+                  onError={(e) => {
+                    e.target.style.display = "none";
+                  }}
+                />
+              </div>
+            )}
+          </Form>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowCourseSettingsModal(false)}>
+            Cancel
+          </Button>
+          <Button
+            variant="primary"
+            onClick={() => {
+              setShowCourseSettingsModal(false);
+              toast.success("Course settings updated! Don't forget to save.");
+            }}
+          >
+            Apply Changes
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </>
   );
 };

@@ -37,9 +37,12 @@ export default function ForgetPassword() {
       });
 
       const data = await response.json();
+      console.log(response);
 
       if (!response.ok) {
-        throw new Error(data.error?.message || data.message || "Request failed");
+        // Handle jsend error response format: { status: 'fail', data: 'error message' }
+        const errorMessage = data.data || data.error?.message || data.message || "Request failed";
+        throw new Error(errorMessage);
       }
 
       // Show success message

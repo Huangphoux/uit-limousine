@@ -21,6 +21,16 @@ export const useCourses = (initialCourses = []) => {
       if (params.category) queryParams.append("category", params.category);
       if (params.page) queryParams.append("page", params.page);
       if (params.limit) queryParams.append("limit", params.limit);
+      // If requesting instructor's courses, include instructorId
+      try {
+        const userStr = localStorage.getItem("user");
+        if (userStr && params.onlyMyCourses) {
+          const user = JSON.parse(userStr);
+          if (user && user.id) queryParams.append("instructorId", user.id);
+        }
+      } catch (e) {
+        // ignore parsing errors
+      }
 
       const queryString = queryParams.toString();
       const url = `${API_URL}/courses${queryString ? `?${queryString}` : ""}`;
