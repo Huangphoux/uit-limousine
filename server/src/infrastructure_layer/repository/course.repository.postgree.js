@@ -9,12 +9,60 @@ export class CourseRepository {
   }
 
   async findById(id) {
-    const raw = await this.prisma.course.findUnique({
-      where: { id: id },
-      select: CourseRepository.baseQuery,
-    });
+    try {
+      const raw = await this.prisma.course.findUnique({
+        where: { id: id },
+        select: CourseRepository.baseQuery,
+      });
 
-    return CourseEntity.rehydrate(raw);
+      return CourseEntity.rehydrate(raw);
+    } catch (err) {
+      // Fallback for databases that haven't been migrated to include assignment fields
+      console.warn(
+        "CourseRepository.findById: baseQuery select failed, retrying with safe select",
+        err.message
+      );
+      const raw = await this.prisma.course.findUnique({
+        where: { id: id },
+        select: {
+          id: true,
+          title: true,
+          shortDesc: true,
+          description: true,
+          language: true,
+          level: true,
+          price: true,
+          published: true,
+          publishDate: true,
+          coverImage: true,
+          createdAt: true,
+          updatedAt: true,
+          instructorId: true,
+          modules: {
+            select: {
+              id: true,
+              title: true,
+              position: true,
+              createdAt: true,
+              lessons: {
+                select: {
+                  id: true,
+                  title: true,
+                  content: true,
+                  mediaUrl: true,
+                  contentType: true,
+                  durationSec: true,
+                  position: true,
+                  createdAt: true,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      return CourseEntity.rehydrate(raw);
+    }
   }
 
   async findByFilter({ title, category, level, skip, take }) {
@@ -80,22 +128,79 @@ export class CourseRepository {
   }
 
   async findByLessonId(lessonId) {
-    const raw = await this.prisma.course.findFirst({
-      where: {
-        modules: {
-          some: {
-            lessons: {
-              some: {
-                id: lessonId,
+    try {
+      const raw = await this.prisma.course.findFirst({
+        where: {
+          modules: {
+            some: {
+              lessons: {
+                some: {
+                  id: lessonId,
+                },
               },
             },
           },
         },
-      },
-      select: CourseRepository.baseQuery,
-    });
+        select: CourseRepository.baseQuery,
+      });
 
-    return CourseEntity.rehydrate(raw);
+      return CourseEntity.rehydrate(raw);
+    } catch (err) {
+      console.warn(
+        "CourseRepository.findByLessonId: baseQuery select failed, retrying with safe select",
+        err.message
+      );
+      const raw = await this.prisma.course.findFirst({
+        where: {
+          modules: {
+            some: {
+              lessons: {
+                some: {
+                  id: lessonId,
+                },
+              },
+            },
+          },
+        },
+        select: {
+          id: true,
+          title: true,
+          shortDesc: true,
+          description: true,
+          language: true,
+          level: true,
+          price: true,
+          published: true,
+          publishDate: true,
+          coverImage: true,
+          createdAt: true,
+          updatedAt: true,
+          instructorId: true,
+          modules: {
+            select: {
+              id: true,
+              title: true,
+              position: true,
+              createdAt: true,
+              lessons: {
+                select: {
+                  id: true,
+                  title: true,
+                  content: true,
+                  mediaUrl: true,
+                  contentType: true,
+                  durationSec: true,
+                  position: true,
+                  createdAt: true,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      return CourseEntity.rehydrate(raw);
+    }
   }
 
   static baseQuery = buildQuery(courseSchema);

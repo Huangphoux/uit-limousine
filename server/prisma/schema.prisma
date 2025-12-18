@@ -106,7 +106,9 @@ model Lesson {
   title          String
   content        String? // markdown or rich text
   mediaUrl       String? // optional video/file url
-  contentType    String? // "video" | "article" | "file"
+  contentType    String? // "video" | "article" | "file" | "assignment"
+  assignmentId   String?
+  assignment     Assignment?      @relation(fields: [assignmentId], references: [id], onDelete: SetNull)
   durationSec    Int? // for video lessons
   position       Int              @default(0)
   createdAt      DateTime         @default(now())
@@ -155,6 +157,7 @@ model Assignment {
   createdAt   DateTime     @default(now())
   course      Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
   submissions Submission[]
+  lessons     Lesson[]
 }
 
 model Submission {

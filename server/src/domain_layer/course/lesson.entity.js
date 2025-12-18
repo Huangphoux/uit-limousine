@@ -8,7 +8,8 @@ export const lessonSchema = z.object({
     .union([z.string().url(), z.literal("")])
     .nullable()
     .optional(),
-  contentType: z.enum(["video", "article", "file"]).optional(),
+  contentType: z.enum(["video", "article", "file", "assignment"]).optional(),
+  assignmentId: z.string().optional(),
   durationSec: z.number().int().nullable().optional(),
   position: z.number().int().default(0),
   createdAt: z.date().default(() => new Date()),

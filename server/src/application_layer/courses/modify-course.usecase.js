@@ -2,6 +2,7 @@ import z from "zod";
 import { AuditLog } from "../../domain_layer/audit-log.entity.js";
 import { logger } from "../../utils/logger.js";
 import { moduleSchema } from "../../domain_layer/course/module.entity.js";
+import AssignmentRepository from "../../infrastructure_layer/repository/assignment.repository.js";
 
 // Schema for audit log - simpler version without complex nested structures
 const auditCourseDataSchema = z.object({
@@ -40,6 +41,7 @@ export class ModifyCourseUsecase {
   constructor(courseRepository, auditLogRepository) {
     this.courseRepository = courseRepository;
     this.auditLogRepository = auditLogRepository;
+    this.assignmentRepository = new AssignmentRepository();
   }
 
   async execute(input) {
@@ -87,6 +89,39 @@ export class ModifyCourseUsecase {
       course.updateCoverImage(parsedInput.coverImage);
     }
     if (parsedInput.modules !== undefined) {
+      // Create Assignment entities for lessons marked as assignment but missing assignmentId
+      for (const module of parsedInput.modules) {
+        if (!module.lessons || !Array.isArray(module.lessons)) continue;
+        for (const lesson of module.lessons) {
+          try {
+            const ct = (lesson.contentType || lesson.type || "").toLowerCase();
+            if (ct === "assignment" && !lesson.assignmentId) {
+              // Build payload from available lesson fields
+              const assignPayload = {
+                courseId: parsedInput.id,
+                title: lesson.title || "Assignment",
+                description: lesson.content || lesson.description || null,
+                dueDate: lesson.dueDate ? new Date(lesson.dueDate) : null,
+                maxPoints: lesson.maxPoints || lesson.maxScore || 100,
+              };
+
+              const created = await this.assignmentRepository.create(assignPayload);
+              if (created && created.id) {
+                lesson.assignmentId = created.id;
+                // ensure contentType is assignment
+                lesson.contentType = "assignment";
+              }
+            }
+          } catch (e) {
+            // log and continue — don't fail entire update for one assignment creation
+            logger.warn("Failed to create assignment for lesson", {
+              lessonTitle: lesson.title,
+              error: e.message,
+            });
+          }
+        }
+      }
+
       course.updateModules(parsedInput.modules);
     }
 

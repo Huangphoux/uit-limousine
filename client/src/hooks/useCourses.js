@@ -30,6 +30,7 @@ export const useCourses = (initialCourses = []) => {
         }
       } catch (e) {
         // ignore parsing errors
+        console.log(e);
       }
 
       const queryString = queryParams.toString();

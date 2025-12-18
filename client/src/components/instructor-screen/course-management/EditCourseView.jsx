@@ -168,7 +168,7 @@ const EditCourseView = () => {
     if (!uiType) return "video";
     if (uiType === "Video") return "video";
     if (uiType === "Reading") return "article";
-    if (uiType === "Assignment") return "file";
+    if (uiType === "Assignment") return "assignment";
     return String(uiType).toLowerCase();
   };
 
@@ -555,6 +555,65 @@ const EditCourseView = () => {
       // Deep snapshot for logging
       const course = JSON.parse(JSON.stringify(courseData));
 
+      // Create Assignment resources on server for lessons typed as Assignment
+      // if they don't already have an assignmentId
+      for (const module of course.modules || []) {
+        for (const lesson of module.lessons || []) {
+          if (lesson.type === "Assignment" && !lesson.assignmentId) {
+            // build assignment payload
+            const assignmentPayload = {
+              courseId: course.id,
+              title: lesson.title || "Assignment",
+              description: lesson.description || lesson.content || "",
+              dueDate:
+                lesson.dueDate && lesson.dueTime
+                  ? new Date(lesson.dueDate + "T" + lesson.dueTime).toISOString()
+                  : undefined,
+              maxPoints: lesson.maxScore || lesson.maxPoints || 100,
+            };
+
+            console.log(
+              "Creating assignment for lesson",
+              lesson.id || lesson.title,
+              assignmentPayload
+            );
+
+            const resp = await fetch(`${API_URL}/assignments`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify(assignmentPayload),
+            });
+
+            const created = await resp.json();
+            if (!resp.ok) {
+              const err =
+                created?.data ||
+                created?.error?.message ||
+                created?.message ||
+                "Failed to create assignment";
+              throw new Error(err);
+            }
+
+            // Try to extract assignment id from common response shapes
+            const assignmentId =
+              created?.data?.id ||
+              created?.id ||
+              created?.assignment?.id ||
+              (created?.data?.assignment && created.data.assignment.id);
+            if (!assignmentId) {
+              console.warn("Assignment created but id not found in response:", created);
+            } else {
+              lesson.assignmentId = assignmentId;
+              // ensure lesson contentType set to 'assignment'
+              lesson.contentType = "assignment";
+            }
+          }
+        }
+      }
+
       console.log("Save Course Debug:");
       console.log("- User ID (authId):", authId);
       console.log("- Course ID:", course.id);
@@ -571,6 +630,7 @@ const EditCourseView = () => {
           content: lesson.description || lesson.content || "",
           mediaUrl: lesson.videoUrl || lesson.mediaUrl || "",
           contentType: mapUIToContentType(lesson.type) || "video",
+          assignmentId: lesson.assignmentId ? lesson.assignmentId : undefined,
           durationSec: lesson.duration ? parseDurationToSeconds(lesson.duration) : null,
           position: lessonIndex,
         })),

@@ -8,6 +8,7 @@ import notificationRouter from "./presentation_layer/routes/notification.route.j
 import gradeRouter from "./presentation_layer/routes/grade.route.js";
 import instructorRouter from "./presentation_layer/routes/instructor.route.js";
 import adminRouter from "./presentation_layer/routes/admin.route.js";
+import assignmentsRouter from "./presentation_layer/routes/assignments.route.js";
 
 const app = express();
 app.use(
@@ -29,6 +30,7 @@ app.use("/notifications", notificationRouter);
 app.use("/grade", gradeRouter);
 app.use("/instructor", instructorRouter);
 app.use("/admin", adminRouter);
+app.use("/assignments", assignmentsRouter);
 
 // Health check endpoint
 app.get("/", (req, res) => {
