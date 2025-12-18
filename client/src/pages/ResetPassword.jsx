@@ -1,6 +1,7 @@
 import { Form, Button, Container, Row, Col, Spinner, Alert } from "react-bootstrap";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useState, useEffect } from "react";
+import { toast } from "sonner";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -20,7 +21,7 @@ export default function ResetPassword() {
   // Check if token exists
   useEffect(() => {
     if (!token) {
-      alert("Invalid or missing reset token. Please request a new password reset.");
+      toast.error("Invalid or missing reset token. Please request a new password reset.");
       navigate("/forgot-password");
     }
   }, [token, navigate]);
@@ -94,9 +95,9 @@ export default function ResetPassword() {
     } catch (error) {
       console.error("Error:", error);
       if (error.message.includes("fetch")) {
-        alert("Unable to connect to the server. Please check your internet connection.");
+        toast.error("Unable to connect to the server. Please check your internet connection.");
       } else {
-        alert("Password reset failed: " + error.message);
+        toast.error("Password reset failed: " + error.message);
       }
     } finally {
       setIsLoading(false);

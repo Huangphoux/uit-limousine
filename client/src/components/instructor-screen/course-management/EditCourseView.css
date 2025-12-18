@@ -656,7 +656,7 @@
 }
 
 .edit-lesson-deadline-time-input {
-    width: 140px;
+    max-width: 300px;
     padding: 0.5rem 1rem;
     font-size: 1.5rem;
 }
@@ -1272,4 +1272,9 @@ svg {
 .search-input-field:focus {
     background-color: #ffffff !important;
     color: #000000 !important;
+}
+
+.edit-modal-form-control {
+    background: #d9d9d9;
+    color: black;
 }

@@ -70,17 +70,17 @@ const ReadingLessonContent = ({ lessonForm, onFormChange, onFileUpload, onRemove
       </div>
 
       {/* Reading Time */}
-      {/* <div className="edit-duration-section">
+      <div className="edit-duration-section">
         <h3 className="edit-content-section-title">⏱️ Estimated Reading Time</h3>
         <Form.Control
           type="text"
           className="edit-duration-input"
-          value={lessonForm.duration}
+          value={lessonForm.duration || ""}
           onChange={(e) => onFormChange("duration", e.target.value)}
           placeholder="e.g., 15:00 (mm:ss)"
         />
         <small className="text-muted">Format: minutes:seconds (e.g., 15:00)</small>
-      </div> */}
+      </div>
     </>
   );
 };

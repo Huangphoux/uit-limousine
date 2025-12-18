@@ -1,6 +1,7 @@
 import { Form, Button, Container, Row, Col, Spinner, Alert } from "react-bootstrap";
 import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
+import { toast } from "sonner";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -53,9 +54,9 @@ export default function ForgetPassword() {
     } catch (error) {
       console.error("Error:", error);
       if (error.message.includes("fetch")) {
-        alert("Unable to connect to the server. Please check your internet connection.");
+        toast.error("Unable to connect to the server. Please check your internet connection.");
       } else {
-        alert("Request failed: " + error.message);
+        toast.error("Request failed: " + error.message);
       }
     } finally {
       setIsLoading(false);

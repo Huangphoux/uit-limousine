@@ -2,6 +2,7 @@ import { Form, Button, Container, Row, Col, Spinner } from "react-bootstrap";
 import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { useAuth } from "../hooks/useAuth";
+import { toast } from "sonner";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -52,9 +53,9 @@ export default function Login() {
     } catch (error) {
       console.error("Error:", error);
       if (error.message.includes("fetch")) {
-        alert("Unable to connect to the server. Please check your internet connection.");
+        toast.error("Unable to connect to the server. Please check your internet connection.");
       } else {
-        alert("Login failed: " + error.message);
+        toast.error("Login failed: " + error.message);
       }
     } finally {
       setIsLoading(false); // Disable loading state

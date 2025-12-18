@@ -6,6 +6,7 @@ import ToastContainer from "../components/ToastContainer";
 import CourseDetailModal from "../components/CourseDetailModal";
 import { useCourses } from "../hooks/useCourses";
 import { useNotificationContext } from "../hooks/useNotificationContext";
+import { toast } from "sonner";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
