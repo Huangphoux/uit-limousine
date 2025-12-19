@@ -13,11 +13,9 @@ describe('Get course materials integration test', () => {
         await prisma.course.create({ data: course });
         await prisma.module.create({ data: module });
         await prisma.lesson.createMany({ data: lessons });
-        await prisma.enrollment.create({ data: enrollment });
     });
 
     afterAll(async () => {
-        await prisma.enrollment.deleteMany({ where: { userId: user.id } });
         await prisma.user.delete({ where: { id: user.id } });
         await prisma.course.delete({ where: { id: course.id } });
     });
@@ -31,6 +29,7 @@ describe('Get course materials integration test', () => {
             catch (e) {
                 test_output = e;
             }
+            console.log(test_output);
         });
 
         it(`Should return object match the schema`, () => {
