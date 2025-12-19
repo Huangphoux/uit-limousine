@@ -4,7 +4,11 @@ export const instructor = {
     email: "create course",
     roles: {
         create: {
-            roleId: 2
+            role: {
+                connect: {
+                    name: "INSTRUCTOR"
+                }
+            }
         }
     }
 }

@@ -9,11 +9,6 @@ export const course = {
     published: true,
 };
 
-export const enrollment = {
-    userId: user.id,
-    courseId: course.id,
-}
-
 export const module = {
     id: "get-course-materials",
     courseId: course.id,
