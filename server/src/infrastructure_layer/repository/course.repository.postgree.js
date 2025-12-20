@@ -64,23 +64,101 @@ export class CourseRepository {
       return CourseEntity.rehydrate(raw);
     }
   }
-
-  async findByFilter({ title, category, level, skip, take }) {
+  async findByFilter({ title, category, level, instructorId, skip, take, currentUserId }) {
     const where = {};
-    if (title) where.title = title;
-    if (category) where.category = category;
-    if (level) where.level = level;
-    // allow filtering by instructorId when provided
-    if (arguments[0] && arguments[0].instructorId) where.instructorId = arguments[0].instructorId;
+
+    if (title) {
+      where.title = {
+        contains: title,
+      };
+    }
+
+    if (category) {
+      where.category = category;
+    }
+
+    if (level) {
+      where.level = level;
+    }
+
+    if (instructorId) {
+      where.instructorId = instructorId;
+    }
+    console.log(currentUserId);
 
     const result = await this.prisma.course.findMany({
       where,
       skip,
       take,
-      include: { instructor: true },
+      include: {
+        instructor: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            avatarUrl: true,
+          }
+        },
+        // --- THÊM LOGIC CHECK ENROLL Ở ĐÂY ---
+        enrollments: currentUserId ? {
+          where: {
+            userId: currentUserId,
+            status: 'ENROLLED'
+          },
+          select: {
+            id: true // Chỉ cần lấy id để biết có tồn tại hay không
+          }
+        } : false
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
     });
 
-    return result.map(CourseEntity.rehydrate);
+    // Trả về dữ liệu đã được map thêm field isEnrolled
+    return result.map(course => {
+      const courseEntity = CourseEntity.rehydrate(course);
+
+      // Gán thêm thuộc tính động để UseCase có thể dùng
+      // (Hoặc nếu CourseEntity của bạn có hàm toJSON, hãy thêm vào đó)
+      return {
+        ...courseEntity,
+        isEnrolledByCurrentUser: course.enrollments?.length > 0
+      };
+    });
+  }
+
+  /**
+   * Count courses by filter
+   */
+  async countByFilter({ title, category, level, instructorId } = {}) {
+    const where = {};
+
+    // ❌ BỎ: published: true nếu muốn đếm tất cả
+    // ✅ THÊM: published: true nếu chỉ muốn đếm courses đã publish
+    // where.published = true; // Uncomment nếu cần
+
+    // Partial match cho title
+    if (title) {
+      where.title = {
+        contains: title,
+      };
+    }
+
+    // Exact match
+    if (category) {
+      where.category = category;
+    }
+
+    if (level) {
+      where.level = level;
+    }
+
+    if (instructorId) {
+      where.instructorId = instructorId;
+    }
+
+    return await this.prisma.course.count({ where });
   }
 
   async save(course) {
@@ -201,6 +279,19 @@ export class CourseRepository {
 
       return CourseEntity.rehydrate(raw);
     }
+  }
+
+  // CourseRepository.js
+  async updateApprovalStatus(courseId, { published, publishDate }) {
+    return await this.prisma.course.update({
+      where: { id: courseId },
+      data: {
+        published: published,
+        publishDate: publishDate,
+        // Nếu bạn muốn lưu lý do từ chối vào database, 
+        // bạn nên thêm field 'denialReason' vào model Course trong schema.prisma
+      }
+    });
   }
 
   static baseQuery = buildQuery(courseSchema);

@@ -25,5 +25,13 @@ export class EnrollmentRepositoryPostgree {
         return EnrollmentEntity.rehydrate(raw);
     }
 
+    async updateStatus(id, newStatus) {
+        return await prisma.enrollment.update({
+            where: { id },
+            data: { status: newStatus }
+        });
+    }
+
+
     static baseQuery = buildQuery(enrollmentSchema);
 }

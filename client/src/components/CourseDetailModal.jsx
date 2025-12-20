@@ -9,7 +9,7 @@ const CourseDetailModal = ({ course, show, onHide, onEnroll, loading, error }) =
   const [isPaid, setIsPaid] = useState(course?.isPaid || false);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const navigate = useNavigate();
-
+const [enrolledCourseIds, setEnrolledCourseIds] = useState([]);
   // Sync local state with course prop when course changes
   useEffect(() => {
     if (course) {
@@ -39,7 +39,7 @@ const CourseDetailModal = ({ course, show, onHide, onEnroll, loading, error }) =
   };
 
   const handleEnroll = () => {
-    setIsEnrolled(true); // Update local state
+    // setIsEnrolled(true); // Update local state
     if (onEnroll) {
       onEnroll(course.id, course, "success"); // Call parent handler
     }

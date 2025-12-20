@@ -109,11 +109,11 @@ export const useCourses = (initialCourses = []) => {
 
     // Real API call
     try {
-      const response = await fetch(`${API_URL}/api/courses/${courseId}/enroll`, {
+      const response = await fetch(`${API_URL}/courses/${courseId}/enroll`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
         },
       });
 
@@ -153,11 +153,11 @@ export const useCourses = (initialCourses = []) => {
 
     // Real API call
     try {
-      const response = await fetch(`${API_URL}/api/courses/${courseId}/unsubscribe`, {
+      const response = await fetch(`${API_URL}/courses/${courseId}/unenroll`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
         },
       });
 

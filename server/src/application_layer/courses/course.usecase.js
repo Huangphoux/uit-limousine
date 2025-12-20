@@ -7,48 +7,26 @@ export default class CourseUseCase {
   constructor() {
     this.submissionRepo = new SubmissionRepository();
     this.assignmentRepo = new AssignmentRepository();
-    this.enrollmentRepo = new EnrollmentRepository();  
+    this.enrollmentRepo = new EnrollmentRepository();
   }
 
   async submitAssignment(assignmentId, studentId, { content, fileUrl }) {
-
-    
     const assignment = await this.assignmentRepo.findById(assignmentId);
-    
-    if (!assignment) {
-      throw new Error('Assignment not found');
-    }
+    if (!assignment) throw new Error('Assignment not found');
 
-  
-   
-    
-    const enrollment = await this.enrollmentRepo.findByUserAndCourse(
-      studentId,
-      assignment.courseId
-    );
-    
-    
+    const enrollment = await this.enrollmentRepo.findByUserAndCourse(studentId, assignment.courseId);
     if (!enrollment || enrollment.status !== 'ENROLLED') {
       throw new Error('You are not enrolled in this course');
     }
 
-    
-    const existingSubmission = await this.submissionRepo.findByAssignmentAndStudent(
-      assignmentId,
-      studentId
-    );
-    
-    if (existingSubmission) {
-      throw new Error('You have already submitted this assignment');
-    }
+    const existingSubmission = await this.submissionRepo.findByAssignmentAndStudent(assignmentId, studentId);
+    if (existingSubmission) throw new Error('You have already submitted this assignment');
 
-   
     let status = 'SUBMITTED';
     if (assignment.dueDate && new Date() > new Date(assignment.dueDate)) {
       status = 'LATE';
     }
 
-    
     const submissionData = {
       assignmentId,
       studentId,
@@ -58,8 +36,51 @@ export default class CourseUseCase {
       submittedAt: new Date()
     };
 
+    // 1. Tạo submission (giữ nguyên logic cũ)
     const newSubmission = await this.submissionRepo.create(submissionData);
-    
+
+    // --- BỔ SUNG LOGIC CẬP NHẬT LESSON PROGRESS ---
+    try {
+      // Tìm lesson liên kết với assignment này thông qua Prisma trực tiếp 
+      // hoặc qua LessonRepo nếu bạn đã tách Repo
+      const lesson = await prisma.lesson.findFirst({
+        where: { assignmentId: assignmentId }
+      });
+
+      if (lesson) {
+        await prisma.lessonProgress.upsert({
+          where: {
+            userId_lessonId: {
+              userId: studentId,
+              lessonId: lesson.id
+            }
+          },
+          update: {
+            progress: 1.0,
+            completedAt: new Date()
+          },
+          create: {
+            userId: studentId,
+            lessonId: lesson.id,
+            progress: 1.0,
+            completedAt: new Date()
+          }
+        });
+        console.log(`Updated lesson progress for lesson: ${lesson.id}`);
+      }
+    } catch (progressError) {
+      // Log lỗi nhưng không làm fail request nộp bài chính
+      console.error("Failed to update lesson progress:", progressError);
+    }
+
     return SubmissionEntity.fromPrisma(newSubmission);
+  }
+
+  async getSubmission(assignmentId, studentId) {
+    const submission = await this.submissionRepo.findByAssignmentAndStudent(
+      assignmentId,
+      studentId
+    );
+    return submission ? SubmissionEntity.fromPrisma(submission) : null;
   }
 }

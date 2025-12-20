@@ -9,7 +9,8 @@ const CourseApprovingScreen = ({
   statusFilter,
   setStatusFilter,
   courses,
-  setCourses,
+  onApproveCourse,
+  onRejectCourse,
   loading,
   filteredCourses,
   setFilteredCourses,
@@ -35,52 +36,6 @@ const CourseApprovingScreen = ({
 
     setFilteredCourses(filtered);
   }, [searchQuery, statusFilter, courses, setFilteredCourses]);
-
-  // Handle course approval
-  const handleApproveCourse = async (courseData) => {
-    console.log("Approving course:", courseData);
-
-    try {
-      // Update course status to approved/published
-      setCourses((prevCourses) =>
-        prevCourses.map((course) =>
-          course.id === courseData.id ? { ...course, status: "Approved" } : course
-        )
-      );
-
-      // TODO: Add API call here to update the course status on the backend
-      // await updateCourseStatus(courseData.id, 'Approved');
-
-      console.log(`Course "${courseData.title}" has been approved successfully`);
-    } catch (error) {
-      console.error("Error approving course:", error);
-      // TODO: Handle error (show toast, revert state, etc.)
-    }
-  };
-
-  // Handle course denial
-  const handleDenyCourse = async (courseData, reason = "") => {
-    console.log("Denying course:", courseData, "Reason:", reason);
-
-    try {
-      // Update course status to denied with reason
-      setCourses((prevCourses) =>
-        prevCourses.map((course) =>
-          course.id === courseData.id
-            ? { ...course, status: "Denied", denialReason: reason }
-            : course
-        )
-      );
-
-      // TODO: Add API call here to update the course status on the backend
-      // await updateCourseStatus(courseData.id, 'Denied', reason);
-
-      console.log(`Course "${courseData.title}" has been denied successfully`);
-    } catch (error) {
-      console.error("Error denying course:", error);
-      // TODO: Handle error (show toast, revert state, etc.)
-    }
-  };
 
   // Calculate Course Approval stats
   const calculateCourseApprovalStats = () => {
@@ -248,8 +203,8 @@ const CourseApprovingScreen = ({
               <div className="course-management-card">
                 <ApprovalCourseCard
                   courseData={course}
-                  onApprove={handleApproveCourse}
-                  onDeny={handleDenyCourse}
+                  onApprove={onApproveCourse}
+                  onDeny={onRejectCourse}
                 />
               </div>
             </Col>

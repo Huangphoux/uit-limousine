@@ -15,6 +15,7 @@ export function authenticationMiddleware(req, res, next) {
     }
     req.body.authId = result.id;
     req.body.roles = result.roles;
+    
 
     next();
 

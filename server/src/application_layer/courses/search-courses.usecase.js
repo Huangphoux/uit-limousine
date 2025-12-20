@@ -7,43 +7,56 @@ export class SearchCoursesUseCase {
     this.#courseRepository = courseRepository;
   }
 
-  async execute({ search, category, level, page = 1, limit = 10, instructorId } = {}) {
+  async execute({ search, category, level, page = 1, limit = 10, instructorId, currentUserId } = {}) {
     logger.debug("Executing Search Courses operation");
-
+    // Parse pagination
     let take = parseInt(limit);
-    if (take < 0) take = 10;
-    let skip = (parseInt(page) - 1) * limit;
-    if (skip < 0) skip = 0;
-    const result = await this.#courseRepository.findByFilter({
-      title: search,
-      category: category,
-      level: level,
-      skip: skip,
-      take: take,
-      instructorId: instructorId,
-    });
+    if (isNaN(take) || take < 1) take = 10;
 
-    logger.debug("Finish Search Courses operation");
+    let currentPage = parseInt(page);
+    if (isNaN(currentPage) || currentPage < 1) currentPage = 1;
+
+    let skip = (currentPage - 1) * take;
+
+    // Build filter
+    const filter = { skip, take, currentUserId };
+    if (search?.trim()) filter.title = search.trim();
+    if (category?.trim()) filter.category = category.trim();
+    if (level?.trim()) filter.level = level.trim();
+    if (instructorId) filter.instructorId = instructorId;
+
+    // Fetch data + count total
+    const result = await this.#courseRepository.findByFilter(filter);
+
+    const countFilter = { ...filter };
+    delete countFilter.skip;
+    delete countFilter.take;
+    const total = await this.#courseRepository.countByFilter(countFilter);
+
+    const totalPages = Math.ceil(total / take);
+
     return {
       courses: result.map((courseEntity) => ({
         id: courseEntity.id,
         title: courseEntity.title,
         description: courseEntity.description,
-        instructor: courseEntity.instructor
-          ? {
-              id: courseEntity.instructor.id,
-              fullName: courseEntity.instructor.name,
-            }
-          : null,
+        category: courseEntity.category || "General",
+        level: courseEntity.level || "BEGINNER",
+        instructor: courseEntity.instructor ? {
+          id: courseEntity.instructor.id,
+          fullName: courseEntity.instructor.name,
+        } : null,
+        coverImage: courseEntity.coverImg,
         thumbnail: courseEntity.coverImg,
-        rating: 4.5,
-        enrollmentCount: 120,
-        price: courseEntity.price,
+        rating: courseEntity.rating || 0,
+        enrollmentCount: courseEntity.enrollmentCount || 0,
+        price: courseEntity.price || 0,
         createdAt: courseEntity.createdAt,
+        enrolled: courseEntity.isEnrolledByCurrentUser || false
       })),
-      total: 50,
-      page: 1,
-      totalPages: 5,
+      total: total,
+      page: currentPage,
+      totalPages: totalPages,
     };
   }
 }
