@@ -31,6 +31,12 @@ import { ChangeRoleUsecase } from "./application_layer/instructor/change-role.us
 import { CreateCourseUsecase } from "./application_layer/courses/create-course.usecase.js";
 import { RequestPasswordResetUsecase } from "./application_layer/authentication/forgot-password.usecase.js";
 import { ResetPasswordUsecase } from "./application_layer/authentication/reset-password.usecase.js";
+import { UnenrollCourseUseCase } from "./application_layer/courses/unenroll-course.usecase.js";
+import { CreateUserByAdminUsecase } from "./application_layer/users/create-users.usecase.js";
+import { UpdateUserByAdminUsecase } from "./application_layer/users/update-user.usecase.js";
+import { DeleteUserByAdminUsecase } from "./application_layer/users/delete-user.usecase.js";
+import { ApproveCourseUseCase } from "./application_layer/courses/approve-course.usecase.js";
+
 
 // externals
 export const prisma = new PrismaClient();
@@ -66,6 +72,7 @@ export const loginUseCase = new LoginUseCase(userRepository);
 export const registerUseCase = new RegisterUseCase(userRepository, roleRepository);
 export const searchCoursesUseCase = new SearchCoursesUseCase(courseRepository);
 export const enrollCoursesUseCase = new EnrollCourseUseCase(courseRepository, paymentReadAccessor, enrollmentRepository);
+export const unenrollCourseUseCase = new UnenrollCourseUseCase(enrollmentRepository);
 export const courseMaterialsQueryUsecase = new CourseMaterialsQueryUseCase(courseReadAccessor, userReadAccessor);
 export const completeLessonUseCase = new CompleteLessonUseCase(courseRepository, enrollmentReadAccessor, lessonProgressRepository, lessonProgressReadAccessor);
 export const modifyCourseUsecase = new ModifyCourseUsecase(courseRepository, auditLogRepository);
@@ -74,3 +81,7 @@ export const changeRoleUsecase = new ChangeRoleUsecase(userRepository, roleRepos
 export const createCourseUsecase = new CreateCourseUsecase(userRepository, courseRepository);
 export const requestPasswordResetUsecase = new RequestPasswordResetUsecase(userReadAccessor, tokenRepo, emailSender);
 export const resetPasswordUsecase = new ResetPasswordUsecase(tokenRepo, userRepository);
+export const createUserByAdminUsecase = new CreateUserByAdminUsecase(userRepository);
+export const updateUserByAdminUsecase = new UpdateUserByAdminUsecase(userRepository);
+export const deleteUserByAdminUsecase = new DeleteUserByAdminUsecase(userRepository);
+export const approveCourseUseCase = new ApproveCourseUseCase(courseRepository, auditLogRepository);

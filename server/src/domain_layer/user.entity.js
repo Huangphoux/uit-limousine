@@ -45,7 +45,7 @@ export class UserEntity {
 
     // Business rules here
     let entity = Object.assign(new UserEntity(), parsedInput);
-    entity.addRole(defaultRole);
+    if (defaultRole) entity.addRole(defaultRole);
 
     return entity;
   }

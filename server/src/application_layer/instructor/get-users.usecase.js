@@ -1,17 +1,23 @@
-import z from "zod"
+import z, { email } from "zod"
 import { logger } from "../../utils/logger.js";
 
 export const inputSchema = z.object({
     authId: z.string(),
     page: z.coerce.number().int().min(1, { message: "Page must be at least 1" }).default(1),
     limit: z.coerce.number().int().min(1, { message: "Limit must be at least 1" }).default(10),
-    role: z.string().optional(),
+    status: z.enum(["ACTIVE", "INACTIVE"]).optional(),
+    // role: z.string().optional(),
+    // email: z.string().email().optional(),
+
 })
 
 export const outputSchema = z.object({
     users: z.array(z.object({
         id: z.string(),
-        username: z.string().nullable(),
+        name: z.string().nullable(),
+        roles: z.array(z.any()).optional(),
+        email: z.string().email(),
+        status: z.enum(["ACTIVE", "INACTIVE"]).optional(),
     })),
     total: z.number().int().min(1),
     page: z.number().int().min(1).optional(),
@@ -35,6 +41,7 @@ export class GetUsersUsecase {
             const result = await this.userReadAccessor.findUsers({
                 role: parsedInput.role,
                 page: parsedInput.page,
+                status: parsedInput.status,
                 limit: parsedInput.limit,
                 select: covertShemaToSelect(outputSchema.shape.users.element.shape),
             });
