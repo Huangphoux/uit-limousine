@@ -57,8 +57,13 @@ const AssignmentGradingDetail = ({ lessonForm, courseData }) => {
   const [submissionsError, setSubmissionsError] = useState(null);
 
   useEffect(() => {
+    console.log("=== AssignmentGradingDetail useEffect ===");
+    console.log("lessonForm:", lessonForm);
     const assignmentId = lessonForm?.assignmentId;
+    console.log("Extracted assignmentId:", assignmentId);
+
     if (!assignmentId) {
+      console.warn("No assignmentId found in lessonForm - cannot fetch submissions");
       setSubmissions([]);
       return;
     }
@@ -70,6 +75,8 @@ const AssignmentGradingDetail = ({ lessonForm, courseData }) => {
       setSubmissionsError(null);
       try {
         const token = localStorage.getItem("accessToken");
+        console.log("Fetching submissions for assignmentId:", assignmentId);
+        console.log("API URL:", `${API_URL}/assignments/${assignmentId}/submissions`);
         const resp = await fetch(`${API_URL}/assignments/${assignmentId}/submissions`, {
           method: "GET",
           headers: {
@@ -79,12 +86,16 @@ const AssignmentGradingDetail = ({ lessonForm, courseData }) => {
         });
 
         const result = await resp.json();
+        console.log("Submissions API response:", result);
+        console.log("Response status:", resp.status, resp.ok);
+
         if (!resp.ok) {
           const err =
             result?.data ||
             result?.error?.message ||
             result?.message ||
             "Failed to fetch submissions";
+          console.error("Fetch submissions error:", err);
           throw new Error(err);
         }
 
@@ -115,9 +126,12 @@ const AssignmentGradingDetail = ({ lessonForm, courseData }) => {
               }))
             : [];
 
+          console.log("Normalized submissions:", normalized);
+          console.log("Submissions count:", normalized.length);
           setSubmissions(normalized);
         }
       } catch (err) {
+        console.error("Fetch submissions exception:", err);
         if (!cancelled) setSubmissionsError(err.message || String(err));
       } finally {
         if (!cancelled) setLoadingSubmissions(false);
@@ -185,6 +199,10 @@ const AssignmentGradingDetail = ({ lessonForm, courseData }) => {
             result?.data || result?.error?.message || result?.message || "Failed to save grade";
           throw new Error(err);
         }
+
+        // Show appropriate success message
+        const successMessage = result?.message || "This assignment is graded successfully!";
+        toast.success(successMessage);
 
         // Update submission in local state
         setSubmissions((prev) =>

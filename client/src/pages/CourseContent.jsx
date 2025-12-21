@@ -19,7 +19,26 @@ const CourseContent = () => {
     const fetchCourseData = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`http://localhost:3000/courses/${courseId}`, {
+
+        // Fetch course materials (includes assignment details)
+        const materialsResponse = await fetch(
+          `http://localhost:3000/courses/${courseId}/materials`,
+          {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        if (!materialsResponse.ok) throw new Error("Failed to fetch course materials");
+
+        const materialsResult = await materialsResponse.json();
+        console.log("Materials API response:", materialsResult);
+
+        // Fetch course basic info
+        const courseResponse = await fetch(`http://localhost:3000/courses/${courseId}`, {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
@@ -27,14 +46,27 @@ const CourseContent = () => {
           },
         });
 
-        if (!response.ok) throw new Error("Failed to fetch course data");
+        if (!courseResponse.ok) throw new Error("Failed to fetch course data");
 
-        const data = await response.json();
-        setCourseData(data);
+        const courseResult = await courseResponse.json();
+        console.log("Course API response:", courseResult);
+
+        // Combine materials with course info
+        const combinedData = {
+          ...courseResult,
+          modules: materialsResult.data?.modules || materialsResult.modules || [],
+        };
+
+        console.log("Combined course data:", combinedData);
+        setCourseData(combinedData);
+
+        console.log("Combined course data:", combinedData);
+        setCourseData(combinedData);
 
         // --- BỔ SUNG ĐOẠN NÀY ---
         const finished = new Set();
-        data.modules.forEach((module) => {
+        const modules = materialsResult.data?.modules || materialsResult.modules || [];
+        modules.forEach((module) => {
           module.lessons.forEach((lesson) => {
             // Dựa trên logic backend bạn đã sửa ở câu hỏi trước:
             // Nếu lesson.isCompleted là true hoặc lesson.progress tồn tại
@@ -46,8 +78,8 @@ const CourseContent = () => {
         setCompletedLessons(finished);
         // -------------------------
 
-        if (data.modules && data.modules.length > 0 && data.modules[0].lessons.length > 0) {
-          setCurrentLesson(data.modules[0].lessons[0].id);
+        if (modules && modules.length > 0 && modules[0].lessons.length > 0) {
+          setCurrentLesson(modules[0].lessons[0].id);
         }
 
         setLoading(false);
@@ -68,6 +100,8 @@ const CourseContent = () => {
 
   const currentLessonData = getAllLessons().find((lesson) => lesson.id === currentLesson);
   console.log("CurrentData", currentLessonData);
+  console.log("CurrentData contentType:", currentLessonData?.contentType);
+  console.log("CurrentData type:", currentLessonData?.type);
 
   // Helper function to find current lesson index
   const getCurrentLessonIndex = () => {
@@ -240,6 +274,7 @@ const CourseContent = () => {
   };
 
   const getContentTypeIcon = (contentType) => {
+    console.log("getContentTypeIcon called with:", contentType);
     switch (contentType) {
       case "video":
         return "🎥";
@@ -370,10 +405,10 @@ const CourseContent = () => {
                         <div className="lock-icon">🔒</div>
                       )}
                     </div>
-                    <div className="lesson-type-icon">{getContentTypeIcon(lesson.contentType)}</div>
+                    <div className="lesson-type-icon">{getContentTypeIcon(lesson.type)}</div>
                     <div className="lesson-details">
                       <div className="lesson-title">{lesson.title}</div>
-                      <div className="lesson-duration">{formatDuration(lesson.durationSec)}</div>
+                      <div className="lesson-duration">{formatDuration(lesson.duration)}</div>
                     </div>
                   </div>
                 ))}
@@ -390,26 +425,27 @@ const CourseContent = () => {
               <h1 className="lesson-main-title">{currentLessonData?.title}</h1>
               <div className="lesson-meta">
                 <span>
-                  {getContentTypeIcon(currentLessonData?.contentType)}{" "}
-                  {currentLessonData?.contentType === "video"
+                  {getContentTypeIcon(currentLessonData?.type)}{" "}
+                  {currentLessonData?.type === "video"
                     ? "Video"
-                    : currentLessonData?.contentType === "article"
+                    : currentLessonData?.type === "article"
                       ? "Article"
                       : "Assignment"}
                 </span>
-                <span>• {formatDuration(currentLessonData?.durationSec)}</span>
+                <span>• {formatDuration(currentLessonData?.duration)}</span>
               </div>
             </div>
 
             {/* Content Container */}
-            {currentLessonData?.contentType === "assignment" ? (
+            {currentLessonData?.type === "assignment" ? (
               <AssignmentSubmissionUI
+                key={currentLessonData?.id}
                 lesson={currentLessonData}
                 onMarkAsFinished={handleMarkAsFinished}
               />
             ) : (
               <div className="content-container">
-                {currentLessonData?.contentType === "video" && currentLessonData?.videoUrl ? (
+                {currentLessonData?.type === "video" && currentLessonData?.videoUrl ? (
                   <iframe
                     src={getYouTubeEmbedUrl(currentLessonData.videoUrl)}
                     title={currentLessonData.title}
@@ -420,13 +456,13 @@ const CourseContent = () => {
                   />
                 ) : (
                   <div className="content-placeholder">
-                    {currentLessonData?.contentType === "video" && (
+                    {currentLessonData?.type === "video" && (
                       <>
                         🎥 Video Player - {currentLessonData?.title}
                         <div className="api-ready-note">Ready for video API integration</div>
                       </>
                     )}
-                    {currentLessonData?.contentType === "article" && (
+                    {currentLessonData?.type === "article" && (
                       <>
                         📄 Article Content - {currentLessonData?.title}
                         <div className="api-ready-note">
@@ -440,7 +476,7 @@ const CourseContent = () => {
             )}
 
             {/* Lesson Actions */}
-            {currentLessonData?.contentType !== "assignment" && (
+            {currentLessonData?.type !== "assignment" && (
               <div className="lesson-actions">
                 {completedLessons.has(currentLesson) ? (
                   <Button className="unmark-btn" onClick={handleMarkAsFinished}>

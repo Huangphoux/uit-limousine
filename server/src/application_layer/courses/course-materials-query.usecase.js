@@ -21,6 +21,17 @@ export const outputSchema = z.object({
           duration: z.number().optional().nullable(),
           order: z.number(),
           isCompleted: z.boolean(),
+          assignmentId: z.string().optional().nullable(),
+          assignment: z
+            .object({
+              id: z.string(),
+              title: z.string().optional().nullable(),
+              description: z.string().optional().nullable(),
+              dueDate: z.date().optional().nullable(),
+              maxPoints: z.number().optional().nullable(),
+            })
+            .optional()
+            .nullable(),
         })
       ),
     })
@@ -28,10 +39,10 @@ export const outputSchema = z.object({
 });
 
 export class CourseMaterialsQueryUseCase {
-    constructor(courseRead, userRead) {
-        this.courseRead = courseRead;
-        this.userRead = userRead;
-    }
+  constructor(courseRead, enrollmentRead) {
+    this.courseRead = courseRead;
+    this.enrollmentRead = enrollmentRead;
+  }
 
   async execute(input) {
     const parsedInput = inputSchema.parse(input);
@@ -42,19 +53,34 @@ export class CourseMaterialsQueryUseCase {
     });
     log.info("Task started");
 
-        const isPublished = await this.courseReadAccessor.isPublished(parsedInput.courseId);
-        if (!isPublished) {
-            log.warn("Task failed: unpublished course");
-            throw Error(`Course has not been published`);
-        }
+    // Check if user is the instructor of this course
+    const isInstructor = await this.courseRead.isInstructor(
+      parsedInput.courseId,
+      parsedInput.authId
+    );
 
-        const enrolled = await this.enrollmentReadAccessor.isEnrolled(parsedInput.authId, parsedInput.courseId);
-        if (!enrolled) {
-            log.warn("Task failed: unenrolled course");
-            throw Error(`User has not enrolled the course`);
-        }
+    // If not instructor, check published and enrollment
+    if (!isInstructor) {
+      const isPublished = await this.courseRead.isPublished(parsedInput.courseId);
+      if (!isPublished) {
+        log.warn("Task failed: unpublished course");
+        throw Error(`Course has not been published`);
+      }
 
-        const courseMaterials = await this.courseReadAccessor.getCourseMaterials(parsedInput.courseId, parsedInput.authId);
+      const enrolled = await this.enrollmentRead.isEnrolled(
+        parsedInput.authId,
+        parsedInput.courseId
+      );
+      if (!enrolled) {
+        log.warn("Task failed: unenrolled course");
+        throw Error(`User has not enrolled the course`);
+      }
+    }
+
+    const courseMaterials = await this.courseRead.getCourseMaterials(
+      parsedInput.courseId,
+      parsedInput.authId
+    );
 
     log.info("Task completed");
     return outputSchema.parse(courseMaterials);

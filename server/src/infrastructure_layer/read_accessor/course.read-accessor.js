@@ -25,6 +25,8 @@ export class CourseReadAccessor {
                   assignment: {
                     select: {
                       id: true,
+                      title: true,
+                      description: true,
                       dueDate: true,
                       maxPoints: true,
                     },
@@ -91,6 +93,8 @@ export class CourseReadAccessor {
           assignment: l.assignment
             ? {
                 id: l.assignment.id,
+                title: l.assignment.title,
+                description: l.assignment.description,
                 dueDate: l.assignment.dueDate,
                 maxPoints: l.assignment.maxPoints,
               }
@@ -107,6 +111,17 @@ export class CourseReadAccessor {
   async isPublished(id) {
     const count = await this.prisma.course.count({
       where: { id, published: true },
+    });
+
+    return count == 1;
+  }
+
+  async isInstructor(courseId, userId) {
+    const count = await this.prisma.course.count({
+      where: {
+        id: courseId,
+        instructorId: userId,
+      },
     });
 
     return count == 1;

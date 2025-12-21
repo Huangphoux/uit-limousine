@@ -81,6 +81,7 @@ const AssignmentLessonContent = ({ lessonForm, onFormChange, onFileUpload, onRem
               type="date"
               value={lessonForm.dueDate || ""}
               onChange={(e) => onFormChange("dueDate", e.target.value)}
+              min={new Date().toISOString().split("T")[0]}
             />
           </Form.Group>
 
@@ -94,7 +95,7 @@ const AssignmentLessonContent = ({ lessonForm, onFormChange, onFileUpload, onRem
           </Form.Group>
         </div>
         <small className="text-muted">
-          Students will be able to submit until this date and time
+          Students will be able to submit until this date and time (must be in the future)
         </small>
       </div> */}
 

@@ -1278,3 +1278,13 @@ svg {
     background: #d9d9d9;
     color: black;
 }
+
+.edit-course-modal-form-control {
+    background: #d9d9d9;
+    color: black;
+}
+
+.edit-course-modal-form-control:focus {
+    background: #d9d9d9;
+    color: black;
+}

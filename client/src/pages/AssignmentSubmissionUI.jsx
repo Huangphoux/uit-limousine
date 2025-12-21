@@ -5,6 +5,12 @@ import "./CourseContent.css";
 import { toast } from "sonner";
 
 const AssignmentSubmissionUI = ({ lesson, onMarkAsFinished }) => {
+  console.log("=== AssignmentSubmissionUI ===");
+  console.log("Lesson data:", lesson);
+  console.log("Assignment:", lesson?.assignment);
+  console.log("Assignment Description:", lesson?.assignment?.description);
+  console.log("Assignment Title:", lesson?.assignment?.title);
+
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [submissionResult, setSubmissionResult] = useState(null);
@@ -12,6 +18,17 @@ const AssignmentSubmissionUI = ({ lesson, onMarkAsFinished }) => {
   const [error, setError] = useState(null);
   const [content, setContent] = useState("");
   const token = localStorage.getItem("accessToken"); // Assuming token is stored in localStorage
+
+  // Reset state when lesson changes
+  useEffect(() => {
+    console.log("Lesson changed, resetting state for lesson:", lesson?.id);
+    setIsSubmitted(false);
+    setSubmissionResult(null);
+    setSelectedFiles([]);
+    setContent("");
+    setError(null);
+  }, [lesson?.id]); // Reset when lesson ID changes
+
   // Load submission data if exists
   useEffect(() => {
     if (lesson?.submission) {
@@ -36,6 +53,7 @@ const AssignmentSubmissionUI = ({ lesson, onMarkAsFinished }) => {
           ? new Date(lesson.submission.submittedAt).toLocaleString("en-GB")
           : "N/A",
         content: lesson.submission.content,
+        feedback: lesson.submission.feedback || null,
       });
     }
   }, [lesson]);
@@ -75,11 +93,12 @@ const AssignmentSubmissionUI = ({ lesson, onMarkAsFinished }) => {
                 ? Math.round((data.data.grade / (lesson.assignment?.maxScore || 100)) * 100)
                 : 0,
               status: data.data.status,
-              scorer: "Pending Review", // Hoặc data.data.gradedBy nếu có
+              scorer: data.data.gradedBy?.name || "Pending Review",
               date: data.data.submittedAt
                 ? new Date(data.data.submittedAt).toLocaleString("en-GB")
                 : "N/A",
               content: data.data.content,
+              feedback: data.data.feedback || null,
             });
           }
         }
@@ -196,6 +215,7 @@ const AssignmentSubmissionUI = ({ lesson, onMarkAsFinished }) => {
         scorer: responseData.data?.gradedBy?.name || "Pending Review",
         date: formattedDate,
         content: content,
+        feedback: responseData.data?.feedback || null,
         submissionId: responseData.data?.id,
       };
       toast.success("Assignment submitted successfully!");
@@ -230,9 +250,12 @@ const AssignmentSubmissionUI = ({ lesson, onMarkAsFinished }) => {
           <span style={{ fontSize: "1.5rem" }}>📖</span>
           <div>
             <h2 className="h5 fw-bold mb-2">Description</h2>
-            <p>
-              {lesson?.assignment.description ||
-                "The user input a number n. Write a program to calculate the sum of 1 to n. If n is lower than 1, return error."}
+            <p style={{ whiteSpace: "pre-wrap" }}>
+              {lesson?.assignment?.description ? (
+                lesson.assignment.description
+              ) : (
+                <em style={{ color: "#6c757d" }}>No description provided for this assignment.</em>
+              )}
             </p>
           </div>
         </div>
@@ -433,37 +456,68 @@ const AssignmentSubmissionUI = ({ lesson, onMarkAsFinished }) => {
 
             {/* Score Card - Only show if graded */}
             {submissionResult?.score !== null && submissionResult?.score !== undefined ? (
-              <div
-                className="d-flex align-items-center justify-content-between p-4 rounded-3"
-                style={{ backgroundColor: "#fef3c7", border: "1px solid #fde68a" }}
-              >
-                <div>
-                  <div className="d-flex align-items-center gap-2 mb-2">
-                    <span style={{ fontSize: "1.5rem", color: "#dc2626" }}>🏷️</span>
-                    <span className="fw-bold" style={{ fontSize: "1.25rem", color: "#dc2626" }}>
-                      Your final score: {submissionResult.score} / {submissionResult.maxScore} (
-                      {submissionResult.percentage}%)
+              <div className="rounded-3" style={{ overflow: "hidden" }}>
+                <div
+                  className="d-flex align-items-center justify-content-between p-4"
+                  style={{ backgroundColor: "#fef3c7", border: "1px solid #fde68a" }}
+                >
+                  <div>
+                    <div className="d-flex align-items-center gap-2 mb-2">
+                      <span style={{ fontSize: "1.5rem", color: "#dc2626" }}>🏷️</span>
+                      <span className="fw-bold" style={{ fontSize: "1.25rem", color: "#dc2626" }}>
+                        Your final score: {submissionResult.score} / {submissionResult.maxScore} (
+                        {submissionResult.percentage}%)
+                      </span>
+                    </div>
+                    <p className="mb-1 ms-4" style={{ color: "#374151" }}>
+                      Scorer: {submissionResult.scorer}
+                    </p>
+                    <p className="mb-0 ms-4" style={{ color: "#374151" }}>
+                      Date: {submissionResult.date}
+                    </p>
+                  </div>
+                  <div className="d-flex align-items-center gap-2">
+                    <span style={{ fontSize: "2rem" }}>🏆</span>
+                    <span
+                      className="fw-bold"
+                      style={{
+                        fontSize: "1.5rem",
+                        color: submissionResult.percentage >= 50 ? "#16a34a" : "#dc2626",
+                      }}
+                    >
+                      {submissionResult.percentage >= 50 ? "Pass" : "Fail"}
                     </span>
                   </div>
-                  <p className="mb-1 ms-4" style={{ color: "#374151" }}>
-                    Scorer: {submissionResult.scorer}
-                  </p>
-                  <p className="mb-0 ms-4" style={{ color: "#374151" }}>
-                    Date: {submissionResult.date}
-                  </p>
                 </div>
-                <div className="d-flex align-items-center gap-2">
-                  <span style={{ fontSize: "2rem" }}>🏆</span>
-                  <span
-                    className="fw-bold"
+
+                {/* Feedback Section */}
+                {submissionResult?.feedback && (
+                  <div
+                    className="p-4"
                     style={{
-                      fontSize: "1.5rem",
-                      color: submissionResult.percentage >= 60 ? "#16a34a" : "#dc2626",
+                      backgroundColor: "#f0fdf4",
+                      borderTop: "1px solid #bbf7d0",
+                      borderLeft: "1px solid #fde68a",
+                      borderRight: "1px solid #fde68a",
+                      borderBottom: "1px solid #fde68a",
                     }}
                   >
-                    {submissionResult.percentage >= 60 ? "Pass" : "Fail"}
-                  </span>
-                </div>
+                    <div className="d-flex align-items-start gap-2 mb-2">
+                      <span style={{ fontSize: "1.25rem" }}>💬</span>
+                      <h3 className="h6 fw-bold mb-0">Instructor Feedback:</h3>
+                    </div>
+                    <p
+                      className="ms-4 mb-0"
+                      style={{
+                        whiteSpace: "pre-wrap",
+                        color: "#166534",
+                        fontSize: "0.95rem",
+                      }}
+                    >
+                      {submissionResult.feedback}
+                    </p>
+                  </div>
+                )}
               </div>
             ) : (
               /* Pending Review */
