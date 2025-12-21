@@ -42,7 +42,7 @@ export class UserRepositoryPostgree {
                         .filter(r => r !== null)
                         .map(r => {
                             // Lấy giá trị ID từ bất cứ field nào có dữ liệu
-                            const rid = r.roleId;
+                            const rid = r.roleId ?? r.id;
                             return {
                                 roleId: typeof rid === 'string' ? parseInt(rid) : rid
                             };

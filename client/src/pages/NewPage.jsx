@@ -71,36 +71,6 @@ const NewPage = () => {
     return () => clearTimeout(debounceTimer);
   }, [searchTerm]);
 
-  useEffect(() => {
-    const fetchMyEnrollments = async () => {
-      try {
-        const response = await fetch(`http://localhost:3000/enrollments/my-courses`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const result = await response.json();
-
-        // Giả sử API trả về mảng các object có chứa courseId
-        const ids = result.data.map((en) => en.courseId);
-        setEnrolledCourseIds(ids);
-      } catch (err) {
-        console.error("Lỗi lấy danh sách enroll:", err);
-      }
-    };
-
-    if (token) fetchMyEnrollments();
-  }, [token]);
-
-  // 2. Hàm khi mở Modal
-  const handleShowModal = (course) => {
-    // Thêm field 'enrolled' vào object course trước khi truyền vào Modal
-    const updatedCourse = {
-      ...course,
-      enrolled: enrolledCourseIds.includes(course.id),
-    };
-    setSelectedCourse(updatedCourse);
-    setShowModal(true);
-  };
-
   const handleEnroll = async (courseId, course, type) => {
     if (type === "success") {
       if (course.enrolled) {
@@ -177,14 +147,13 @@ const NewPage = () => {
 
       // Debug: Log the actual API response
       console.log("API Response:", result);
-
       // Check if we have a valid course object (API returns course directly, not wrapped in success/data)
       if (result && result.id) {
         // Map API response to the format expected by the modal
         const courseDetail = {
           id: result.id,
           title: result.title,
-          provider: result.instructor?.fullName || "Unknown Instructor",
+          provider: result.provider || "Stanford University",
           category: course.category || "General",
           description: result.description || result.shortDesc || "No description available",
           rating: result.rating || 0,
@@ -193,7 +162,7 @@ const NewPage = () => {
           duration: course.duration || "N/A",
           image: result.coverImage || course.image,
           enrolled: course.enrolled || false,
-          instructor: result.instructor?.fullName || "Unknown Instructor",
+          instructor: result.instructor?.name || "Unknown Instructor",
           price: result.price || 0,
           isPaid: course.isPaid || false,
           // Additional details from API
