@@ -14,12 +14,12 @@ const AdminScreen = () => {
 
   const [courses, setCourses] = useState([]);
 
-  const API_BASE_URL = "http://localhost:3000/admin"; // hoặc URL backend của bạn
+  const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
   const fetchCourses = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_BASE_URL}/courses`, {
+      const response = await fetch(`${API_BASE_URL}/instructor/applications?status=PENDING`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -28,43 +28,38 @@ const AdminScreen = () => {
       });
 
       if (!response.ok) {
-        throw new Error("Failed to fetch courses");
+        throw new Error("Failed to fetch instructor applications");
       }
 
       const result = await response.json();
 
-      if (result.status === "success") {
-        // Transform API data to match component format
-        const transformedCourses = result.data.courses.map((course) => ({
-          id: course.id,
-          title: course.title,
-          description: "", // API không có field này
-          instructor: course.instructor.name || "Unknown",
-          submittedDate: new Date(course.createdAt).toISOString().split("T")[0],
-          status: course.published ? "Approved" : "Waiting",
-          estimatedDuration: "", // Tính từ modules nếu cần
-          category: course.category || "Uncategorized",
-          image: course.coverImage || "https://via.placeholder.com/300x200",
-          modules: course.modules.map((module) => ({
-            id: module.id,
-            title: module.title,
-            description: "",
-            duration: "", // Tính từ lessons nếu cần
-            lessons: module.lessons.map((lesson) => ({
-              id: lesson.id,
-              title: lesson.title,
-              type: lesson.contentType,
-              duration: lesson.durationSec ? `${Math.floor(lesson.durationSec / 60)} minutes` : "",
-              content: "",
-            })),
-          })),
+      if (result.success) {
+        // Transform instructor applications to match course format
+        const transformedCourses = result.data.map((application) => ({
+          id: application.id,
+          title: application.requestedCourseTitle,
+          description: application.requestedCourseSummary || "",
+          instructor: application.applicant?.fullname || application.applicant?.email || "Unknown",
+          submittedDate: new Date(application.appliedAt).toISOString().split("T")[0],
+          status:
+            application.status === "PENDING"
+              ? "Waiting"
+              : application.status === "APPROVED"
+                ? "Approved"
+                : "Rejected",
+          estimatedDuration: "",
+          category: "Uncategorized",
+          image: "https://via.placeholder.com/300x200",
+          portfolioUrl: application.portfolioUrl || "",
+          applicantId: application.applicantId,
+          modules: [], // Chưa có modules vì chỉ là đơn yêu cầu
         }));
 
         setCourses(transformedCourses);
       }
     } catch (err) {
-      console.error("Error fetching courses:", err);
-      // Có thể set error state ở đây
+      console.error("Error fetching instructor applications:", err);
+      toast.error("Failed to load course requests");
     } finally {
       setLoading(false);
     }
@@ -86,53 +81,86 @@ const AdminScreen = () => {
   // Handle Approve từ Frontend
   const handleApproveCourse = async (courseData) => {
     try {
+      const token = localStorage.getItem("accessToken");
+      const userStr = localStorage.getItem("user");
+
+      if (!token || !userStr) {
+        toast.error("Please login as admin");
+        return;
+      }
+
+      const user = JSON.parse(userStr);
+      const reviewerId = user.id;
+
       const response = await fetch(
-        `${API_BASE_URL}/courses/${courseData.id}/update-publish-status`,
+        `${API_BASE_URL}/instructor/applications/${courseData.id}/approve`,
         {
-          method: "PATCH",
+          method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
-            action: "APPROVE",
+            reviewerId: reviewerId,
+            note: "Approved by admin",
           }),
         }
       );
 
+      const result = await response.json();
+
       if (response.ok) {
         fetchCourses();
-        toast.success("Course Approved!");
+        toast.success("Course request approved! Course created successfully.");
+      } else {
+        toast.error(result.message || "Failed to approve course request");
       }
     } catch (err) {
       console.error(err);
+      toast.error("Error approving course request");
     }
   };
 
   // Handle Deny từ Frontend
   const handleRejectCourse = async (courseData, reason) => {
     try {
+      const token = localStorage.getItem("accessToken");
+      const userStr = localStorage.getItem("user");
+
+      if (!token || !userStr) {
+        toast.error("Please login as admin");
+        return;
+      }
+
+      const user = JSON.parse(userStr);
+      const reviewerId = user.id;
+
       const response = await fetch(
-        `${API_BASE_URL}/courses/${courseData.id}/update-publish-status`,
+        `${API_BASE_URL}/instructor/applications/${courseData.id}/reject`,
         {
-          method: "PATCH",
+          method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
-            action: "REJECT",
-            reason: reason,
+            reviewerId: reviewerId,
+            note: reason || "Rejected by admin",
           }),
         }
       );
 
+      const result = await response.json();
+
       if (response.ok) {
         fetchCourses();
-        toast.success("Course Rejected!");
+        toast.success("Course request rejected!");
+      } else {
+        toast.error(result.message || "Failed to reject course request");
       }
     } catch (err) {
       console.error(err);
+      toast.error("Error rejecting course request");
     }
   };
   return (
