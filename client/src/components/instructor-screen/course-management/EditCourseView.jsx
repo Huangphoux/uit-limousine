@@ -93,15 +93,27 @@ const EditCourseView = () => {
         const normalizedModules = (materials.modules || []).map((m) => ({
           ...m,
           lessons: (m.lessons || []).map((l) => {
+            const lessonType = mapContentTypeToUI(l.type || l.contentType);
+            console.log(`Loading lesson: ${l.title}, type: ${lessonType}, mediaUrl: ${l.mediaUrl}`);
             const lesson = {
               ...l,
-              type: mapContentTypeToUI(l.type || l.contentType),
+              type: lessonType,
               description: l.content || l.description || "", // Map backend 'content' to frontend 'description'
               duration:
                 l.duration || l.durationSec
                   ? `${Math.floor((l.duration || l.durationSec) / 60)}:${String((l.duration || l.durationSec) % 60).padStart(2, "0")}`
                   : "10:00",
             };
+
+            // Map mediaUrl and content based on lesson type
+            if (lessonType === "Video" && l.mediaUrl) {
+              lesson.videoUrl = l.mediaUrl;
+              console.log(`  -> Mapped videoUrl: ${lesson.videoUrl}`);
+            }
+
+            if (lessonType === "Reading" && l.content) {
+              lesson.readingContent = l.content;
+            }
 
             // If lesson has assignmentId, we'll fetch assignment details separately
             if (l.assignmentId) {
@@ -278,6 +290,14 @@ const EditCourseView = () => {
     const module = courseData.modules.find((m) => m.id === moduleId);
     const lesson = module?.lessons.find((l) => l.id === lessonId);
     if (lesson) {
+      console.log(
+        "Selecting lesson:",
+        lesson.title,
+        "videoUrl:",
+        lesson.videoUrl,
+        "mediaUrl:",
+        lesson.mediaUrl
+      );
       setSelectedLesson({ moduleId, lessonId });
       setLessonForm(lesson);
       if (lesson.type === "Assignment") {
@@ -642,10 +662,11 @@ const EditCourseView = () => {
       // Deep snapshot for logging
       const course = JSON.parse(JSON.stringify(courseData));
 
-      // Create or Update Assignment resources on server for lessons typed as Assignment
+      // Create Assignment resources for NEW assignment lessons only
+      // Existing assignments will be updated via the course update endpoint
       for (const module of course.modules || []) {
         for (const lesson of module.lessons || []) {
-          if (lesson.type === "Assignment") {
+          if (lesson.type === "Assignment" && !lesson.assignmentId) {
             // build assignment payload
             const assignmentPayload = {
               courseId: course.id,
@@ -658,75 +679,44 @@ const EditCourseView = () => {
               maxPoints: lesson.maxScore || lesson.maxPoints || 100,
             };
 
-            if (!lesson.assignmentId) {
-              // Create new assignment
-              console.log(
-                "Creating assignment for lesson",
-                lesson.id || lesson.title,
-                assignmentPayload
-              );
+            // Create new assignment
+            console.log(
+              "Creating assignment for lesson",
+              lesson.id || lesson.title,
+              assignmentPayload
+            );
 
-              const resp = await fetch(`${API_URL}/assignments`, {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  Authorization: `Bearer ${token}`,
-                },
-                body: JSON.stringify(assignmentPayload),
-              });
+            const resp = await fetch(`${API_URL}/assignments`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify(assignmentPayload),
+            });
 
-              const created = await resp.json();
-              if (!resp.ok) {
-                const err =
-                  created?.data ||
-                  created?.error?.message ||
-                  created?.message ||
-                  "Failed to create assignment";
-                throw new Error(err);
-              }
+            const created = await resp.json();
+            if (!resp.ok) {
+              const err =
+                created?.data ||
+                created?.error?.message ||
+                created?.message ||
+                "Failed to create assignment";
+              throw new Error(err);
+            }
 
-              // Try to extract assignment id from common response shapes
-              const assignmentId =
-                created?.data?.id ||
-                created?.id ||
-                created?.assignment?.id ||
-                (created?.data?.assignment && created.data.assignment.id);
-              if (!assignmentId) {
-                console.warn("Assignment created but id not found in response:", created);
-              } else {
-                lesson.assignmentId = assignmentId;
-                // ensure lesson contentType set to 'assignment'
-                lesson.contentType = "assignment";
-              }
+            // Try to extract assignment id from common response shapes
+            const assignmentId =
+              created?.data?.id ||
+              created?.id ||
+              created?.assignment?.id ||
+              (created?.data?.assignment && created.data.assignment.id);
+            if (!assignmentId) {
+              console.warn("Assignment created but id not found in response:", created);
             } else {
-              // Update existing assignment
-              console.log(
-                "Updating assignment",
-                lesson.assignmentId,
-                "for lesson",
-                lesson.id || lesson.title,
-                assignmentPayload
-              );
-
-              const resp = await fetch(`${API_URL}/assignments/${lesson.assignmentId}`, {
-                method: "PUT",
-                headers: {
-                  "Content-Type": "application/json",
-                  Authorization: `Bearer ${token}`,
-                },
-                body: JSON.stringify(assignmentPayload),
-              });
-
-              const updated = await resp.json();
-              if (!resp.ok) {
-                const err =
-                  updated?.data ||
-                  updated?.error?.message ||
-                  updated?.message ||
-                  "Failed to update assignment";
-                console.error("Assignment update failed:", err);
-                // Don't throw, just log - allow course save to continue
-              }
+              lesson.assignmentId = assignmentId;
+              // ensure lesson contentType set to 'assignment'
+              lesson.contentType = "assignment";
             }
           }
         }
@@ -742,16 +732,39 @@ const EditCourseView = () => {
         id: module.id,
         title: module.title,
         position: moduleIndex,
-        lessons: (module.lessons || []).map((lesson, lessonIndex) => ({
-          id: lesson.id,
-          title: lesson.title,
-          content: lesson.description || lesson.content || "",
-          mediaUrl: lesson.videoUrl || lesson.mediaUrl || "",
-          contentType: mapUIToContentType(lesson.type) || "video",
-          assignmentId: lesson.assignmentId ? lesson.assignmentId : undefined,
-          durationSec: lesson.duration ? parseDurationToSeconds(lesson.duration) : null,
-          position: lessonIndex,
-        })),
+        lessons: (module.lessons || []).map((lesson, lessonIndex) => {
+          console.log("Processing lesson for save:", lesson.title, "Type:", lesson.type);
+          console.log("- videoUrl:", lesson.videoUrl);
+          console.log("- readingContent:", lesson.readingContent);
+
+          // Determine mediaUrl based on lesson type
+          let mediaUrl = null;
+          if (lesson.type === "Video" && lesson.videoUrl) {
+            mediaUrl = lesson.videoUrl;
+            console.log("- Setting mediaUrl for Video:", mediaUrl);
+          }
+
+          // For reading lessons, use readingContent in content field
+          let content = lesson.description || lesson.content || "";
+          if (lesson.type === "Reading" && lesson.readingContent) {
+            content = lesson.readingContent;
+            console.log("- Setting content for Reading:", content.substring(0, 50));
+          }
+
+          const lessonData = {
+            id: lesson.id,
+            title: lesson.title,
+            content: content,
+            mediaUrl: mediaUrl || undefined, // Use undefined instead of empty string
+            contentType: mapUIToContentType(lesson.type) || "video",
+            assignmentId: lesson.assignmentId ? lesson.assignmentId : undefined,
+            durationSec: lesson.duration ? parseDurationToSeconds(lesson.duration) : null,
+            position: lessonIndex,
+          };
+
+          console.log("- Final lesson data:", lessonData);
+          return lessonData;
+        }),
       }));
 
       // Backend now accepts: authId, id, title, description, price, level, language, coverImage, modules

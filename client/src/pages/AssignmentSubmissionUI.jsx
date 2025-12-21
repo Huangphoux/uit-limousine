@@ -4,12 +4,13 @@ import { BsCloudUpload, BsDownload, BsFileEarmarkText, BsTrophy, BsTag } from "r
 import "./CourseContent.css";
 import { toast } from "sonner";
 
-const AssignmentSubmissionUI = ({ lesson, onMarkAsFinished }) => {
+const AssignmentSubmissionUI = ({ lesson, onMarkAsFinished, isCompleted }) => {
   console.log("=== AssignmentSubmissionUI ===");
   console.log("Lesson data:", lesson);
   console.log("Assignment:", lesson?.assignment);
   console.log("Assignment Description:", lesson?.assignment?.description);
   console.log("Assignment Title:", lesson?.assignment?.title);
+  console.log("Is Completed:", isCompleted);
 
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -545,6 +546,19 @@ const AssignmentSubmissionUI = ({ lesson, onMarkAsFinished }) => {
             )}
           </div>
         )}
+
+        {/* Lesson Actions - Mark as Finished */}
+        <div className="lesson-actions mt-4">
+          {isCompleted ? (
+            <Button className="unmark-btn" onClick={onMarkAsFinished}>
+              ✕ Unmark
+            </Button>
+          ) : (
+            <Button className="mark-finished-btn" onClick={onMarkAsFinished}>
+              ✓ Mark as finished
+            </Button>
+          )}
+        </div>
       </div>
     </div>
   );

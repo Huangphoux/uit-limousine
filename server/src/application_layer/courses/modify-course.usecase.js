@@ -105,6 +105,12 @@ export class ModifyCourseUsecase {
       }
     }
     if (parsedInput.modules !== undefined) {
+      // Debug: Log modules before processing
+      console.log(
+        "[ModifyCourse] parsedInput.modules:",
+        JSON.stringify(parsedInput.modules, null, 2)
+      );
+
       // Create Assignment entities for lessons marked as assignment but missing assignmentId
       for (const module of parsedInput.modules) {
         if (!module.lessons || !Array.isArray(module.lessons)) continue;

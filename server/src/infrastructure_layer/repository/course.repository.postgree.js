@@ -174,17 +174,59 @@ export class CourseRepository {
     logger.debug("CourseRepository.save - persisting course", {
       courseId: course.id,
       published: course.published,
-      persistenceData: persistenceData,
+      persistenceData: JSON.stringify(persistenceData, null, 2),
     });
+
+    // Delete all existing lessons for all modules before updating
+    // This is necessary because Prisma doesn't support deleteMany inside nested upserts
+    if (course.modules && course.modules.length > 0) {
+      const moduleIds = course.modules.map((m) => m.id).filter(Boolean);
+      if (moduleIds.length > 0) {
+        const deletedCount = await this.prisma.lesson.deleteMany({
+          where: {
+            module: {
+              id: { in: moduleIds },
+            },
+          },
+        });
+        logger.debug("Deleted existing lessons for modules", {
+          moduleIds,
+          deletedCount: deletedCount.count,
+        });
+      }
+    }
 
     const raw = await this.prisma.course.update({
       where: { id: course.id },
       data: persistenceData,
     });
 
-    logger.debug("CourseRepository.save - after update", {
-      courseId: raw.id,
-      published: raw.published,
+    logger.debug("CourseRepository.save - after update, fetching full result");
+
+    // Fetch the saved course WITH all relations to verify what was actually saved
+    const savedCourse = await this.prisma.course.findUnique({
+      where: { id: course.id },
+      include: {
+        modules: {
+          include: {
+            lessons: true,
+          },
+        },
+      },
+    });
+
+    logger.debug("CourseRepository.save - verification fetch", {
+      courseId: savedCourse.id,
+      modulesCount: savedCourse.modules?.length,
+      lessons: savedCourse.modules?.flatMap((m) =>
+        m.lessons.map((l) => ({
+          id: l.id,
+          title: l.title,
+          type: l.type,
+          mediaUrl: l.mediaUrl,
+          content: l.content?.substring(0, 50),
+        }))
+      ),
     });
 
     return CourseEntity.rehydrate(raw);

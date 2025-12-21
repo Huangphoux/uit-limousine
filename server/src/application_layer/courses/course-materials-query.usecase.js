@@ -18,6 +18,7 @@ export const outputSchema = z.object({
           title: z.string(),
           type: z.string().optional().nullable(),
           content: z.string().optional().nullable(),
+          mediaUrl: z.string().optional().nullable(),
           duration: z.number().optional().nullable(),
           order: z.number(),
           isCompleted: z.boolean(),

@@ -27,6 +27,8 @@ export class LessonEntity {
   }
 
   static rehydrate(input) {
-    return Object.assign(new LessonEntity(), input);
+    // Parse through schema to ensure all optional fields are handled correctly
+    const parsedInput = LessonEntity.schema.parse(input);
+    return Object.assign(new LessonEntity(), parsedInput);
   }
 }

@@ -32,6 +32,7 @@ export class CourseReadAccessor {
                     },
                   },
                   content: true,
+                  mediaUrl: true,
                   durationSec: true,
                   position: true,
                   LessonProgress: {
@@ -66,6 +67,7 @@ export class CourseReadAccessor {
                   title: true,
                   contentType: true,
                   content: true,
+                  mediaUrl: true,
                   durationSec: true,
                   position: true,
                   LessonProgress: {
@@ -100,6 +102,7 @@ export class CourseReadAccessor {
               }
             : null,
           content: l.content,
+          mediaUrl: l.mediaUrl,
           duration: l.durationSec,
           order: l.position,
           isCompleted: l.LessonProgress.some((p) => p.progress === 1),

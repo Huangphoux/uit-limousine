@@ -36,6 +36,19 @@ const CourseContent = () => {
 
         const materialsResult = await materialsResponse.json();
         console.log("Materials API response:", materialsResult);
+        console.log("Modules from API:", materialsResult.data?.modules || materialsResult.modules);
+
+        // Debug: Log all lessons with their mediaUrl and type
+        const modules = materialsResult.data?.modules || materialsResult.modules || [];
+        modules.forEach((module, modIdx) => {
+          console.log(`Module ${modIdx}: ${module.title}`);
+          module.lessons.forEach((lesson, lesIdx) => {
+            console.log(`  Lesson ${lesIdx}: ${lesson.title}`);
+            console.log(`    - type: ${lesson.type}`);
+            console.log(`    - mediaUrl: ${lesson.mediaUrl}`);
+            console.log(`    - content: ${lesson.content?.substring(0, 50)}`);
+          });
+        });
 
         // Fetch course basic info
         const courseResponse = await fetch(`http://localhost:3000/courses/${courseId}`, {
@@ -65,7 +78,6 @@ const CourseContent = () => {
 
         // --- BỔ SUNG ĐOẠN NÀY ---
         const finished = new Set();
-        const modules = materialsResult.data?.modules || materialsResult.modules || [];
         modules.forEach((module) => {
           module.lessons.forEach((lesson) => {
             // Dựa trên logic backend bạn đã sửa ở câu hỏi trước:
@@ -102,6 +114,8 @@ const CourseContent = () => {
   console.log("CurrentData", currentLessonData);
   console.log("CurrentData contentType:", currentLessonData?.contentType);
   console.log("CurrentData type:", currentLessonData?.type);
+  console.log("CurrentData mediaUrl:", currentLessonData?.mediaUrl);
+  console.log("CurrentData content:", currentLessonData?.content);
 
   // Helper function to find current lesson index
   const getCurrentLessonIndex = () => {
@@ -442,32 +456,50 @@ const CourseContent = () => {
                 key={currentLessonData?.id}
                 lesson={currentLessonData}
                 onMarkAsFinished={handleMarkAsFinished}
+                isCompleted={completedLessons.has(currentLesson)}
               />
             ) : (
               <div className="content-container">
-                {currentLessonData?.type === "video" && currentLessonData?.videoUrl ? (
+                {currentLessonData?.type === "video" &&
+                (currentLessonData?.videoUrl || currentLessonData?.mediaUrl) ? (
                   <iframe
-                    src={getYouTubeEmbedUrl(currentLessonData.videoUrl)}
+                    src={getYouTubeEmbedUrl(
+                      currentLessonData.videoUrl || currentLessonData.mediaUrl
+                    )}
                     title={currentLessonData.title}
                     frameBorder="0"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                     allowFullScreen
                     className="video-iframe"
                   />
+                ) : currentLessonData?.type === "article" && currentLessonData?.content ? (
+                  <div
+                    className="article-content-container"
+                    style={{
+                      padding: "2rem",
+                      backgroundColor: "#ffffff",
+                      borderRadius: "0.5rem",
+                      boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+                      lineHeight: "1.8",
+                      fontSize: "1rem",
+                      color: "#1f2937",
+                      whiteSpace: "pre-wrap",
+                    }}
+                  >
+                    {currentLessonData.content}
+                  </div>
                 ) : (
                   <div className="content-placeholder">
                     {currentLessonData?.type === "video" && (
                       <>
                         🎥 Video Player - {currentLessonData?.title}
-                        <div className="api-ready-note">Ready for video API integration</div>
+                        <div className="api-ready-note">No video URL provided</div>
                       </>
                     )}
                     {currentLessonData?.type === "article" && (
                       <>
                         📄 Article Content - {currentLessonData?.title}
-                        <div className="api-ready-note">
-                          Ready for article content API integration
-                        </div>
+                        <div className="api-ready-note">No article content provided</div>
                       </>
                     )}
                   </div>
