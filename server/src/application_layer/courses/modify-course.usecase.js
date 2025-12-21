@@ -22,14 +22,24 @@ export const modifiedCourseDataSchema = z.object({
   language: z.string().nullable().optional(),
   coverImage: z.string().nullable().optional(),
   modules: z.array(moduleSchema).optional(),
+  published: z.boolean().optional(),
 });
 
-export const inputSchema = modifiedCourseDataSchema.merge(
-  z.object({
-    authId: z.string(),
-    id: z.string(),
-  })
-);
+export const inputSchema = modifiedCourseDataSchema
+  .merge(
+    z.object({
+      authId: z.string(),
+      id: z.string().optional(),
+      courseId: z.string().optional(),
+    })
+  )
+  .transform((data) => {
+    // Map courseId to id if id is not provided
+    if (!data.id && data.courseId) {
+      data.id = data.courseId;
+    }
+    return data;
+  });
 
 export const outputSchema = z.object({
   id: z.string(),
@@ -87,6 +97,12 @@ export class ModifyCourseUsecase {
     }
     if (parsedInput.coverImage !== undefined) {
       course.updateCoverImage(parsedInput.coverImage);
+    }
+    if (parsedInput.published !== undefined) {
+      course.published = parsedInput.published;
+      if (parsedInput.published && !course.publishDate) {
+        course.publishDate = new Date();
+      }
     }
     if (parsedInput.modules !== undefined) {
       // Create Assignment entities for lessons marked as assignment but missing assignmentId

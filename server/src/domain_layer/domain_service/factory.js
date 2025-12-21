@@ -15,14 +15,15 @@ export function toPersistence(entity, withRelations) {
   let result = {};
   for (const [key, value] of Object.entries(persistable)) {
     const r = dispatcher(value, withRelations);
-    if (!r) continue;
+    if (r === null || r === undefined) continue; // Allow false, 0, ""
     result[key] = r;
   }
 
   return result;
 
   function dispatcher(value, withRelations) {
-    if (!value) return null;
+    if (value === null || value === undefined) return null;
+    if (value instanceof Date) return value; // Handle Date objects
     if (isPrimitive(value)) return toPersistenceNonContainer(value);
 
     if (!withRelations) return null;

@@ -96,19 +96,102 @@ const InstructorScreen = () => {
     // You can add API call to update the course data here
   };
 
-  const handlePublishCourse = (courseDataWithAction) => {
+  const handlePublishCourse = async (courseDataWithAction) => {
     const { action, ...courseData } = courseDataWithAction;
 
-    switch (action) {
-      case "resend":
-        // Handle resending denied course
-        break;
-      case "hide":
-        // Handle hiding published course
-        break;
-      case "publish":
-        // Handle publishing draft course
-        break;
+    console.log("handlePublishCourse - action:", action);
+    console.log("handlePublishCourse - courseData:", courseData);
+
+    try {
+      const token = localStorage.getItem("accessToken");
+      const API_URL = import.meta.env.VITE_API_URL;
+
+      if (!token) {
+        console.error("No access token found");
+        return;
+      }
+
+      // Prepare payload with only backend-expected fields
+      const payload = {
+        title: courseData.title || "",
+        price: courseData.price || 0,
+      };
+
+      // Only add optional fields if they have values
+      if (courseData.description) {
+        payload.description = courseData.description;
+      }
+      if (courseData.level) {
+        payload.level = courseData.level;
+      }
+      if (courseData.language) {
+        payload.language = courseData.language;
+      }
+      if (courseData.image || courseData.coverImage) {
+        payload.coverImage = courseData.image || courseData.coverImage;
+      }
+
+      console.log("Payload to send:", payload);
+
+      switch (action) {
+        case "publish": {
+          // Publish draft course
+          const publishResponse = await fetch(`${API_URL}/courses/${courseData.id}`, {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              ...payload,
+              published: true,
+            }),
+          });
+
+          if (publishResponse.ok) {
+            await fetchCourses({ onlyMyCourses: true });
+            console.log("Course published successfully");
+          } else {
+            const errorData = await publishResponse.json();
+            console.error("Failed to publish course:", errorData);
+          }
+          break;
+        }
+
+        case "hide": {
+          // Unpublish course
+          const hideResponse = await fetch(`${API_URL}/courses/${courseData.id}`, {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              ...payload,
+              published: false,
+            }),
+          });
+
+          if (hideResponse.ok) {
+            await fetchCourses({ onlyMyCourses: true });
+            console.log("Course unpublished successfully");
+          } else {
+            const errorData = await hideResponse.json();
+            console.error("Failed to unpublish course:", errorData);
+          }
+          break;
+        }
+
+        case "resend":
+          // Handle resending denied course
+          console.log("Resend action not yet implemented");
+          break;
+
+        default:
+          console.log("Unknown action:", action);
+      }
+    } catch (error) {
+      console.error("Error in handlePublishCourse:", error);
     }
   };
 

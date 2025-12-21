@@ -83,6 +83,9 @@ export class CourseRepository {
 
     if (instructorId) {
       where.instructorId = instructorId;
+    } else {
+      // If not filtering by instructorId (i.e., learner view), only show published courses
+      where.published = true;
     }
     console.log(currentUserId);
 
@@ -97,33 +100,35 @@ export class CourseRepository {
             name: true,
             email: true,
             avatarUrl: true,
-          }
+          },
         },
         // --- THÊM LOGIC CHECK ENROLL Ở ĐÂY ---
-        enrollments: currentUserId ? {
-          where: {
-            userId: currentUserId,
-            status: 'ENROLLED'
-          },
-          select: {
-            id: true // Chỉ cần lấy id để biết có tồn tại hay không
-          }
-        } : false
+        enrollments: currentUserId
+          ? {
+              where: {
+                userId: currentUserId,
+                status: "ENROLLED",
+              },
+              select: {
+                id: true, // Chỉ cần lấy id để biết có tồn tại hay không
+              },
+            }
+          : false,
       },
       orderBy: {
-        createdAt: 'desc',
+        createdAt: "desc",
       },
     });
 
     // Trả về dữ liệu đã được map thêm field isEnrolled
-    return result.map(course => {
+    return result.map((course) => {
       const courseEntity = CourseEntity.rehydrate(course);
 
       // Gán thêm thuộc tính động để UseCase có thể dùng
       // (Hoặc nếu CourseEntity của bạn có hàm toJSON, hãy thêm vào đó)
       return {
         ...courseEntity,
-        isEnrolledByCurrentUser: course.enrollments?.length > 0
+        isEnrolledByCurrentUser: course.enrollments?.length > 0,
       };
     });
   }
@@ -163,9 +168,23 @@ export class CourseRepository {
 
   async save(course) {
     // include relations (modules/lessons) when persisting
+    const persistenceData = toPersistence(course, true);
+
+    // Log to debug published field
+    logger.debug("CourseRepository.save - persisting course", {
+      courseId: course.id,
+      published: course.published,
+      persistenceData: persistenceData,
+    });
+
     const raw = await this.prisma.course.update({
       where: { id: course.id },
-      data: toPersistence(course, true),
+      data: persistenceData,
+    });
+
+    logger.debug("CourseRepository.save - after update", {
+      courseId: raw.id,
+      published: raw.published,
     });
 
     return CourseEntity.rehydrate(raw);
@@ -288,9 +307,9 @@ export class CourseRepository {
       data: {
         published: published,
         publishDate: publishDate,
-        // Nếu bạn muốn lưu lý do từ chối vào database, 
+        // Nếu bạn muốn lưu lý do từ chối vào database,
         // bạn nên thêm field 'denialReason' vào model Course trong schema.prisma
-      }
+      },
     });
   }
 

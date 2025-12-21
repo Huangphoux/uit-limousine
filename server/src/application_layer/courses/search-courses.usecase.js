@@ -7,7 +7,15 @@ export class SearchCoursesUseCase {
     this.#courseRepository = courseRepository;
   }
 
-  async execute({ search, category, level, page = 1, limit = 10, instructorId, currentUserId } = {}) {
+  async execute({
+    search,
+    category,
+    level,
+    page = 1,
+    limit = 10,
+    instructorId,
+    currentUserId,
+  } = {}) {
     logger.debug("Executing Search Courses operation");
     // Parse pagination
     let take = parseInt(limit);
@@ -42,17 +50,21 @@ export class SearchCoursesUseCase {
         description: courseEntity.description,
         category: courseEntity.category || "General",
         level: courseEntity.level || "BEGINNER",
-        instructor: courseEntity.instructor ? {
-          id: courseEntity.instructor.id,
-          fullName: courseEntity.instructor.name,
-        } : null,
+        instructor: courseEntity.instructor
+          ? {
+              id: courseEntity.instructor.id,
+              fullName: courseEntity.instructor.name,
+            }
+          : null,
         coverImage: courseEntity.coverImg,
         thumbnail: courseEntity.coverImg,
         rating: courseEntity.rating || 0,
         enrollmentCount: courseEntity.enrollmentCount || 0,
         price: courseEntity.price || 0,
         createdAt: courseEntity.createdAt,
-        enrolled: courseEntity.isEnrolledByCurrentUser || false
+        enrolled: courseEntity.isEnrolledByCurrentUser || false,
+        published: courseEntity.published || false,
+        status: courseEntity.published ? "Published" : "Draft",
       })),
       total: total,
       page: currentPage,
