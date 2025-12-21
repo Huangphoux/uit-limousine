@@ -15,6 +15,7 @@ import CourseManagementCard from "./components/instructor-screen/course-manageme
 import CourseManagementView from "./components/instructor-screen/course-management/CourseManagementView";
 import EditCourseView from "./components/instructor-screen/course-management/EditCourseView";
 import AssignmentSubmit from "./pages/AssignmentSubmit";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 const routes = [
   {
@@ -53,7 +54,11 @@ const routes = [
 
   {
     path: "/courses",
-    element: <NewPageLayout />,
+    element: (
+      <ProtectedRoute allowedRoles={["learner", "instructor", "admin"]}>
+        <NewPageLayout />
+      </ProtectedRoute>
+    ),
     errorElement: <ErrorPage />,
     children: [
       {
@@ -64,7 +69,11 @@ const routes = [
   },
   {
     path: "/course/:courseId",
-    element: <CourseContent />,
+    element: (
+      <ProtectedRoute allowedRoles={["learner", "instructor", "admin"]}>
+        <CourseContent />
+      </ProtectedRoute>
+    ),
     errorElement: <ErrorPage />,
   },
   {
@@ -74,19 +83,31 @@ const routes = [
   },
   {
     path: "/instructor-screen",
-    element: <InstructorScreen />,
+    element: (
+      <ProtectedRoute allowedRoles={["instructor"]}>
+        <InstructorScreen />
+      </ProtectedRoute>
+    ),
     errorElement: <ErrorPage />,
   },
 
   {
     path: "/instructor/edit-course",
-    element: <EditCourseView />,
+    element: (
+      <ProtectedRoute allowedRoles={["instructor"]}>
+        <EditCourseView />
+      </ProtectedRoute>
+    ),
     errorElement: <ErrorPage />,
   },
 
   {
     path: "/admin-screen",
-    element: <AdminScreen />,
+    element: (
+      <ProtectedRoute allowedRoles={["admin"]}>
+        <AdminScreen />
+      </ProtectedRoute>
+    ),
     errorElement: <ErrorPage />,
   },
 ];

@@ -48,8 +48,32 @@ export default function Login() {
       // Use AuthContext login function to save user info and tokens
       login(data.data.user, data.data.accessToken, data.data.refreshToken);
 
-      // Navigate to user info page
-      navigate("/courses");
+      // Navigate based on user role
+      console.log("User data:", data.data.user);
+      console.log("User role:", data.data.user.role);
+      console.log("Type of role:", typeof data.data.user.role);
+
+      // Handle role as array, object, or string
+      let userRole;
+      if (Array.isArray(data.data.user.role) && data.data.user.role.length > 0) {
+        // Role is array like ['INSTRUCTOR']
+        userRole = data.data.user.role[0].toLowerCase();
+      } else if (typeof data.data.user.role === "string") {
+        userRole = data.data.user.role.toLowerCase();
+      } else if (data.data.user.role?.name) {
+        userRole = data.data.user.role.name.toLowerCase();
+      } else if (data.data.user.role?.type) {
+        userRole = data.data.user.role.type.toLowerCase();
+      } else {
+        userRole = "learner"; // default fallback
+      }
+      if (userRole === "admin") {
+        navigate("/admin-screen");
+      } else if (userRole === "instructor") {
+        navigate("/instructor-screen");
+      } else {
+        navigate("/courses");
+      }
     } catch (error) {
       console.error("Error:", error);
       if (error.message.includes("fetch")) {

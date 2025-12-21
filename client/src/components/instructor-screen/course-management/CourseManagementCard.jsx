@@ -124,6 +124,10 @@ const CourseManagementCard = ({ courseData, onEdit, onPublish, onDelete }) => {
         backgroundColor: "#EFF6FF",
         transition: "all 0.3s ease",
         border: "1px solid #e9ecef",
+        minHeight: "380px",
+        maxHeight: "380px",
+        display: "flex",
+        flexDirection: "column",
       }}
     >
       <div className="position-relative">
@@ -139,14 +143,39 @@ const CourseManagementCard = ({ courseData, onEdit, onPublish, onDelete }) => {
         />
       </div>
 
-      <Card.Body className="p-2">
+      <Card.Body className="p-2" style={{ display: "flex", flexDirection: "column", flex: 1 }}>
         <Card.Title
           className="fw-bold mb-1"
-          style={{ fontSize: "16px", color: "#000", fontWeight: "bold" }}
+          style={{
+            fontSize: "16px",
+            color: "#000",
+            fontWeight: "bold",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            display: "-webkit-box",
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: "vertical",
+            minHeight: "38px",
+            maxHeight: "38px",
+          }}
         >
           {title}
         </Card.Title>
-        <Card.Text className=" mb-2" style={{ fontSize: "13px", lineHeight: "1.3", color: "#000" }}>
+        <Card.Text
+          className="mb-2"
+          style={{
+            fontSize: "13px",
+            lineHeight: "1.3",
+            color: "#000",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            display: "-webkit-box",
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: "vertical",
+            minHeight: "34px",
+            maxHeight: "34px",
+          }}
+        >
           {description}
         </Card.Text>{" "}
         <div className="mb-2">
@@ -179,13 +208,19 @@ const CourseManagementCard = ({ courseData, onEdit, onPublish, onDelete }) => {
                 border: "1px solid #f5c6cb",
                 fontSize: "12px",
                 color: "#721c24",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                display: "-webkit-box",
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: "vertical",
+                maxHeight: "40px",
               }}
             >
               <strong>Reason:</strong> {courseData.denialReason}
             </div>
           </div>
         )}
-        <div className="d-flex gap-1">
+        <div className="d-flex gap-1" style={{ marginTop: "auto" }}>
           {/* Edit Button */}
           <Button
             variant={
