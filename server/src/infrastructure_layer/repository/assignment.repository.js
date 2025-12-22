@@ -18,4 +18,11 @@ export default class AssignmentRepository {
     });
     return result;
   }
+  async update(id, data) {
+    const result = await prisma.assignment.update({
+      where: { id },
+      data,
+    });
+    return result;
+  }
 }

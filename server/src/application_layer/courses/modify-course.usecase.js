@@ -1,9 +1,32 @@
 import z from "zod";
 import { AuditLog } from "../../domain_layer/audit-log.entity.js";
 import { logger } from "../../utils/logger.js";
-import { moduleSchema } from "../../domain_layer/course/module.entity.js";
+// import { moduleSchema } from "../../domain_layer/course/module.entity.js";
 import AssignmentRepository from "../../infrastructure_layer/repository/assignment.repository.js";
 
+
+export const lessonSchema = z.object({
+  id: z.string().optional(),
+  title: z.string(),
+  contentType: z.string(), // video, assignment, reading...
+  mediaUrl: z.string().nullable().optional(),
+  content: z.string().nullable().optional(),
+  durationSec: z.number().nullable().optional(),
+  position: z.number().optional(),
+  assignmentId: z.string().nullable().optional(),
+
+  // ✅ CẦN THÊM 2 TRƯỜNG NÀY ĐỂ ZOD KHÔNG XÓA DỮ LIỆU
+  dueDate: z.string().nullable().optional(), // Frontend gửi lên dạng ISO string
+  maxPoints: z.number().nullable().optional(),
+});
+
+// Schema cho Module
+export const moduleSchema = z.object({
+  id: z.string().optional(),
+  title: z.string(),
+  position: z.number().optional(),
+  lessons: z.array(lessonSchema).optional(), // Mảng các bài học
+});
 // Schema for audit log - simpler version without complex nested structures
 const auditCourseDataSchema = z.object({
   title: z.string(),
@@ -111,32 +134,76 @@ export class ModifyCourseUsecase {
         JSON.stringify(parsedInput.modules, null, 2)
       );
 
-      // Create Assignment entities for lessons marked as assignment but missing assignmentId
+
+      // Tạo mới hoặc cập nhật assignment cho lesson dạng assignment
       for (const module of parsedInput.modules) {
         if (!module.lessons || !Array.isArray(module.lessons)) continue;
         for (const lesson of module.lessons) {
           try {
             const ct = (lesson.contentType || lesson.type || "").toLowerCase();
-            if (ct === "assignment" && !lesson.assignmentId) {
-              // Build payload from available lesson fields
-              const assignPayload = {
-                courseId: parsedInput.id,
-                title: lesson.title || "Assignment",
-                description: lesson.content || lesson.description || null,
-                dueDate: lesson.dueDate ? new Date(lesson.dueDate) : null,
-                maxPoints: lesson.maxPoints || lesson.maxScore || 100,
-              };
+            console.log("[ModifyCourse] Processing lesson123:", {
+              title: lesson.title,
+              contentType: ct,
+              assignmentId: lesson.assignmentId,
+              dueDate: lesson.dueDate,        // Check giá trị này
+              maxPoints: lesson.maxPoints,
+              rawLesson: lesson               // Xem toàn bộ lesson object
+            });
+            if (ct === "assignment") {
+              if (!lesson.assignmentId) {
+                // Tạo assignment mới
+                const assignPayload = {
+                  courseId: parsedInput.id,
+                  title: lesson.title || "Assignment",
+                  description: lesson.content || lesson.description || null,
+                  dueDate: lesson.dueDate ? new Date(lesson.dueDate) : null,
+                  maxPoints: lesson.maxPoints || lesson.maxScore || 100, // ✅ Support both fields
+                };
+                const created = await this.assignmentRepository.create(assignPayload);
+                if (created && created.id) {
+                  lesson.assignmentId = created.id;
+                  lesson.contentType = "assignment";
+                }
+              } else {
+                // Cập nhật assignment đã tồn tại
+                const updatePayload = {};
 
-              const created = await this.assignmentRepository.create(assignPayload);
-              if (created && created.id) {
-                lesson.assignmentId = created.id;
-                // ensure contentType is assignment
-                lesson.contentType = "assignment";
+                // ✅ Check both dueDate fields
+                if (lesson.dueDate !== undefined) {
+                  updatePayload.dueDate = lesson.dueDate ? new Date(lesson.dueDate) : null;
+                }
+
+                if (lesson.title !== undefined) {
+                  updatePayload.title = lesson.title;
+                }
+
+                if (lesson.content !== undefined || lesson.description !== undefined) {
+                  updatePayload.description = lesson.content || lesson.description || null;
+                }
+
+                // ✅ Check both maxPoints/maxScore fields
+                if (lesson.maxPoints !== undefined || lesson.maxScore !== undefined) {
+                  updatePayload.maxPoints = lesson.maxPoints || lesson.maxScore || 100;
+                }
+
+                console.log("[ModifyCourse] Updating assignment:", lesson.assignmentId, updatePayload);
+
+                if (Object.keys(updatePayload).length > 0) {
+                  try {
+                    await this.assignmentRepository.update(lesson.assignmentId, updatePayload);
+                  } catch (e) {
+                    logger.warn("Failed to update assignment for lesson", {
+                      lessonTitle: lesson.title,
+                      assignmentId: lesson.assignmentId,
+                      error: e.message,
+                    });
+                  }
+                }
               }
             }
           } catch (e) {
-            // log and continue — don't fail entire update for one assignment creation
-            logger.warn("Failed to create assignment for lesson", {
+            // log and continue — don't fail entire update for one assignment creation/update
+            logger.warn("Failed to create/update assignment for lesson", {
               lessonTitle: lesson.title,
               error: e.message,
             });

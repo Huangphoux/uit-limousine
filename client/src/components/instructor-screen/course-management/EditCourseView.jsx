@@ -27,17 +27,15 @@ const EditCourseView = () => {
   });
   const [loading, setLoading] = useState(false);
 
-  // Fetch course details from API
   const fetchCourseDetails = async (courseId) => {
     setLoading(true);
     try {
       const token = localStorage.getItem("accessToken");
       const userStr = localStorage.getItem("user");
-
       const user = JSON.parse(userStr);
-      const myAuthId = user.id;
 
-      const response = await fetch(`${API_URL}/courses/${courseId}/materials`, {
+      // Fetch course materials
+      const materialsResponse = await fetch(`${API_URL}/courses/${courseId}/materials`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -45,145 +43,100 @@ const EditCourseView = () => {
         },
       });
 
-      const result = await response.json();
-      console.log("API Response:", result);
+      const materialsResult = await materialsResponse.json();
 
-      if (!response.ok) {
-        const errorMessage =
-          result.data || result.error?.message || result.message || "Failed to load course";
-        throw new Error(errorMessage);
+      if (!materialsResponse.ok) {
+        throw new Error(materialsResult.message || "Failed to load course materials");
       }
 
-      // Handle API response for course materials (UC-6.1)
-      // Response format: { status: 'success', data: { modules: [...] } }
-      if (result.status === "success" && result.data) {
-        const materials = result.data;
-        console.log("Materials:", materials);
+      // Fetch course details
+      const courseResponse = await fetch(`${API_URL}/courses/${courseId}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
-        // We need to fetch additional course info from the course detail endpoint
-        // since materials endpoint only returns modules
-        const courseResponse = await fetch(`${API_URL}/courses/${courseId}`, {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        });
+      const courseResult = await courseResponse.json();
 
-        const courseResult = await courseResponse.json();
-        console.log("Course Result:", courseResult);
+      if (!courseResponse.ok) {
+        throw new Error("Failed to load course details");
+      }
 
-        if (!courseResponse.ok) {
-          throw new Error("Failed to load course details");
-        }
+      const course = courseResult.data || courseResult;
+      const materials = materialsResult.data;
 
-        // Course detail response format
-        let course;
-        if (courseResult.data && typeof courseResult.data === "object") {
-          course = courseResult.data;
-        } else if (courseResult.id) {
-          course = courseResult;
-        } else {
-          throw new Error("Invalid course data format");
-        }
+      // Normalize modules and lessons
+      const normalizedModules = (materials.modules || []).map((m) => ({
+        id: m.id,
+        title: m.title,
+        position: m.order ?? m.position,
+        lessons: (m.lessons || []).map((l) => {
+          // Map content type
+          const lessonType = mapContentTypeToUI(l.type || l.contentType);
 
-        console.log("Parsed course:", course);
+          // Convert duration to MM:SS format
+          const durationSec = l.duration || l.durationSec || 600;
+          const duration = `${Math.floor(durationSec / 60)}:${String(durationSec % 60).padStart(2, "0")}`;
 
-        // Normalize lesson type values from backend to UI labels
-        const normalizedModules = (materials.modules || []).map((m) => ({
-          ...m,
-          lessons: (m.lessons || []).map((l) => {
-            const lessonType = mapContentTypeToUI(l.type || l.contentType);
-            console.log(`Loading lesson: ${l.title}, type: ${lessonType}, mediaUrl: ${l.mediaUrl}`);
-            const lesson = {
-              ...l,
-              type: lessonType,
-              description: l.content || l.description || "", // Map backend 'content' to frontend 'description'
-              duration:
-                l.duration || l.durationSec
-                  ? `${Math.floor((l.duration || l.durationSec) / 60)}:${String((l.duration || l.durationSec) % 60).padStart(2, "0")}`
-                  : "10:00",
-            };
+          const lesson = {
+            id: l.id,
+            title: l.title,
+            type: lessonType,
+            description: l.content || l.description || "",
+            duration: duration,
+            isCompleted: l.isCompleted || false,
+          };
 
-            // Map mediaUrl and content based on lesson type
-            if (lessonType === "Video" && l.mediaUrl) {
-              lesson.videoUrl = l.mediaUrl;
-              console.log(`  -> Mapped videoUrl: ${lesson.videoUrl}`);
-            }
+          // Handle VIDEO type
+          if (lessonType === "Video" && l.mediaUrl) {
+            lesson.videoUrl = l.mediaUrl;
+          }
 
-            if (lessonType === "Reading" && l.content) {
-              lesson.readingContent = l.content;
-            }
+          // Handle READING type
+          if (lessonType === "Reading" && l.content) {
+            lesson.readingContent = l.content;
+          }
 
-            // If lesson has assignmentId, we'll fetch assignment details separately
-            if (l.assignmentId) {
-              lesson.assignmentId = l.assignmentId;
-            }
+          // Handle ASSIGNMENT type - use nested assignment data if available
+          if (lessonType === "Assignment") {
+            lesson.assignmentId = l.assignmentId;
 
-            return lesson;
-          }),
-        }));
+            // Use nested assignment data from API response
+            if (l.assignment) {
+              const assignment = l.assignment;
+              lesson.description = assignment.description || "";
+              lesson.maxPoints = assignment.maxPoints || 100;
+              lesson.maxScore = assignment.maxPoints || 100;
 
-        setCourseData({
-          id: course.id,
-          title: course.title || "Untitled Course",
-          description: course.description || course.shortDesc || "",
-          instructor: course.instructor?.fullName || "Instructor Name",
-          image: course.thumbnail || course.image || "",
-          status: course.published ? "published" : "draft",
-          modules: normalizedModules,
-          level: course.level || "",
-          language: course.language,
-          price: course.price,
-          rating: course.rating,
-          enrollmentCount: course.enrollmentCount,
-        });
-
-        // Fetch assignment details for lessons that have assignmentId
-        for (const module of normalizedModules) {
-          for (const lesson of module.lessons) {
-            if (lesson.assignmentId) {
-              try {
-                const assignmentResp = await fetch(
-                  `${API_URL}/assignments/${lesson.assignmentId}`,
-                  {
-                    headers: {
-                      Authorization: token ? `Bearer ${token}` : "",
-                    },
-                  }
-                );
-                const assignmentResult = await assignmentResp.json();
-
-                if (assignmentResp.ok) {
-                  const assignment = assignmentResult.data || assignmentResult;
-
-                  // Map assignment dueDate to lesson's dueDate and dueTime
-                  if (assignment.dueDate) {
-                    const dueDateTime = new Date(assignment.dueDate);
-                    lesson.dueDate = dueDateTime.toISOString().split("T")[0]; // YYYY-MM-DD
-                    lesson.dueTime = dueDateTime.toTimeString().slice(0, 5); // HH:MM
-                  }
-
-                  // Map other assignment fields
-                  lesson.description = assignment.description || "";
-                  lesson.maxPoints = assignment.maxPoints || 100;
-                  lesson.maxScore = assignment.maxPoints || 100;
-                }
-              } catch (err) {
-                console.error(`Failed to fetch assignment ${lesson.assignmentId}:`, err);
+              // Map dueDate
+              if (assignment.dueDate) {
+                const dueDateTime = new Date(assignment.dueDate);
+                lesson.dueDate = dueDateTime.toISOString().split("T")[0]; // YYYY-MM-DD
+                lesson.dueTime = dueDateTime.toTimeString().slice(0, 5); // HH:MM
               }
             }
           }
-        }
 
-        // Update courseData with assignment details
-        setCourseData((prev) => ({
-          ...prev,
-          modules: normalizedModules,
-        }));
-      } else {
-        throw new Error("Invalid API response format");
-      }
+          return lesson;
+        }),
+      }));
+
+      setCourseData({
+        id: course.id,
+        title: course.title || "Untitled Course",
+        description: course.description || course.shortDesc || "",
+        instructor: course.instructor?.name || course.instructor?.fullName || "Instructor Name",
+        image: course.coverImage || course.thumbnail || course.image || "",
+        status: course.published ? "published" : "draft",
+        modules: normalizedModules,
+        level: course.level || "",
+        language: course.language,
+        price: course.price,
+        rating: course.rating,
+        enrollmentCount: course.students || course.enrollmentCount,
+      });
     } catch (error) {
       console.error("Error fetching course:", error);
       toast.error("Failed to load course details: " + error.message);
@@ -191,7 +144,6 @@ const EditCourseView = () => {
       setLoading(false);
     }
   };
-
   // Load course data from navigation state or fetch from API
   useEffect(() => {
     if (location.state?.courseData) {
@@ -755,12 +707,24 @@ const EditCourseView = () => {
             id: lesson.id,
             title: lesson.title,
             content: content,
-            mediaUrl: mediaUrl || undefined, // Use undefined instead of empty string
+            mediaUrl: mediaUrl || undefined,
             contentType: mapUIToContentType(lesson.type) || "video",
             assignmentId: lesson.assignmentId ? lesson.assignmentId : undefined,
             durationSec: lesson.duration ? parseDurationToSeconds(lesson.duration) : null,
             position: lessonIndex,
           };
+
+          // ✅ THÊM: Luôn gửi assignment fields cho lesson type Assignment
+          if (lesson.type === "Assignment") {
+            // DueDate
+            if (lesson.dueDate) {
+              const dueTimeStr = lesson.dueTime || "23:59";
+              lessonData.dueDate = new Date(lesson.dueDate + "T" + dueTimeStr).toISOString();
+            }
+
+            // MaxPoints
+            lessonData.maxPoints = lesson.maxScore || lesson.maxPoints || 100;
+          }
 
           console.log("- Final lesson data:", lessonData);
           return lessonData;
