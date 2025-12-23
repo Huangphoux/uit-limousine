@@ -1,14 +1,16 @@
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import request from 'supertest';
-import prisma from '../../src/lib/prisma.js'; // ← IMPORT TỪ LIB
+import path from 'path';
+import fs from 'fs';
+import prisma from '../../src/lib/prisma.js';
 import app from '../../src/app.js';
 
 describe('Submit Assignment API', () => {
   let userId, courseId, assignmentId;
+  let testFilePath;
 
   beforeAll(async () => {
     await prisma.$connect();
-    
 
     const user = await prisma.user.create({
       data: {
@@ -18,7 +20,6 @@ describe('Submit Assignment API', () => {
       }
     });
     userId = user.id;
-   
 
     const course = await prisma.course.create({
       data: {
@@ -28,7 +29,6 @@ describe('Submit Assignment API', () => {
       }
     });
     courseId = course.id;
-  
 
     const assignment = await prisma.assignment.create({
       data: {
@@ -39,7 +39,6 @@ describe('Submit Assignment API', () => {
       }
     });
     assignmentId = assignment.id;
-    
 
     await prisma.enrollment.create({
       data: {
@@ -49,7 +48,13 @@ describe('Submit Assignment API', () => {
         isPaid: true
       }
     });
-    
+
+    const testDir = path.join(process.cwd(), 'tests', 'fixtures');
+    if (!fs.existsSync(testDir)) {
+      fs.mkdirSync(testDir, { recursive: true });
+    }
+    testFilePath = path.join(testDir, 'test-submission.zip');
+    fs.writeFileSync(testFilePath, Buffer.from('PK test zip content'));
   }, 30000);
 
   afterAll(async () => {
@@ -59,37 +64,80 @@ describe('Submit Assignment API', () => {
       await prisma.assignment.deleteMany({ where: { courseId } });
       await prisma.course.delete({ where: { id: courseId } });
       await prisma.user.delete({ where: { id: userId } });
-     
+
+      if (fs.existsSync(testFilePath)) {
+        fs.unlinkSync(testFilePath);
+      }
+
+      const uploadsDir = path.join(process.cwd(), 'uploads', 'submissions');
+      if (fs.existsSync(uploadsDir)) {
+        fs.rmSync(uploadsDir, { recursive: true, force: true });
+      }
     } catch (error) {
-      
     } finally {
       await prisma.$disconnect();
     }
   }, 30000);
 
-  const submitAssignment = (assignmentId, data) =>
+  const submitAssignmentWithFile = (assignmentId, studentId, filePath) =>
     request(app)
       .post(`/courses/assignments/${assignmentId}/submit`)
-      .send(data);
+      .field('studentId', studentId)
+      .attach('file', filePath);
 
-  it('should submit successfully', async () => {
-   
+  const submitAssignmentWithContent = (assignmentId, data) =>
+    request(app)
+      .post(`/courses/assignments/${assignmentId}/submit`)
+      .field('studentId', data.studentId)
+      .field('content', data.content || '');
 
-    const res = await submitAssignment(assignmentId, {
-      studentId: userId,
-      content: 'My submission',
-      fileUrl: 'https://example.com/file.pdf'
+  it('should submit with file successfully', async () => {
+    const newAssignment = await prisma.assignment.create({
+      data: {
+        courseId,
+        title: 'Test Assignment File Upload',
+        dueDate: new Date('2025-12-31'),
+        maxPoints: 100
+      }
     });
 
-    
+    const res = await submitAssignmentWithFile(newAssignment.id, userId, testFilePath);
+
     expect(res.status).toBe(201);
     expect(res.body.success).toBe(true);
     expect(res.body.data.status).toBe('SUBMITTED');
+    expect(res.body.data.fileUrl).toBeDefined();
+    expect(res.body.data.fileUrl).toContain('/uploads/submissions/');
+
+    await prisma.submission.deleteMany({ where: { assignmentId: newAssignment.id } });
+    await prisma.assignment.delete({ where: { id: newAssignment.id } });
+  }, 20000);
+
+  it('should submit with content successfully', async () => {
+    const newAssignment = await prisma.assignment.create({
+      data: {
+        courseId,
+        title: 'Test Assignment Content',
+        dueDate: new Date('2025-12-31'),
+        maxPoints: 100
+      }
+    });
+
+    const res = await submitAssignmentWithContent(newAssignment.id, {
+      studentId: userId,
+      content: 'My submission content'
+    });
+
+    expect(res.status).toBe(201);
+    expect(res.body.success).toBe(true);
+    expect(res.body.data.status).toBe('SUBMITTED');
+    expect(res.body.data.content).toBe('My submission content');
+
+    await prisma.submission.deleteMany({ where: { assignmentId: newAssignment.id } });
+    await prisma.assignment.delete({ where: { id: newAssignment.id } });
   }, 20000);
 
   it('should fail if already submitted', async () => {
-    
-    
     const newAssignment = await prisma.assignment.create({
       data: {
         courseId,
@@ -99,17 +147,15 @@ describe('Submit Assignment API', () => {
       }
     });
 
-    const res1 = await submitAssignment(newAssignment.id, { 
-      studentId: userId, 
-      content: 'First' 
+    const res1 = await submitAssignmentWithContent(newAssignment.id, {
+      studentId: userId,
+      content: 'First'
     });
-    
-    
-    const res2 = await submitAssignment(newAssignment.id, { 
-      studentId: userId, 
-      content: 'Second' 
+
+    const res2 = await submitAssignmentWithContent(newAssignment.id, {
+      studentId: userId,
+      content: 'Second'
     });
-  
 
     expect(res2.status).toBe(403);
     expect(res2.body.message).toBe('You have already submitted this assignment');
@@ -119,9 +165,9 @@ describe('Submit Assignment API', () => {
   }, 20000);
 
   it('should fail if assignment not found', async () => {
-    const res = await submitAssignment('00000000-0000-0000-0000-000000000000', { 
-      studentId: userId, 
-      content: 'Test' 
+    const res = await submitAssignmentWithContent('00000000-0000-0000-0000-000000000000', {
+      studentId: userId,
+      content: 'Test'
     });
 
     expect(res.status).toBe(404);
@@ -130,15 +176,15 @@ describe('Submit Assignment API', () => {
 
   it('should fail if not enrolled', async () => {
     const user2 = await prisma.user.create({
-      data: { 
-        email: `other-${Date.now()}@example.com`, 
-        username: `other${Date.now()}` 
+      data: {
+        email: `other-${Date.now()}@example.com`,
+        username: `other${Date.now()}`
       }
     });
 
-    const res = await submitAssignment(assignmentId, { 
-      studentId: user2.id, 
-      content: 'Test' 
+    const res = await submitAssignmentWithContent(assignmentId, {
+      studentId: user2.id,
+      content: 'Test'
     });
 
     expect(res.status).toBe(403);
@@ -147,12 +193,46 @@ describe('Submit Assignment API', () => {
     await prisma.user.delete({ where: { id: user2.id } });
   }, 20000);
 
-  it('should fail if no content or fileUrl', async () => {
-    const res = await submitAssignment(assignmentId, { 
-      studentId: userId 
+  it('should fail if no content or file', async () => {
+    const newAssignment = await prisma.assignment.create({
+      data: {
+        courseId,
+        title: 'Test Assignment No Content',
+        dueDate: new Date('2025-12-31'),
+        maxPoints: 100
+      }
     });
+
+    const res = await request(app)
+      .post(`/courses/assignments/${newAssignment.id}/submit`)
+      .field('studentId', userId);
 
     expect(res.status).toBe(400);
     expect(res.body.message).toBe('Please provide either content or file');
+
+    await prisma.assignment.delete({ where: { id: newAssignment.id } });
   }, 10000);
-});
+
+  it('should mark as late if past due date', async () => {
+    const pastDueAssignment = await prisma.assignment.create({
+      data: {
+        courseId,
+        title: 'Past Due Assignment',
+        dueDate: new Date('2020-01-01'),
+        maxPoints: 100
+      }
+    });
+
+    const res = await submitAssignmentWithContent(pastDueAssignment.id, {
+      studentId: userId,
+      content: 'Late submission'
+    });
+
+    expect(res.status).toBe(201);
+    expect(res.body.success).toBe(true);
+    expect(res.body.data.status).toBe('LATE');
+    expect(res.body.message).toContain('Late submission');
+
+    await prisma.submission.deleteMany({ where: { assignmentId: pastDueAssignment.id } });
+    await prisma.assignment.delete({ where: { id: pastDueAssignment.id } });
+  }, 20000);});
