@@ -47,6 +47,9 @@ const CourseContent = () => {
             console.log(`    - type: ${lesson.type}`);
             console.log(`    - mediaUrl: ${lesson.mediaUrl}`);
             console.log(`    - content: ${lesson.content?.substring(0, 50)}`);
+            console.log(
+              `    - assignment: ${lesson.assignment ? JSON.stringify(lesson.assignment) : "null"}`
+            );
           });
         });
 

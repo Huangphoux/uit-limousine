@@ -139,13 +139,14 @@ const AssignmentSubmissionUI = ({ lesson, onMarkAsFinished, isCompleted }) => {
   };
 
   const handleSubmit = async () => {
-    // if (!studentId) {
-    //   setError("Student ID is required");
-    //   return;
-    // }
+    console.log("[handleSubmit] Starting submission...");
+    console.log("[handleSubmit] Assignment ID:", lesson?.assignment?.id);
+    console.log("[handleSubmit] Content:", content);
+    console.log("[handleSubmit] Selected files:", selectedFiles);
 
     if (selectedFiles.length === 0 && !content.trim()) {
       setError("Please provide either content or upload a file");
+      console.log("[handleSubmit] Error: No content or file provided");
       return;
     }
 
@@ -155,12 +156,14 @@ const AssignmentSubmissionUI = ({ lesson, onMarkAsFinished, isCompleted }) => {
 
       let fileUrl = null;
 
-      // Upload file if selected
+      // For now, using a placeholder URL if file is selected
+      // TODO: Implement actual file upload to server/cloud storage
       if (selectedFiles.length > 0) {
-        // For multiple files, you might want to upload all and concatenate URLs
-        // For now, uploading the first file
-        fileUrl = await uploadFile(selectedFiles[0]);
+        console.log("[handleSubmit] File selected, using placeholder URL");
+        fileUrl = "Link: https://github.com/learner1/todo-app"; // Placeholder URL
       }
+
+      console.log("[handleSubmit] Calling API to submit assignment...");
 
       // Submit assignment to API
       const response = await fetch(
@@ -174,17 +177,21 @@ const AssignmentSubmissionUI = ({ lesson, onMarkAsFinished, isCompleted }) => {
           body: JSON.stringify({
             assignmentId: lesson.assignment?.id,
             content: content.trim() || null,
-            fileUrl: "Link: https://github.com/learner1/todo-app", // Replace with actual fileUrl
+            fileUrl: fileUrl,
           }),
         }
       );
 
+      console.log("[handleSubmit] API response status:", response.status);
+
       if (!response.ok) {
         const errorData = await response.json();
+        console.log("[handleSubmit] API error:", errorData);
         throw new Error(errorData.message || "Submission failed");
       }
 
       const responseData = await response.json();
+      console.log("[handleSubmit] API response data:", responseData);
 
       // Format submission result from API response
       const now = new Date();
@@ -201,8 +208,8 @@ const AssignmentSubmissionUI = ({ lesson, onMarkAsFinished, isCompleted }) => {
         files: fileUrl
           ? [
               {
-                name: selectedFiles[0].name,
-                size: `${Math.round(selectedFiles[0].size / 1024)} KB`,
+                name: selectedFiles[0]?.name || "Submission file",
+                size: selectedFiles[0] ? `${Math.round(selectedFiles[0].size / 1024)} KB` : "N/A",
                 url: fileUrl,
               },
             ]
@@ -219,19 +226,24 @@ const AssignmentSubmissionUI = ({ lesson, onMarkAsFinished, isCompleted }) => {
         feedback: responseData.data?.feedback || null,
         submissionId: responseData.data?.id,
       };
+
+      console.log("[handleSubmit] Submission successful, result:", result);
       toast.success("Assignment submitted successfully!");
       setSubmissionResult(result);
       setIsSubmitted(true);
 
       // Mark lesson as finished after submission
       if (onMarkAsFinished) {
+        console.log("[handleSubmit] Marking lesson as finished...");
         onMarkAsFinished();
       }
     } catch (err) {
-      console.error("Submission error:", err);
+      console.error("[handleSubmit] Submission error:", err);
       setError(err.message || "Failed to submit assignment. Please try again.");
+      toast.error(err.message || "Failed to submit assignment");
     } finally {
       setIsSubmitting(false);
+      console.log("[handleSubmit] Submission process completed");
     }
   };
 
