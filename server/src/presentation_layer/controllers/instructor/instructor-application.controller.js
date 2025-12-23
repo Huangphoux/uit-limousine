@@ -1,12 +1,12 @@
 import ApplyInstructorUseCase from '../../../application_layer/instructor/apply-instructor.usecase.js';
 import ReviewInstructorUseCase from '../../../application_layer/instructor/review-instructor.usecase.js';
-import InstructorApplicationMapper from '../../../infrustructure_layer/mapper/instructor-application.mapper.js';
+import InstructorApplicationMapper from '../../../infrastructure_layer/mapper/instructor-application.mapper.js';
 import InstructorApplicationEntity from '../../../domain_layer/instructor-application.entity.js';
 
 const applyUseCase = new ApplyInstructorUseCase();
 const reviewUseCase = new ReviewInstructorUseCase();
 export const applyInstructor = async (req, res) => {
-  
+
 
   try {
     const { applicantId, requestedCourseTitle, requestedCourseSummary, portfolioUrl } = req.body;

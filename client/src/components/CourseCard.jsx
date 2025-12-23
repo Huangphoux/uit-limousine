@@ -212,7 +212,7 @@ const CourseCard = ({ course, onCardClick }) => {
                 {course.rating}
               </span>
               <span className="small" style={{ color: textColors.students, fontSize: "0.85rem" }}>
-                👥 {course.students.toLocaleString()}
+                👥 {(course.students || course.enrollmentCount || 0).toLocaleString()}
               </span>
             </div>
 
@@ -221,10 +221,10 @@ const CourseCard = ({ course, onCardClick }) => {
                 className={`badge bg-${getLevelColor(course.level)}`}
                 style={{ fontSize: "0.75rem", padding: "0.35rem 0.65rem" }}
               >
-                {course.level}
+                {course.level || "N/A"}
               </span>
               <span className="small" style={{ color: textColors.duration, fontSize: "0.85rem" }}>
-                ⏱️ {course.duration}
+                ⏱️ {course.duration || "N/A"}
               </span>
             </div>
           </div>

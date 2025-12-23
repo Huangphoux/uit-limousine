@@ -21,6 +21,11 @@ export class PinoLogger {
     error(message, context) {
         this.logger.error({ ...context }, message);
     }
+
+    child(context) {
+        const childLogger = this.logger.child(context);
+        return new PinoLogger(childLogger);
+    }
 }
 
 export const logger = new PinoLogger(pino({

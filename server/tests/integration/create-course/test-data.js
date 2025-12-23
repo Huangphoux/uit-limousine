@@ -1,12 +1,14 @@
-import { Role } from "../../../src/domain_layer/role.entity";
-
 export const instructor = {
     id: "create course",
     username: "create course",
     email: "create course",
     roles: {
         create: {
-            roleId: 2
+            role: {
+                connect: {
+                    name: "INSTRUCTOR"
+                }
+            }
         }
     }
 }

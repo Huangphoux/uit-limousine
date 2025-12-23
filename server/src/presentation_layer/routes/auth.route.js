@@ -1,15 +1,16 @@
 import { Router } from "express";
-import { loginUseCase, registerUseCase } from "../../composition-root.js";
+import { loginUseCase, registerUseCase, requestPasswordResetUsecase, resetPasswordUsecase } from "../../composition-root.js";
 import {
-  registerController,
-  loginController,
   logoutController,
 } from "../controllers/auth.controller.js";
+import { controller } from "../controllers/generic.controller.js";
 
 const router = Router();
 
-router.post("/login", loginController(loginUseCase));
-router.post("/register", registerController(registerUseCase));
+router.post("/login", controller(loginUseCase));
+router.post("/register", controller(registerUseCase));
 router.post("/logout", logoutController());
+router.post("/forgot-password", controller(requestPasswordResetUsecase));
+router.post("/reset-password", controller(resetPasswordUsecase));
 
 export default router;

@@ -1,7 +1,7 @@
 // server/src/presentation_layer/controllers/notification.controller.js
 
 import { NotificationUseCase } from '../../../application_layer/notification/notification.usecase.js';
-import { NotificationMapper } from '../../../infrustructure_layer/mapper/notification.mapper.js';
+import { NotificationMapper } from '../../../infrastructure_layer/mapper/notification.mapper.js';
 
 export class NotificationController {
   constructor() {

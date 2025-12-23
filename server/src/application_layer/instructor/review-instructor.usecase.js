@@ -1,4 +1,4 @@
-import InstructorApplicationRepository from '../../infrustructure_layer/repository/instructor-application.repository.js';
+import InstructorApplicationRepository from '../../infrastructure_layer/repository/instructor-application.repository.js';
 import InstructorApplicationEntity from '../../domain_layer/instructor-application.entity.js';
 
 export default class ReviewInstructorUseCase {

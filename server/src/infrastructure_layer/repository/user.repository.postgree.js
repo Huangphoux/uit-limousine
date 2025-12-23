@@ -42,8 +42,6 @@ export class UserRepositoryPostgree {
     }
 
     async save(user) {
-        // logger.debug('Saving user', { userId: user.id, userData: user });
-
         const raw = await this.prisma.user.update({
             where: { id: user.id },
             data: {
@@ -67,27 +65,7 @@ export class UserRepositoryPostgree {
 
         const domainUser = UserEntity.rehydrate(raw);
 
-        // logger.info('User saved successfully', { userId: domainUser.id });
         return domainUser;
-        // try {
-        //     const raw = await this.prisma.user.update({
-        //         where: { id: user.id },
-        //         data: toPersistence(user),
-        //         select: UserRepositoryPostgree.baseQuery,
-        //     });
-
-        //     const domainUser = UserEntity.rehydrate(raw);
-
-        //     logger.info('User saved successfully', { userId: domainUser.id });
-        //     return domainUser;
-        // } catch (error) {
-        //     logger.error('Failed to save user', {
-        //         userId: user.id,
-        //         error_message: error.message,
-        //         stack_trace: error.stack,
-        //     });
-        //     throw error;
-        // }
     }
 
     static baseQuery = buildQuery(userSchema);

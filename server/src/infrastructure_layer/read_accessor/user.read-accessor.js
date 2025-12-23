@@ -51,4 +51,27 @@ export class UserReadAccessor {
 
         return { total, users };
     }
+
+    async getIdByEmail(email) {
+        return await this.prisma.user.findUnique({
+            where: { email },
+            select: { id: true },
+        });
+    }
+
+    async isInstructor(id) {
+        const count = await this.prisma.user.count({
+            where: {
+                id,
+                roles: {
+                    some: {
+                        role: {
+                            name: "INSTRUCTOR",
+                        }
+                    }
+                }
+            }
+        });
+        return count == 1;
+    }
 }
