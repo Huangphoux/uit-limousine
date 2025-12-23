@@ -556,7 +556,7 @@ const NewPage = () => {
               : // HIỂN THỊ DANH SÁCH KHÓA HỌC
                 courses
                   .filter((course) => course && course.id)
-                  .map((course, index) => (
+                  .map((course) => (
                     <Col
                       key={course.id}
                       lg={4}
