@@ -159,20 +159,7 @@ const CourseCard = ({ course, onCardClick }) => {
 
         <Card.Body className="d-flex flex-column" style={{ padding: "1.25rem" }}>
           <div className="mb-2">
-            <h6
-              className="mb-1"
-              style={{
-                color: textColors.provider,
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap",
-                fontSize: "0.875rem",
-                fontWeight: "600",
-              }}
-            >
-              {course.provider}
-            </h6>
-            {/* Provider + Instructor (avatar + name) */}
+            {/* Provider + Instructor */}
             {(() => {
               const instructorName =
                 typeof course.instructor === "string"
