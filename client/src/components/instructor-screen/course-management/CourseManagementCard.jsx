@@ -13,7 +13,7 @@ import {
 } from "react-icons/fa";
 import { toast } from "sonner";
 
-const CourseManagementCard = ({ courseData, onEdit, onPublish, onDelete }) => {
+const CourseManagementCard = ({ courseData, onEdit, onPublish }) => {
   const {
     title,
     description,
