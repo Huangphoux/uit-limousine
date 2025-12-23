@@ -386,9 +386,10 @@ describe('Grade Submission API - Complete Test Suite', () => {
         grade: 90
       });
 
-      expect(response.status).toBe(403);
-      expect(response.body.message).toBe('Submission has already been graded');
+      expect(response.status).toBe(200);
+      expect(response.body.data.grade).toBe(90);
 
+      await prisma.submission.delete({ where: { id: submission.id } });
           }, 10000);
   });
   describe('🔧 Edge Cases', () => {

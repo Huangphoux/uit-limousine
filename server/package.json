@@ -56,11 +56,5 @@
   },
   "prisma": {
     "seed": "node prisma/seed.js"
-  },
-  "jest": {
-    "testEnvironment": "node",
-    "coveragePathIgnorePatterns": [
-      "/node_modules/"
-    ]
   }
 }

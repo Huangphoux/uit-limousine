@@ -2,22 +2,31 @@ import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import request from 'supertest';
 import prisma from '../../src/lib/prisma.js'; // ← IMPORT TỪ LIB
 import app from '../../src/app.js';
+import { loginUseCase } from '../../src/composition-root.js';
+import bcrypt from 'bcrypt';
 
 describe('Submit Assignment API', () => {
   let userId, courseId, assignmentId;
+  let authToken;
 
   beforeAll(async () => {
     await prisma.$connect();
     
+    const password = 'password123';
+    const hashedPassword = await bcrypt.hash(password, 10);
 
     const user = await prisma.user.create({
       data: {
         email: `test-${Date.now()}@example.com`,
         name: 'Test Student',
-        username: `test${Date.now()}`
+        username: `test${Date.now()}`,
+        password: hashedPassword
       }
     });
     userId = user.id;
+    
+    const loginResult = await loginUseCase.execute({ email: user.email, password });
+    authToken = loginResult.accessToken;
    
 
     const course = await prisma.course.create({
@@ -70,6 +79,7 @@ describe('Submit Assignment API', () => {
   const submitAssignment = (assignmentId, data) =>
     request(app)
       .post(`/courses/assignments/${assignmentId}/submit`)
+      .set('Authorization', `Bearer ${authToken}`)
       .send(data);
 
   it('should submit successfully', async () => {
@@ -129,17 +139,24 @@ describe('Submit Assignment API', () => {
   }, 10000);
 
   it('should fail if not enrolled', async () => {
+    const password = 'password123';
+    const hashedPassword = await bcrypt.hash(password, 10);
+
     const user2 = await prisma.user.create({
       data: { 
         email: `other-${Date.now()}@example.com`, 
-        username: `other${Date.now()}` 
+        username: `other${Date.now()}`,
+        password: hashedPassword
       }
     });
+
+    const loginResult = await loginUseCase.execute({ email: user2.email, password });
+    const user2Token = loginResult.accessToken;
 
     const res = await submitAssignment(assignmentId, { 
       studentId: user2.id, 
       content: 'Test' 
-    });
+    }).set('Authorization', `Bearer ${user2Token}`);
 
     expect(res.status).toBe(403);
     expect(res.body.message).toBe('You are not enrolled in this course');
