@@ -322,7 +322,7 @@ const CourseManagementCard = ({ courseData, onEdit, onPublish, onDelete }) => {
           </Button>
 
           {/* Delete Button */}
-          <Button
+          {/* <Button
             variant={
               status?.toLowerCase() === "wait for approval" ||
               status?.toLowerCase() === "waiting" ||
@@ -353,7 +353,7 @@ const CourseManagementCard = ({ courseData, onEdit, onPublish, onDelete }) => {
             }}
           >
             <FaTrash size={10} />
-          </Button>
+          </Button> */}
         </div>
       </Card.Body>
     </Card>
