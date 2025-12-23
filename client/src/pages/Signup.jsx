@@ -9,9 +9,9 @@ export default function Signup() {
 
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
-    username: "test",
-    email: "test@test",
-    password: "test",
+    fullName: "",
+    email: "",
+    password: "",
   });
 
   const handleChange = (e) => {
@@ -23,10 +23,12 @@ export default function Signup() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    console.log("Form submitted with data:", formData);
+    console.log("API_URL:", API_URL);
     setIsLoading(true);
 
     try {
-      const response = await fetch(`${API_URL}/api/sign-up`, {
+      const response = await fetch(`${API_URL}/auth/register`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -37,9 +39,13 @@ export default function Signup() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || "Signup failed");
+        throw new Error(data.error?.message || data.message || "Signup failed");
       }
 
+      // Show success message if available
+      if (data.message) {
+        console.log(data.message);
+      }
       navigate("/login");
     } catch (error) {
       console.error("Error:", error);
@@ -50,50 +56,171 @@ export default function Signup() {
   };
 
   return (
-    <Container>
-      <Row className="justify-content-center">
-        <Col xs={12} md={6} lg={5}>
-          <h3 className="text-center mb-4">Sign Up</h3>
+    <>
+      <style>{`
+        .auth-container {
+          min-height: 100vh;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 2rem 0;
+        }
+
+        .auth-card {
+          background: white;
+          border-radius: 1.5rem;
+          box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+          padding: 3rem 2.5rem;
+          max-width: 480px;
+          width: 100%;
+        }
+
+        .auth-title {
+          color: #1a1a1a;
+          font-weight: 700;
+          font-size: 2rem;
+          margin-bottom: 0.5rem;
+          text-align: center;
+        }
+
+        .auth-subtitle {
+          color: #6c757d;
+          font-size: 0.95rem;
+          text-align: center;
+          margin-bottom: 2rem;
+        }
+
+        .auth-label {
+          color: #1a1a1a;
+          font-weight: 600;
+          font-size: 0.9rem;
+          margin-bottom: 0.5rem;
+        }
+
+        .auth-input {
+          border: 2px solid #e9ecef;
+          border-radius: 0.75rem;
+          padding: 0.75rem 1rem;
+          font-size: 1rem;
+          transition: all 0.3s ease;
+          background: #f8f9fa !important;
+          color: #212529 !important;
+        }
+
+        .auth-input:focus {
+          background: white !important;
+          border-color: #007bff;
+          box-shadow: 0 0 0 4px rgba(0, 123, 255, 0.1);
+          color: #212529 !important;
+        }
+
+        .auth-input::placeholder {
+          color: #adb5bd !important;
+        }
+
+        .auth-input:-webkit-autofill,
+        .auth-input:-webkit-autofill:hover,
+        .auth-input:-webkit-autofill:focus,
+        .auth-input:-webkit-autofill:active {
+          -webkit-box-shadow: 0 0 0 30px #f8f9fa inset !important;
+          -webkit-text-fill-color: #212529 !important;
+          transition: background-color 5000s ease-in-out 0s;
+        }
+
+        .auth-button {
+          border-radius: 0.75rem;
+          padding: 0.875rem;
+          font-weight: 600;
+          font-size: 1rem;
+          transition: all 0.3s ease;
+          border: none;
+          background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+        }
+
+        .auth-button:hover:not(:disabled) {
+          transform: translateY(-2px);
+          box-shadow: 0 8px 20px rgba(0, 123, 255, 0.4);
+        }
+
+        .auth-button:active:not(:disabled) {
+          transform: translateY(0);
+        }
+
+        .auth-link {
+          color: #007bff;
+          text-decoration: none;
+          font-weight: 500;
+          transition: color 0.2s ease;
+        }
+
+        .auth-link:hover {
+          color: #0056b3;
+          text-decoration: underline;
+        }
+
+        .auth-divider {
+          color: #6c757d;
+          font-size: 0.9rem;
+        }
+
+        @media (max-width: 576px) {
+          .auth-card {
+            padding: 2rem 1.5rem;
+            border-radius: 1rem;
+          }
+          
+          .auth-title {
+            font-size: 1.75rem;
+          }
+        }
+      `}</style>
+      <div className="auth-container">
+        <div className="auth-card">
+          <h1 className="auth-title">Create Account</h1>
+          <p className="auth-subtitle">Sign up to get started</p>
 
           <Form onSubmit={handleSubmit}>
             <Form.Group className="mb-3" controlId="formName">
-              <Form.Label>Username</Form.Label>
+              <Form.Label className="auth-label">Full Name</Form.Label>
               <Form.Control
                 type="text"
-                placeholder="Enter username"
-                name="username"
-                value={formData.username}
+                placeholder="Enter your full name"
+                name="fullName"
+                value={formData.fullName}
                 onChange={handleChange}
                 required
+                className="auth-input"
               />
             </Form.Group>
 
             <Form.Group className="mb-3" controlId="formEmail">
-              <Form.Label>Email address</Form.Label>
+              <Form.Label className="auth-label">Email address</Form.Label>
               <Form.Control
                 type="email"
-                placeholder="Enter email"
+                placeholder="Enter your email"
                 name="email"
                 value={formData.email}
                 onChange={handleChange}
                 required
+                className="auth-input"
               />
             </Form.Group>
 
-            <Form.Group className="mb-3" controlId="formPassword">
-              <Form.Label>Password</Form.Label>
+            <Form.Group className="mb-4" controlId="formPassword">
+              <Form.Label className="auth-label">Password</Form.Label>
               <Form.Control
                 type="password"
-                placeholder="Enter password"
+                placeholder="Create a password"
                 name="password"
                 value={formData.password}
                 onChange={handleChange}
                 required
+                className="auth-input"
               />
             </Form.Group>
 
             <div className="d-grid">
-              <Button variant="primary" type="submit" size="lg" disabled={isLoading}>
+              <Button className="auth-button" type="submit" size="lg" disabled={isLoading}>
                 {isLoading ? (
                   <>
                     <Spinner
@@ -104,23 +231,23 @@ export default function Signup() {
                       aria-hidden="true"
                       className="me-2"
                     />
-                    <span className="visually-hidden">Signing up...</span>
+                    Creating account...
                   </>
                 ) : (
-                  "Sign Up"
+                  "Create Account"
                 )}
               </Button>
             </div>
 
-            <div className="text-center mt-3">
-              Already registered?{" "}
-              <Link to="/login" className="text-decoration-none">
+            <div className="text-center mt-4 auth-divider">
+              Already have an account?{" "}
+              <Link to="/login" className="auth-link">
                 Sign in
               </Link>
             </div>
           </Form>
-        </Col>
-      </Row>
-    </Container>
+        </div>
+      </div>
+    </>
   );
 }

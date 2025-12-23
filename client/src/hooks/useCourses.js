@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 
 const API_URL = import.meta.env.VITE_API_URL;
+const USE_MOCK_DATA = import.meta.env.VITE_USE_MOCK_DATA === "true" || !API_URL;
 
 // Custom hook for managing course data
 export const useCourses = (initialCourses = []) => {
@@ -8,30 +9,72 @@ export const useCourses = (initialCourses = []) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Fetch courses from API
-  const fetchCourses = async () => {
+  // Fetch courses from API (UC-4.1)
+  const fetchCourses = async (params = {}) => {
     setLoading(true);
     setError(null);
 
     try {
-      const response = await fetch(`${API_URL}/api/courses`, {
+      // Build query string from params
+      const queryParams = new URLSearchParams();
+      if (params.search) queryParams.append("search", params.search);
+      if (params.category) queryParams.append("category", params.category);
+      if (params.page) queryParams.append("page", params.page);
+      if (params.limit) queryParams.append("limit", params.limit);
+
+      const queryString = queryParams.toString();
+      const url = `${API_URL}/courses${queryString ? `?${queryString}` : ""}`;
+
+      // Get token if available (optional for guests)
+      const token = localStorage.getItem("accessToken");
+      const headers = {
+        "Content-Type": "application/json",
+      };
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+
+      const response = await fetch(url, {
         method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          // Add authorization header if needed
-          // "Authorization": `Bearer ${localStorage.getItem("token")}`,
-        },
+        headers,
       });
 
       if (!response.ok) {
-        throw new Error(`Failed to fetch courses: ${response.statusText}`);
+        const errorData = await response.json();
+        throw new Error(
+          errorData.error?.message || `Failed to fetch courses: ${response.statusText}`
+        );
       }
 
       const data = await response.json();
-      setCourses(data.courses || data); // Handle different response formats
+
+      console.log("API Response:", data);
+
+      // Handle API response format - backend returns 'status' instead of 'success'
+      const isSuccess = data.success === true || data.status === "success";
+
+      if (isSuccess && data.data) {
+        const coursesArray = data.data.courses || [];
+        console.log("Courses fetched:", coursesArray.length, coursesArray);
+        setCourses(coursesArray);
+        return {
+          success: true,
+          courses: coursesArray,
+          pagination: data.data.pagination,
+        };
+      } else {
+        console.error("Response validation failed:", {
+          status: data.status,
+          success: data.success,
+          hasData: !!data.data,
+          fullResponse: data,
+        });
+        throw new Error("Invalid response format");
+      }
     } catch (err) {
       setError(err.message);
       console.error("Error fetching courses:", err);
+      return { success: false, error: err.message };
     } finally {
       setLoading(false);
     }
@@ -39,6 +82,21 @@ export const useCourses = (initialCourses = []) => {
 
   // Enroll in a course
   const enrollInCourse = async (courseId) => {
+    // If using mock data, just update local state (for demo/development)
+    if (USE_MOCK_DATA) {
+      // Simulate API delay
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      // Update local state
+      setCourses((prevCourses) =>
+        prevCourses.map((course) =>
+          course.id === courseId ? { ...course, enrolled: true } : course
+        )
+      );
+      return { success: true };
+    }
+
+    // Real API call
     try {
       const response = await fetch(`${API_URL}/api/courses/${courseId}/enroll`, {
         method: "POST",
@@ -62,6 +120,50 @@ export const useCourses = (initialCourses = []) => {
       return { success: true };
     } catch (err) {
       console.error("Error enrolling in course:", err);
+      return { success: false, error: err.message };
+    }
+  };
+
+  // Unsubscribe from a course
+  const unsubscribeFromCourse = async (courseId) => {
+    // If using mock data, just update local state (for demo/development)
+    if (USE_MOCK_DATA) {
+      // Simulate API delay
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      // Update local state
+      setCourses((prevCourses) =>
+        prevCourses.map((course) =>
+          course.id === courseId ? { ...course, enrolled: false } : course
+        )
+      );
+      return { success: true };
+    }
+
+    // Real API call
+    try {
+      const response = await fetch(`${API_URL}/api/courses/${courseId}/unsubscribe`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to unsubscribe: ${response.statusText}`);
+      }
+
+      // Update local state
+      setCourses((prevCourses) =>
+        prevCourses.map((course) =>
+          course.id === courseId ? { ...course, enrolled: false } : course
+        )
+      );
+
+      return { success: true };
+    } catch (err) {
+      console.error("Error unsubscribing from course:", err);
       return { success: false, error: err.message };
     }
   };
@@ -115,6 +217,7 @@ export const useCourses = (initialCourses = []) => {
     error,
     fetchCourses,
     enrollInCourse,
+    unsubscribeFromCourse,
     searchCourses,
     filterByCategory,
     filterByLevel,
@@ -138,6 +241,8 @@ export const defaultCourses = [
     duration: "3 months",
     image: "https://via.placeholder.com/300x200/007bff/ffffff?text=AI+ML",
     enrolled: false,
+    price: 299,
+    isPaid: false,
   },
   {
     id: 2,
@@ -151,6 +256,8 @@ export const defaultCourses = [
     duration: "2 months",
     image: "https://via.placeholder.com/300x200/28a745/ffffff?text=Python",
     enrolled: false,
+    price: 0,
+    isPaid: true,
   },
   {
     id: 3,
@@ -164,6 +271,8 @@ export const defaultCourses = [
     duration: "4 months",
     image: "https://via.placeholder.com/300x200/17a2b8/ffffff?text=Data+Science",
     enrolled: true,
+    price: 399,
+    isPaid: true,
   },
   {
     id: 4,
@@ -177,6 +286,8 @@ export const defaultCourses = [
     duration: "6 weeks",
     image: "https://via.placeholder.com/300x200/fd7e14/ffffff?text=Marketing",
     enrolled: false,
+    price: 149,
+    isPaid: true,
   },
   {
     id: 5,
@@ -190,6 +301,8 @@ export const defaultCourses = [
     duration: "5 months",
     image: "https://via.placeholder.com/300x200/6f42c1/ffffff?text=UI%2FUX",
     enrolled: false,
+    price: 249,
+    isPaid: false,
   },
   {
     id: 6,
@@ -203,6 +316,8 @@ export const defaultCourses = [
     duration: "8 months",
     image: "https://via.placeholder.com/300x200/dc3545/ffffff?text=Full+Stack",
     enrolled: false,
+    price: 499,
+    isPaid: false,
   },
   {
     id: 7,
@@ -216,5 +331,7 @@ export const defaultCourses = [
     duration: "8 months",
     image: "https://via.placeholder.com/300x200/dc3545/ffffff?text=Full+Stack",
     enrolled: true,
+    price: 0,
+    isPaid: true,
   },
 ];

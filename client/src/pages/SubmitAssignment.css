@@ -1,0 +1,7 @@
+.submit-assignment-card {
+    border: 1px solid #dee2e6;
+    box-shadow: 0 2px 4px rgba(0,0,0,.05);
+}
+.submit-assignment-card .card-title {
+    font-weight: 600;
+}

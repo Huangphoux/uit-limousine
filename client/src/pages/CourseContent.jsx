@@ -2,6 +2,7 @@ import React, { useState, useRef } from "react";
 import { Container, Row, Col, Button, ProgressBar } from "react-bootstrap";
 import { useParams, useNavigate } from "react-router-dom";
 import "./CourseContent.css";
+import AssignmentSubmissionUI from "./AssignmentSubmissionUI";
 
 const CourseContent = () => {
   const { courseId } = useParams();
@@ -106,6 +107,15 @@ const CourseContent = () => {
     return getCurrentLessonIndex() < allLessons.length - 1;
   };
 
+  const getNextLesson = () => {
+    const allLessons = getAllLessons();
+    if (hasNextLesson()) {
+      let nextIndex = getCurrentLessonIndex() + 1;
+      return allLessons[nextIndex];
+    }
+    return null;
+  };
+
   // Helper function to get current section
   const getCurrentSection = () => {
     return courseData.sections.find((section) =>
@@ -136,8 +146,30 @@ const CourseContent = () => {
     }
   };
 
+  // Helper function to check if a lesson is unlocked
+  const isLessonUnlocked = (lessonId) => {
+    const allLessons = getAllLessons();
+    const lessonIndex = allLessons.findIndex((lesson) => lesson.id === lessonId);
+
+    if (lessonIndex === -1) return false;
+
+    // First lesson is always unlocked
+    if (lessonIndex === 0) return true;
+
+    // Lesson is unlocked if it's completed
+    if (allLessons[lessonIndex].isCompleted) return true;
+
+    // Lesson is unlocked if the previous lesson is completed
+    return allLessons[lessonIndex - 1].isCompleted;
+  };
+
   const handleLessonClick = (lessonId) => {
-    setCurrentLesson(lessonId);
+    // Only allow clicking on unlocked lessons
+    if (isLessonUnlocked(lessonId)) {
+      setCurrentLesson(lessonId);
+    } else {
+      console.log("This lesson is locked. Complete previous lessons first.");
+    }
   };
 
   // Helper function to convert YouTube URL to embed format
@@ -238,6 +270,12 @@ const CourseContent = () => {
       const allLessons = getAllLessons();
       const currentIndex = getCurrentLessonIndex();
       const nextLesson = allLessons[currentIndex + 1];
+
+      // Check if next lesson is unlocked
+      if (!isLessonUnlocked(nextLesson.id)) {
+        console.log("Next lesson is locked. Complete current lesson first.");
+        return;
+      }
 
       // Check if we're moving to a different section
       const currentSectionId = getCurrentSection()?.id;
@@ -368,14 +406,20 @@ const CourseContent = () => {
                   {section.lessons.map((lesson) => (
                     <div
                       key={lesson.id}
-                      className={`lesson-item ${lesson.id === currentLesson ? "active" : ""} ${lesson.isCompleted ? "completed" : ""}`}
+                      className={`lesson-item ${lesson.id === currentLesson ? "active" : ""} ${lesson.isCompleted ? "completed" : ""} ${!isLessonUnlocked(lesson.id) ? "locked" : ""}`}
                       onClick={() => handleLessonClick(lesson.id)}
+                      style={{
+                        cursor: isLessonUnlocked(lesson.id) ? "pointer" : "not-allowed",
+                        opacity: isLessonUnlocked(lesson.id) ? 1 : 0.5,
+                      }}
                     >
                       <div className="lesson-status-icon">
                         {lesson.isCompleted ? (
                           <div className="check-icon">✓</div>
-                        ) : (
+                        ) : isLessonUnlocked(lesson.id) ? (
                           <div className="empty-circle"></div>
+                        ) : (
+                          <div className="lock-icon">🔒</div>
                         )}
                       </div>
                       <div className="lesson-type-icon">
@@ -414,55 +458,57 @@ const CourseContent = () => {
               </div>
 
               {/* Content Container - Adaptable for Video/Reading/Assignment */}
-              <div className="content-container">
-                {currentLessonData?.type === "video" && currentLessonData?.videoUrl ? (
-                  <iframe
-                    src={getYouTubeEmbedUrl(currentLessonData.videoUrl)}
-                    title={currentLessonData.title}
-                    frameBorder="0"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                    allowFullScreen
-                    className="video-iframe"
-                  />
-                ) : (
-                  <div className="content-placeholder">
-                    {currentLessonData?.type === "video" && (
-                      <>
-                        🎥 Video Player - {currentLessonData?.title}
-                        <div className="api-ready-note">Ready for video API integration</div>
-                      </>
-                    )}
-                    {currentLessonData?.type === "reading" && (
-                      <>
-                        📄 Reading Content - {currentLessonData?.title}
-                        <div className="api-ready-note">
-                          Ready for reading content API integration
-                        </div>
-                      </>
-                    )}
-                    {currentLessonData?.type === "assignment" && (
-                      <>
-                        📝 Assignment - {currentLessonData?.title}
-                        <div className="api-ready-note">Ready for assignment API integration</div>
-                        {/* Assignment submit here */}
-                      </>
-                    )}
-                  </div>
-                )}
-              </div>
+              {currentLessonData?.type === "assignment" ? (
+                <AssignmentSubmissionUI
+                  lesson={currentLessonData}
+                  onMarkAsFinished={handleMarkAsFinished}
+                />
+              ) : (
+                <div className="content-container">
+                  {currentLessonData?.type === "video" && currentLessonData?.videoUrl ? (
+                    <iframe
+                      src={getYouTubeEmbedUrl(currentLessonData.videoUrl)}
+                      title={currentLessonData.title}
+                      frameBorder="0"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                      allowFullScreen
+                      className="video-iframe"
+                    />
+                  ) : (
+                    <div className="content-placeholder">
+                      {currentLessonData?.type === "video" && (
+                        <>
+                          🎥 Video Player - {currentLessonData?.title}
+                          <div className="api-ready-note">Ready for video API integration</div>
+                        </>
+                      )}
+                      {currentLessonData?.type === "reading" && (
+                        <>
+                          📄 Reading Content - {currentLessonData?.title}
+                          <div className="api-ready-note">
+                            Ready for reading content API integration
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Lesson Actions */}
-              <div className="lesson-actions">
-                {currentLessonData.isCompleted ? (
-                  <Button className="unmark-btn" onClick={handleMarkAsFinished}>
-                    ✕ Unmark
-                  </Button>
-                ) : (
-                  <Button className="mark-finished-btn" onClick={handleMarkAsFinished}>
-                    ✓ Mark as finished
-                  </Button>
-                )}
-              </div>
+              {currentLessonData?.type !== "assignment" && (
+                <div className="lesson-actions">
+                  {currentLessonData?.isCompleted ? (
+                    <Button className="unmark-btn" onClick={handleMarkAsFinished}>
+                      ✕ Unmark
+                    </Button>
+                  ) : (
+                    <Button className="mark-finished-btn" onClick={handleMarkAsFinished}>
+                      ✓ Mark as finished
+                    </Button>
+                  )}
+                </div>
+              )}
 
               {/* Navigation */}
               <div className="lesson-navigation">
@@ -478,9 +524,11 @@ const CourseContent = () => {
                   {getCurrentSection()?.title}
                 </div>
                 <button
-                  className={`nav-btn next ${!hasNextLesson() ? "disabled" : ""}`}
+                  className={`nav-btn next ${!hasNextLesson() || (getNextLesson() && !isLessonUnlocked(getNextLesson().id)) ? "disabled" : ""}`}
                   onClick={handleNextLesson}
-                  disabled={!hasNextLesson()}
+                  disabled={
+                    !hasNextLesson() || (getNextLesson() && !isLessonUnlocked(getNextLesson().id))
+                  }
                 >
                   Next lesson →
                 </button>

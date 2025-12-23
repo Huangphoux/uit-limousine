@@ -1,6 +1,6 @@
-
 import { Container, Navbar } from "react-bootstrap";
 import { useEffect, useState } from "react";
+import Header from "../components/Header";
 
 export default function UserInfo() {
   const [userInfo, setUserInfo] = useState(null);
@@ -25,11 +25,12 @@ export default function UserInfo() {
   if (!userInfo) {
     return (
       <>
-        <Navbar expand="lg" fixed="top" className="bg-body-tertiary">
+        {/* <Navbar expand="lg" fixed="top" className="bg-body-tertiary">
           <Container>
             <Navbar.Brand>Limousine!</Navbar.Brand>
           </Container>
-        </Navbar>
+        </Navbar> */}
+        <Header />
         <Container className="mt-5 pt-5">Loading...</Container>
       </>
     );
@@ -38,11 +39,7 @@ export default function UserInfo() {
   return (
     <>
       {/* Custom header with only the app name */}
-      <Navbar expand="lg" fixed="top" className="bg-body-tertiary">
-        <Container>
-          <Navbar.Brand>Limousine!</Navbar.Brand>
-        </Container>
-      </Navbar>
+      <Header />
 
       {/* Main content */}
       <Container

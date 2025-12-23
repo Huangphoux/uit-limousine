@@ -9,5 +9,15 @@ export const config = {
     },
     bcrypt: {
         saltRounds: Number(process.env.BCRYPT_SALT_ROUNDS),
+    },
+    frontend: {
+        url: process.env.FRONTEND_URL,
+    },
+    token: {
+        expiry: process.env.TOKEN_EXPIRY,
+    },
+    email: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
     }
 }

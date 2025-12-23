@@ -1,6 +1,6 @@
 // server/src/application_layer/notification.usecase.js
 
-import { NotificationRepository } from '../../infrustructure_layer/repository/notification.repository.js';
+import { NotificationRepository } from '../../infrastructure_layer/repository/notification.repository.js';
 
 export class NotificationUseCase {
   constructor() {
@@ -8,7 +8,7 @@ export class NotificationUseCase {
   }
 
   async createNotification(userId, { title, body, channel = 'IN_APP', data = null }) {
-    
+
     try {
       if (!userId || !title || !body) {
         throw new Error('Missing required fields: userId, title, body');

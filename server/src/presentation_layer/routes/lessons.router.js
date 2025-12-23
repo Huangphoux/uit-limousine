@@ -1,8 +1,9 @@
 import { Router } from "express";
-import { completeLessonController } from "../../composition-root.js";
+import { completeLessonUseCase } from "../../composition-root.js";
+import { controller } from "../controllers/generic.controller.js";
 
 const router = Router();
 
-router.post('/:lessonId/complete', async (req, res) => await completeLessonController.execute(req, res));
+router.post('/:lessonId/complete', controller(completeLessonUseCase));
 
 export default router;

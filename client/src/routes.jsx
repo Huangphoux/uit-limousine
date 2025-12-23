@@ -3,11 +3,18 @@ import ErrorPage from "./pages/ErrorPage";
 import NewPageLayout from "./pages/NewPageLayout";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
+import ForgetPassword from "./pages/ForgetPassword";
+import ResetPassword from "./pages/ResetPassword";
 import NewPage from "./pages/NewPage";
 import UserInfo from "./pages/UserInfo";
 import CourseContent from "./pages/CourseContent";
 import InstructorScreen from "./pages/InstructorScreen";
 import AdminScreen from "./pages/AdminScreen";
+import CourseCard from "./components/CourseCard";
+import CourseManagementCard from "./components/instructor-screen/course-management/CourseManagementCard";
+import CourseManagementView from "./components/instructor-screen/course-management/CourseManagementView";
+import EditCourseView from "./components/instructor-screen/course-management/EditCourseView";
+import AssignmentSubmit from "./pages/AssignmentSubmit";
 
 const routes = [
   {
@@ -15,10 +22,6 @@ const routes = [
     element: <App />,
     errorElement: <ErrorPage />,
     children: [
-      {
-        path: "",
-        element: <App />,
-      },
       {
         path: "login",
         element: <Login />,
@@ -29,13 +32,27 @@ const routes = [
       },
     ],
   },
+
+  {
+    path: "/forgot-password",
+    element: <ForgetPassword />,
+    errorElement: <ErrorPage />,
+  },
+
+  {
+    path: "/reset-password",
+    element: <ResetPassword />,
+    errorElement: <ErrorPage />,
+  },
+
   {
     path: "/user-info",
     element: <UserInfo />,
     errorElement: <ErrorPage />,
   },
+
   {
-    path: "/new-page",
+    path: "/courses",
     element: <NewPageLayout />,
     errorElement: <ErrorPage />,
     children: [
@@ -51,10 +68,22 @@ const routes = [
     errorElement: <ErrorPage />,
   },
   {
+    path: "/course/submit",
+    element: <AssignmentSubmit />,
+    errorElement: <ErrorPage />,
+  },
+  {
     path: "/instructor-screen",
     element: <InstructorScreen />,
     errorElement: <ErrorPage />,
   },
+
+  {
+    path: "/instructor/edit-course",
+    element: <EditCourseView />,
+    errorElement: <ErrorPage />,
+  },
+
   {
     path: "/admin-screen",
     element: <AdminScreen />,

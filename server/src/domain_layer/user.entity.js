@@ -1,34 +1,59 @@
+import { z } from "zod";
+import { RoleEntity, roleSchema } from "./role.entity.js";
+
+export const userRoleSchema = z.object({
+  id: z.int().default(null),
+  userId: z.string(),
+  roleId: z.string(),
+  role: roleSchema.default(null),
+});
+
+export const userSchema = z.object({
+  id: z.string().default(null),
+  username: z.string().default(null),
+  createdAt: z.date().default(() => new Date()),
+  email: z.string(),
+  updatedAt: z.date().default(() => new Date()),
+  avatarUrl: z.string().default(null),
+  bio: z.string().default(null),
+  name: z.string().default(null),
+  password: z.string().default(null),
+
+  roles: z.array(userRoleSchema).default([]),
+});
+
 export class UserEntity {
-    #id = null;
-    #email = null;
-    #name = null;
-    #password = null;
-    #createdAt = null;
-    #roles = [];
+  static schema = userSchema;
 
-    get id() { return this.#id; }
-    get email() { return this.#email; }
-    get name() { return this.#name; }
-    get password() { return this.#password; }
-    get createdAt() { return this.#createdAt; }
-    get roles() { return this.#roles; }
+  addRole(role) {
+    if (this.roles.some((r) => r.id == role.id)) return;
 
-    set id(value) { this.#id = value; }
-    set email(value) { this.#email = value; }
-    set name(value) { this.#name = value; }
-    set password(value) { this.#password = value; }
-    set createdAt(value) { this.#createdAt = value; }
-    set roles(value) { this.#roles = value; }
+    this.roles.push(role);
+  }
 
-    addRole(role) {
-        this.#roles.push(role);
-    }
+  hasRole(roleName) {
+    if (this.roles.some((r) => r.name == roleName)) return true;
+    return false;
+  }
 
-    static create(email, password, name) {
-        let user = new UserEntity();
-        user.email = email;
-        user.password = password;
-        user.name = name;
-        return user;
-    }
+  changePassword(newPasswordHashed) {
+    this.password = newPasswordHashed;
+  }
+
+  static create(input, defaultRole) {
+    let parsedInput = UserEntity.schema.parse(input);
+
+    // Business rules here
+    let entity = Object.assign(new UserEntity(), parsedInput);
+    entity.addRole(defaultRole);
+
+    return entity;
+  }
+
+  static rehydrate(input) {
+    if (!input) return null;
+    if (input.roles) input.roles = input.roles.map((r) => RoleEntity.rehydrate(r.role));
+
+    return Object.assign(new UserEntity(), input);
+  }
 }

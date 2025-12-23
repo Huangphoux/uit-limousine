@@ -1,27 +1,38 @@
 @startuml
 title UC-05 Learn Course / View Lesson (Sequence)
-participant User
-participant WebApp
-participant ContentService
-participant EnrollmentService
-participant DB
-participant Analytics
+' Cấu hình giao diện để tránh lỗi chữ trắng nền trắng
+skinparam participant {
+    BackgroundColor White
+    BorderColor Black
+    FontColor Black
+}
 
+' Khai báo rõ ràng: "Tên hiển thị trên hình" as ID_dùng_trong_code
+participant "User (Student)" as User
+participant "Web Application" as WebApp
+participant "Content Service" as ContentService
+participant "Enrollment Service" as EnrollmentService
+participant "Database" as DB
+participant "Analytics Service" as Analytics
+
+' Logic giữ nguyên, dùng ID ngắn gọn
 User -> WebApp: Open lesson
 WebApp -> EnrollmentService: verifyAccess(userId, courseId)
 EnrollmentService -> DB: SELECT enrollment
 DB --> EnrollmentService: ok/not enrolled
+
 alt allowed
-WebApp -> ContentService: getLesson(lessonId)
-ContentService -> DB: SELECT lesson content
-DB --> ContentService: lesson data
-ContentService --> WebApp: lesson payload (video/url)
-WebApp --> User: render player
-loop during viewing
-WebApp -> Analytics: trackProgress(userId, lessonId, timestamp)
-Analytics --> DB: store event
-end
+    WebApp -> ContentService: getLesson(lessonId)
+    ContentService -> DB: SELECT lesson content
+    DB --> ContentService: lesson data
+    ContentService --> WebApp: lesson payload (video/url)
+    WebApp --> User: render player
+    
+    loop during viewing
+        WebApp -> Analytics: trackProgress(userId, lessonId, timestamp)
+        Analytics --> DB: store event
+    end
 else denied
-WebApp --> User: access denied / CTA to enroll
+    WebApp --> User: access denied / CTA to enroll
 end
 @enduml

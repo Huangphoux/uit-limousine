@@ -19,7 +19,7 @@ describe('Instructor Application API - Complete Test Suite', () => {
         bio: 'Experienced English teacher with 10 years of experience'
       }
     });
-  
+
     testData.reviewer = await prisma.user.create({
       data: {
         email: `reviewer-${Date.now()}@test.com`,
@@ -27,7 +27,7 @@ describe('Instructor Application API - Complete Test Suite', () => {
         username: `reviewer${Date.now()}`
       }
     });
-   
+
   }, 30000);
   afterAll(async () => {
     try {
@@ -90,7 +90,7 @@ describe('Instructor Application API - Complete Test Suite', () => {
       expect(response.status).toBe(201);
       expect(response.body.success).toBe(true);
       expect(response.body.message).toContain('successfully');
-      
+
       const { data } = response.body;
       expect(data).toHaveProperty('id');
       expect(data).toHaveProperty('applicant');
@@ -226,12 +226,12 @@ describe('Instructor Application API - Complete Test Suite', () => {
         note: 'Excellent portfolio and experience. Approved.'
       });
 
-     
+
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
       expect(response.body.message).toContain('approved successfully');
-      
+
       const { data } = response.body;
       expect(data.status).toBe('APPROVED');
       expect(data).toHaveProperty('reviewedAt');
@@ -348,7 +348,7 @@ describe('Instructor Application API - Complete Test Suite', () => {
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
       expect(response.body.message).toContain('rejected successfully');
-      
+
       const { data } = response.body;
       expect(data.status).toBe('REJECTED');
       expect(data).toHaveProperty('reviewedAt');
