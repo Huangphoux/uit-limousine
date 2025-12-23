@@ -22,10 +22,11 @@ export default class SubmissionRepository {
 
       return result;
     } catch (error) {
-      throw error;
+      
+      throw error('failed!');
     }
   }
-
+n
   async findByAssignmentAndStudent(assignmentId, studentId) {
     const result = await prisma.submission.findFirst({
       where: {
