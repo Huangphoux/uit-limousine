@@ -15,7 +15,12 @@ export function authenticationMiddleware(req, res, next) {
     }
     req.body.authId = result.id;
     req.body.roles = result.roles;
-    
+
+    // Set req.user for controllers that expect it (e.g., NotificationController)
+    req.user = {
+      id: result.id,
+      roles: result.roles,
+    };
 
     next();
 

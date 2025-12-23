@@ -121,6 +121,32 @@ export default class ReviewInstructorUseCase {
         note: resultEntity.note,
       });
 
+      // Create an in-app notification for the applicant informing them of the rejection
+      try {
+        const { NotificationUseCase } = await import("../notification/notification.usecase.js");
+        const notificationUseCase = new NotificationUseCase();
+        const courseTitle = rejectedApplication.requestedCourseTitle || "your course";
+        const title = "Course application rejected";
+        const body = `Your course application "${courseTitle}" was rejected. Reason: ${
+          note || "No reason provided"
+        }`;
+        await notificationUseCase.createNotification(resultEntity.applicantId, {
+          title,
+          body,
+          data: { applicationId: resultEntity.id, courseTitle },
+          type: "URGENT", // Mark rejection notifications as urgent for toast display
+        });
+        console.log(
+          "[ReviewInstructorUseCase] Notification created for applicant:",
+          resultEntity.applicantId
+        );
+      } catch (notifErr) {
+        console.warn(
+          "[ReviewInstructorUseCase] Failed to create notification for rejection:",
+          notifErr.message
+        );
+      }
+
       return { entity: resultEntity, application: rejectedApplication };
     } catch (error) {
       console.error("\n[ReviewInstructorUseCase] ==========================================");

@@ -356,6 +356,12 @@ describe('Instructor Application API - Complete Test Suite', () => {
       expect(data.reviewer).not.toBeNull();
       expect(data.reviewer.id).toBe(testData.reviewer.id);
       expect(data.note).toBe('Need more teaching experience. Please reapply after 2 years.');
+
+      // Verify notification created for the applicant
+      const notif = await prisma.notification.findFirst({ where: { userId: testData.applicant.id }, orderBy: { createdAt: 'desc' } });
+      expect(notif).toBeTruthy();
+      expect(notif.title).toContain('Course application rejected');
+      expect(notif.body).toContain('Course to Reject');
     }, 20000);
   });
 

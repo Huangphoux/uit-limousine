@@ -4,12 +4,13 @@ export class NotificationEntity {
   constructor({
     id,
     userId,
-    channel = 'IN_APP',
+    channel = "IN_APP",
     title,
     body,
     data = null,
     read = false,
-    createdAt
+    createdAt,
+    type = "NORMAL", // NORMAL, URGENT, INFO, WARNING
   }) {
     this.id = id;
     this.userId = userId;
@@ -19,12 +20,13 @@ export class NotificationEntity {
     this.data = data;
     this.read = read;
     this.createdAt = createdAt;
+    this.type = type;
 
-    console.log('[NotificationEntity] Created:', { id, userId, title });
+    console.log("[NotificationEntity] Created:", { id, userId, title, type });
   }
 
   markAsRead() {
-    console.log('[NotificationEntity] Marking as read:', this.id);
+    console.log("[NotificationEntity] Marking as read:", this.id);
     this.read = true;
   }
 
@@ -37,7 +39,8 @@ export class NotificationEntity {
       body: this.body,
       data: this.data,
       read: this.read,
-      createdAt: this.createdAt
+      createdAt: this.createdAt,
+      type: this.type,
     };
   }
 }

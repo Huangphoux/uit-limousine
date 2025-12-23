@@ -189,6 +189,7 @@ model Notification {
   body      String
   data      Json?
   read      Boolean             @default(false)
+  type      String              @default("NORMAL") // NORMAL, URGENT, INFO, WARNING
   createdAt DateTime            @default(now())
   user      User                @relation(fields: [userId], references: [id], onDelete: Cascade)
 

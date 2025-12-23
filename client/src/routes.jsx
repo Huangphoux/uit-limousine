@@ -85,7 +85,9 @@ const routes = [
     path: "/instructor-screen",
     element: (
       <ProtectedRoute allowedRoles={["instructor"]}>
-        <InstructorScreen />
+        <NewPageLayout>
+          <InstructorScreen />
+        </NewPageLayout>
       </ProtectedRoute>
     ),
     errorElement: <ErrorPage />,

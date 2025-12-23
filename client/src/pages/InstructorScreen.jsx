@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { Container, Row, Col, Card } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
 import { FaBook, FaChartLine, FaFileAlt, FaUsers, FaRegClock } from "react-icons/fa";
-import Header from "../components/Header";
 import CreateCourseModal from "../components/CreateCourseModal";
 import EditCourseModal from "../components/instructor-screen/course-management/EditCourseModal";
 import CourseManagementView from "../components/instructor-screen/course-management/CourseManagementView";
@@ -312,8 +311,6 @@ const InstructorScreen = () => {
         `}
       </style>
       <div>
-        <Header />
-
         {/* Main Content */}
         <Container
           fluid
