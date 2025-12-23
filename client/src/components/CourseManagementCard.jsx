@@ -2,7 +2,7 @@ import React from "react";
 import { Card, Button, Row, Col } from "react-bootstrap";
 import { FaEdit, FaEye, FaTrash, FaUsers, FaClock, FaStar } from "react-icons/fa";
 
-const CourseManagementCard = ({ courseData, onEdit, onPublish, onDelete }) => {
+const CourseManagementCard = ({ courseData, onEdit, onPublish }) => {
   const { title, description, image, enrolledStudents, duration, status, rating } = courseData;
   const defaultImage = "images/course-placeholder.svg";
 
@@ -143,7 +143,7 @@ const CourseManagementCard = ({ courseData, onEdit, onPublish, onDelete }) => {
             {status === "Published" ? "Hide" : "Publish"}
           </Button>
 
-          <Button
+          {/* <Button
             variant="outline-danger"
             size="sm"
             className="d-flex align-items-center justify-content-center"
@@ -157,7 +157,7 @@ const CourseManagementCard = ({ courseData, onEdit, onPublish, onDelete }) => {
             }}
           >
             <FaTrash size={10} />
-          </Button>
+          </Button> */}
         </div>
       </Card.Body>
     </Card>
