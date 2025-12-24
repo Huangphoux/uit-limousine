@@ -10,6 +10,7 @@ import {
 import { getCourseById } from "../controllers/courses/course.controller.js";
 import { submitAssignment, getSubmission } from "../controllers/courses/submit-assignment.controller.js";
 import { authenticationMiddleware } from "../middlewares/authentication.middleware.js";
+import { submissionUploadMiddleware } from "../middlewares/upload.middleware.js";
 import { controller } from "../controllers/generic.controller.js";
 import { roleAuthorizationMiddleware } from "../middlewares/role-authorization.middleware.js";
 
@@ -25,7 +26,7 @@ router.get(
   authenticationMiddleware,
   controller(courseMaterialsQueryUsecase)
 );
-router.post("/assignments/:assignmentId/submit", authenticationMiddleware, submissionUploadMiddleware, submitAssignment);
+router.post("/assignments/:assignmentId/submit", submissionUploadMiddleware, authenticationMiddleware, submitAssignment);
 router.get("/assignments/:assignmentId/submission", authenticationMiddleware, getSubmission);
 router.put("/:courseId", authenticationMiddleware, controller(modifyCourseUsecase));
 // Router

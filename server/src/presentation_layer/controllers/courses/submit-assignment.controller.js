@@ -9,13 +9,14 @@ const fileStorageService = new FileStorageService(config.upload.uploadDir);
 export const submitAssignment = async (req, res) => {
   try {
     const { assignmentId } = req.params;
-    const { content, studentId } = req.body;
+    const { content, authId } = req.body;
     const file = req.file;
+    const studentId = authId;
 
     if (!studentId) {
       return res.status(400).json({
         success: false,
-        message: 'Please provide studentId'
+        message: 'Authentication required'
       });
     }
 
@@ -51,8 +52,8 @@ export const submitAssignment = async (req, res) => {
 
     return res.status(201).json({
       success: true,
-      message: submission.status === 'LATE' 
-        ? 'Assignment submitted successfully (Late submission)' 
+      message: submission.status === 'LATE'
+        ? 'Assignment submitted successfully (Late submission)'
         : 'Assignment submitted successfully',
       data: submissionDTO
     });
