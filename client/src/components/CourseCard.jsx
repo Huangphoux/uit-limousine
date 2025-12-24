@@ -159,19 +159,56 @@ const CourseCard = ({ course, onCardClick }) => {
 
         <Card.Body className="d-flex flex-column" style={{ padding: "1.25rem" }}>
           <div className="mb-2">
-            <h6
-              className="mb-1"
-              style={{
-                color: textColors.provider,
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap",
-                fontSize: "0.875rem",
-                fontWeight: "600",
-              }}
-            >
-              {course.provider}
-            </h6>
+            {/* Provider + Instructor */}
+            {(() => {
+              const instructorName =
+                typeof course.instructor === "string"
+                  ? course.instructor
+                  : course.instructor?.name || course.instructor?.fullName || "";
+              return (
+                <div
+                  className="mb-1 d-flex align-items-center"
+                  style={{ justifyContent: "space-between" }}
+                >
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <h6
+                      className="mb-0"
+                      style={{
+                        color: textColors.provider,
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                        fontSize: "0.875rem",
+                        fontWeight: "600",
+                      }}
+                    >
+                      {course.provider}
+                    </h6>
+                    <div style={{ fontSize: "0.72rem", color: "#6c757d" }}>
+                      {course.category || ""}
+                    </div>
+                  </div>
+
+                  {instructorName && (
+                    <div style={{ marginLeft: "12px", textAlign: "right" }}>
+                      <div
+                        style={{
+                          fontSize: "0.95rem",
+                          fontWeight: 700,
+                          color: "#343a40",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                          maxWidth: "220px",
+                        }}
+                      >
+                        {instructorName}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
             <Card.Title
               className="fw-bold"
               style={{
@@ -212,7 +249,7 @@ const CourseCard = ({ course, onCardClick }) => {
                 {course.rating}
               </span>
               <span className="small" style={{ color: textColors.students, fontSize: "0.85rem" }}>
-                👥 {(course.students || course.enrollmentCount || 0).toLocaleString()}
+                👥 {(course.enrolledStudents || course.enrollmentCount || course.students || 0).toLocaleString()}
               </span>
             </div>
 
@@ -311,6 +348,7 @@ CourseCard.propTypes = {
     duration: PropTypes.string.isRequired,
     image: PropTypes.string.isRequired,
     enrolled: PropTypes.bool.isRequired,
+    instructor: PropTypes.oneOfType([PropTypes.string, PropTypes.object]),
   }).isRequired,
   onEnroll: PropTypes.func,
   onCardClick: PropTypes.func,

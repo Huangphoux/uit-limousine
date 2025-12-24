@@ -10,12 +10,15 @@ import gradeRouter from "./presentation_layer/routes/grade.route.js";
 import instructorRouter from "./presentation_layer/routes/instructor.route.js";
 import adminRouter from "./presentation_layer/routes/admin.route.js";
 import { config } from "./config.js";
+import assignmentsRouter from "./presentation_layer/routes/assignments.route.js";
 
 const app = express();
 app.use(
   cors({
-    origin: process.env.NODE_ENV === "production" ? ["https://uit-limousine.netlify.app"] : true,
+    origin: process.env.NODE_ENV === "production" ? ["https://uit-limousine.onrender.com"] : true, // Allow all origins in development
     credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 app.use(express.json());
@@ -31,6 +34,7 @@ app.use("/notifications", notificationRouter);
 app.use("/grade", gradeRouter);
 app.use("/instructor", instructorRouter);
 app.use("/admin", adminRouter);
+app.use("/assignments", assignmentsRouter);
 
 app.get("/", (req, res) => {
   res.jsend.success({ message: "UIT Limousine API is running!" });

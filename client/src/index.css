@@ -22,3 +22,32 @@ body {
 * {
     box-sizing: border-box;
 }
+
+/* Sonner toast styles */
+.toast-success {
+    background-color: #10b981 !important;
+    color: white !important;
+    border: 1px solid #059669 !important;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.15) !important;
+}
+
+.toast-error {
+    background-color: #ef4444 !important;
+    color: white !important;
+    border: 1px solid #dc2626 !important;
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.15) !important;
+}
+
+.toast-info {
+    background-color: #3b82f6 !important;
+    color: white !important;
+    border: 1px solid #1d4ed8 !important;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15) !important;
+}
+
+.toast-warning {
+    background-color: #f59e0b !important;
+    color: white !important;
+    border: 1px solid #d97706 !important;
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.15) !important;
+}

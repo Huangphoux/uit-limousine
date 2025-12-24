@@ -8,7 +8,8 @@ export function controller(usecase) {
             let input = {
                 ...req.query,
                 ...req.params,
-                ...req.body
+                ...req.body,
+                currentUserId: req.body.authId || null
             }
 
             const result = await usecase.execute(input);

@@ -15,10 +15,11 @@ export default class SubmissionRepository {
         include: {
           assignment: true,
           student: {
-            select: { id: true, name: true, email: true }
-          }
-        }
+            select: { id: true, name: true, email: true },
+          },
+        },
       });
+
 
       return result;
     } catch (error) {
@@ -31,8 +32,8 @@ n
     const result = await prisma.submission.findFirst({
       where: {
         assignmentId,
-        studentId
-      }
+        studentId,
+      },
     });
 
     return result;
@@ -44,9 +45,22 @@ n
       include: {
         assignment: true,
         student: {
-          select: { id: true, name: true, email: true }
-        }
-      }
+          select: { id: true, name: true, email: true },
+        },
+      },
     });
+  }
+
+  async findByAssignment(assignmentId, options = {}) {
+    const where = { assignmentId };
+    const result = await prisma.submission.findMany({
+      where,
+      orderBy: { submittedAt: "desc" },
+      include: {
+        student: { select: { id: true, name: true, email: true } },
+        assignment: true,
+      },
+    });
+    return result;
   }
 }

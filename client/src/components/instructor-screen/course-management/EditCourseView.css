@@ -30,6 +30,29 @@
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
+.edit-save-btn {
+    background: #00FFFF;
+    border: 2px solid #e9ecef;
+    border-radius: 25px;
+    padding: 10px 30px;
+    font-size: 1rem;
+    font-weight: 600;
+    color: black;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.edit-save-btn:hover {
+    background: #28c9c9;
+    border-color: #dee2e6;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
 .edit-back-btn:active {
     transform: translateY(0);
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
@@ -274,6 +297,7 @@
     align-items: center;
     justify-content: space-between;
     gap: 0.5rem;
+    width: 100%;
 }
 
 .edit-lesson-left {
@@ -281,6 +305,7 @@
     align-items: center;
     gap: 0.4rem;
     flex: 1;
+    min-width: 0;
 }
 
 .edit-lesson-status-icon {
@@ -325,6 +350,7 @@
     overflow: hidden;
     text-overflow: ellipsis;
     cursor: pointer;
+    max-width: 100%;
 }
 
 .edit-lesson-title-sidebar:hover {
@@ -341,6 +367,9 @@
     background: rgba(255, 255, 255, 0.1);
     color: white;
     min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .edit-lesson-name-input:focus {
@@ -350,7 +379,7 @@
 }
 
 .edit-lesson-delete-btn {
-    background: none;
+    background: transparent;
     border: none;
     cursor: pointer;
     font-size: 1.4rem;
@@ -358,6 +387,7 @@
     color: #ff4444;
     transition: all 0.2s;
     flex-shrink: 0;
+    display: flex;
 }
 
 .edit-lesson-delete-btn:hover {
@@ -626,7 +656,7 @@
 }
 
 .edit-lesson-deadline-time-input {
-    width: 140px;
+    max-width: 300px;
     padding: 0.5rem 1rem;
     font-size: 1.5rem;
 }
@@ -1242,4 +1272,19 @@ svg {
 .search-input-field:focus {
     background-color: #ffffff !important;
     color: #000000 !important;
+}
+
+.edit-modal-form-control {
+    background: #d9d9d9;
+    color: black;
+}
+
+.edit-course-modal-form-control {
+    background: #d9d9d9;
+    color: black;
+}
+
+.edit-course-modal-form-control:focus {
+    background: #d9d9d9;
+    color: black;
 }

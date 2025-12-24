@@ -9,7 +9,7 @@ const CourseDetailModal = ({ course, show, onHide, onEnroll, loading, error }) =
   const [isPaid, setIsPaid] = useState(course?.isPaid || false);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const navigate = useNavigate();
-
+const [enrolledCourseIds, setEnrolledCourseIds] = useState([]);
   // Sync local state with course prop when course changes
   useEffect(() => {
     if (course) {
@@ -39,7 +39,7 @@ const CourseDetailModal = ({ course, show, onHide, onEnroll, loading, error }) =
   };
 
   const handleEnroll = () => {
-    setIsEnrolled(true); // Update local state
+    // setIsEnrolled(true); // Update local state
     if (onEnroll) {
       onEnroll(course.id, course, "success"); // Call parent handler
     }
@@ -223,7 +223,7 @@ const CourseDetailModal = ({ course, show, onHide, onEnroll, loading, error }) =
                   <span style={{ color: "#ffc107", fontSize: "1.125rem" }}>★</span>
                   <span style={{ fontWeight: "600", color: "#212529" }}>{course.rating}</span>
                   <span style={{ color: "#6c757d", fontSize: "0.875rem" }}>
-                    ({course.students.toLocaleString()})
+                    ({(course.enrolledStudents || course.enrollmentCount || course.students || 0).toLocaleString()})
                   </span>
                 </div>
 
@@ -237,7 +237,7 @@ const CourseDetailModal = ({ course, show, onHide, onEnroll, loading, error }) =
                     <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
                   </svg>
                   <span style={{ fontWeight: "500", color: "#495057" }}>
-                    {course.students.toLocaleString()}
+                    {(course.enrolledStudents || course.enrollmentCount || course.students || 0).toLocaleString()}
                   </span>
                 </div>
 

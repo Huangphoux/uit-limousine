@@ -1,5 +1,16 @@
-import React, { useState } from "react";
-import { Row, Col, Modal, Form, Button, Card, InputGroup, Badge, Dropdown } from "react-bootstrap";
+import React, { useState, useEffect } from "react";
+import {
+  Row,
+  Col,
+  Modal,
+  Form,
+  Button,
+  Card,
+  Badge,
+  Dropdown,
+  Spinner,
+  Alert,
+} from "react-bootstrap";
 import {
   FaSearch,
   FaUserPlus,
@@ -14,37 +25,29 @@ import {
   FaEyeSlash,
   FaChevronDown,
 } from "react-icons/fa";
+import { toast } from "sonner";
 
 const UserManagementView = () => {
-  const [users, setUsers] = useState([
-    {
-      id: "user1",
-      username: "Admin",
-      email: "admin@gmail.com",
-      role: "Admin",
-      status: "Active",
-      dateCreation: "16/11/2025",
-      avatar: null,
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [pagination, setPagination] = useState({
+    total: 0,
+    page: 1,
+    totalPages: 1,
+  });
+  const [userStats, setUserStats] = useState({
+    total: 0,
+    byRole: {
+      LEARNER: 0,
+      INSTRUCTOR: 0,
+      ADMIN: 0,
     },
-    {
-      id: "user2",
-      username: "Instructor",
-      email: "instructor@gmail.com",
-      role: "Instructor",
-      status: "Active",
-      dateCreation: "16/11/2025",
-      avatar: null,
+    byStatus: {
+      ACTIVE: 0,
+      INACTIVE: 0,
     },
-    {
-      id: "user3",
-      username: "User",
-      email: "user@gmail.com",
-      role: "User",
-      status: "Inactive",
-      dateCreation: "16/11/2025",
-      avatar: null,
-    },
-  ]);
+  });
 
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState("All");
@@ -58,41 +61,104 @@ const UserManagementView = () => {
   });
 
   const [newUser, setNewUser] = useState({
-    username: "",
+    name: "",
     email: "",
     password: "",
     confirmPassword: "",
     role: "",
     avatar: null,
+    status: "ACTIVE",
   });
   const [editUser, setEditUser] = useState({
-    username: "",
+    name: "",
     email: "",
     role: "",
     avatar: null,
+    status: "",
   });
 
-  const getRoleColor = (role) => {
+  // API Base URL - thay đổi theo backend của bạn
+  const API_BASE_URL = "http://localhost:3000/admin";
+
+  // Fetch users from API
+  const fetchUsers = async (page = 1) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await fetch(`${API_BASE_URL}/users?page=${page}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          // Thêm token nếu cần
+          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch users");
+      }
+
+      const result = await response.json();
+
+      if (result.status === "success") {
+        setUsers(result.data.users);
+        setPagination({
+          total: result.data.total,
+          page: result.data.page,
+          totalPages: result.data.totalPages,
+        });
+        // Set stats from API if available
+        if (result.data.stats) {
+          setUserStats(result.data.stats);
+        }
+      }
+    } catch (err) {
+      setError(err.message);
+      console.error("Error fetching users:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  // Helpers
+  const getRoleName = (roles) => {
+    if (!roles || roles.length === 0) return "No Role";
+    // Lấy role đầu tiên và chuyển thành format đẹp hơn
+    const role = roles[0];
+    if (role === "LEARNER") return "LEARNER";
+    if (role === "INSTRUCTOR") return "INSTRUCTOR";
+    if (role === "ADMIN") return "ADMIN";
+    return role;
+  };
+
+  const getRoleColor = (roles) => {
+    const role = getRoleName(roles);
     switch (role) {
       case "Admin":
         return { bg: "#9C27B0", text: "#fff" };
       case "Instructor":
         return { bg: "#2196F3", text: "#fff" };
-      case "User":
+      case "Learner":
         return { bg: "#FF9800", text: "#fff" };
       default:
         return { bg: "#9E9E9E", text: "#fff" };
     }
   };
 
-  const getStatusColor = (status) => (status === "Active" ? "#4CAF50" : "#F44336");
-  const getAvatarColor = (role) => {
+  const getStatusColor = (status) => (status === "ACTIVE" ? "#4CAF50" : "#F44336");
+
+  const getAvatarColor = (roles) => {
+    const role = getRoleName(roles);
     switch (role) {
       case "Admin":
         return "#F44336";
       case "Instructor":
         return "#FF9800";
-      case "User":
+      case "LEARNER":
         return "#9C27B0";
       default:
         return "#9E9E9E";
@@ -102,95 +168,187 @@ const UserManagementView = () => {
   const stats = [
     {
       label: "All Users",
-      count: users.length,
+      count: pagination.total,
       icon: <FaUsers className="text-white" />,
       bg: "rgba(13, 110, 253, 0.6)",
     },
     {
       label: "Learner",
-      count: users.filter((u) => u.role === "User").length,
+      count: userStats.byRole?.LEARNER || 0,
       icon: <FaUsers className="text-white" />,
       bg: "rgba(232, 47, 161, 0.7)",
     },
     {
       label: "Instructor",
-      count: users.filter((u) => u.role === "Instructor").length,
+      count: userStats.byRole?.INSTRUCTOR || 0,
       icon: <FaUserGraduate className="text-white" />,
       bg: "#28a745",
     },
     {
       label: "Admin",
-      count: users.filter((u) => u.role === "Admin").length,
+      count: userStats.byRole?.ADMIN || 0,
       icon: <FaUserShield className="text-white" />,
       bg: "orange",
     },
     {
       label: "Active",
-      count: users.filter((u) => u.status === "Active").length,
+      count: userStats.byStatus?.ACTIVE || 0,
       icon: <FaCheckCircle className="text-white" />,
       bg: "#17a2b8",
     },
     {
       label: "Inactive",
-      count: users.filter((u) => u.status === "Inactive").length,
+      count: userStats.byStatus?.INACTIVE || 0,
       icon: <FaTimesCircle className="text-white" />,
       bg: "#dc3545",
     },
   ];
 
   const filteredUsers = users.filter((user) => {
-    const matchSearch =
-      user.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchRole = roleFilter === "All" || user.role === roleFilter;
+    const name = user.name || "";
+    const matchSearch = name.toLowerCase().includes(searchQuery.toLowerCase());
+
+    let matchRole = true;
+    if (roleFilter !== "All") {
+      if (roleFilter === "LEARNER") {
+        matchRole = user.roles?.includes("LEARNER");
+      } else {
+        matchRole = user.roles?.includes(roleFilter.toUpperCase());
+      }
+    }
+
     return matchSearch && matchRole;
   });
 
-  const handleCreate = () => {
-    if (!newUser.username || !newUser.email || !newUser.password || !newUser.role) return;
-    if (newUser.password !== newUser.confirmPassword) {
-      alert("Passwords do not match!");
+  // API Handlers
+  const handleCreate = async () => {
+    // 1. Kiểm tra đầu vào
+    if (!newUser.name || !newUser.email || !newUser.role) {
+      toast.error("Please fill all required fields!");
       return;
     }
-    const user = {
-      id: `user${Date.now()}`,
-      username: newUser.username,
-      email: newUser.email,
-      role: newUser.role,
-      status: "Active",
-      dateCreation: new Date().toLocaleDateString("en-GB"),
-      avatar: newUser.avatar,
-    };
-    setUsers([...users, user]);
-    setNewUser({
-      username: "",
-      email: "",
-      password: "",
-      confirmPassword: "",
-      role: "",
-      avatar: null,
-    });
-    setShowCreateModal(false);
+
+    try {
+      setLoading(true);
+
+      // 2. Chuẩn hóa Role thành chuỗi viết hoa (e.g., "ADMIN", "INSTRUCTOR", "LEARNER")
+      const roleString = newUser.role.toUpperCase();
+
+      const payload = {
+        name: newUser.name,
+        email: newUser.email,
+        role: roleString, // CHẮC CHẮN LÀ CHUỖI, KHÔNG CÓ [ ]
+      };
+
+      console.log("Payload gửi đi:", payload); // Kiểm tra log ở trình duyệt
+
+      const response = await fetch(`${API_BASE_URL}/users`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.data || "Failed to create user");
+      }
+
+      await fetchUsers(pagination.page);
+      setShowCreateModal(false);
+      setNewUser({
+        name: "",
+        email: "",
+        password: "",
+        role: "",
+        avatar: null,
+      });
+      toast.success("User created successfully!");
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleEdit = () => {
-    if (!editUser.username || !editUser.email || !editUser.role) return;
-    setUsers(users.map((u) => (u.id === selectedUser.id ? { ...u, ...editUser } : u)));
-    setShowEditModal(false);
+  const handleEdit = async () => {
+    if (!editUser.name || !editUser.role) {
+      toast.error("Please fill all required fields!");
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      let roleApi = editUser.role.toUpperCase();
+      if (editUser.role === "LEARNER") roleApi = "LEARNER";
+
+      const response = await fetch(`${API_BASE_URL}/users/${selectedUser.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+        },
+        body: JSON.stringify({
+          name: editUser.name,
+          role: editUser.role.toUpperCase(), // Gửi chuỗi
+          avatar: editUser.avatar,
+          status: editUser.status,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to update user");
+      }
+
+      await fetchUsers(pagination.page);
+      setShowEditModal(false);
+      toast.success("User updated successfully!");
+    } catch (err) {
+      console.error("Error updating user:", err);
+      toast.error("Failed to update user: " + err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleDelete = () => {
-    setUsers(users.filter((u) => u.id !== selectedUser.id));
-    setShowDeleteModal(false);
+  const handleDelete = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch(`${API_BASE_URL}/users/${selectedUser.id}`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete user");
+      }
+
+      await fetchUsers(pagination.page);
+      setShowDeleteModal(false);
+      toast.success("User deleted successfully!");
+    } catch (err) {
+      console.error("Error deleting user:", err);
+      toast.error("Failed to delete user: " + err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const openEditModal = (user) => {
     setSelectedUser(user);
     setEditUser({
-      username: user.username,
-      email: user.email,
-      role: user.role,
-      avatar: user.avatar,
+      name: user.name || "",
+      email: user.email || "",
+      role: getRoleName(user.roles),
+      avatar: user.avatar || null,
+      status: user.status || "INACTIVE",
     });
     setShowEditModal(true);
   };
@@ -207,6 +365,19 @@ const UserManagementView = () => {
     }
   };
 
+  if (loading && users.length === 0) {
+    return (
+      <div
+        className="d-flex justify-content-center align-items-center"
+        style={{ minHeight: "400px" }}
+      >
+        <Spinner animation="border" role="status">
+          <span className="visually-hidden">Loading...</span>
+        </Spinner>
+      </div>
+    );
+  }
+
   return (
     <div>
       <style>{`        
@@ -219,6 +390,7 @@ const UserManagementView = () => {
         .status-dot { width: 8px; height: 8px; border-radius: 50%; }
         .action-btn { border: 1px solid #e0e0e0; background: #e9ecef; color: black; padding: 6px 12px; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; margin-right: 8px; }
         .action-btn:hover { background: #f5f5f5; }
+        .action-btn:disabled { opacity: 0.5; cursor: not-allowed; }
         .delete-btn { color: black; border-color: #e0e0e0; }
         .avatar-circle { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 600; font-size: 14px; }
         .modal-input { border: 1px solid #ced4da; border-radius: 8px; padding: 10px 14px; width: 100%; margin-bottom: 16px; background-color: #fff; color: #000; }
@@ -243,6 +415,12 @@ const UserManagementView = () => {
           display: none !important;
         }
       `}</style>
+
+      {error && (
+        <Alert variant="danger" dismissible onClose={() => setError(null)}>
+          {error}
+        </Alert>
+      )}
 
       {/* Stats Cards */}
       <Row className="mb-4 g-3 stats-section">
@@ -333,9 +511,15 @@ const UserManagementView = () => {
                 <Dropdown.Item eventKey="All" style={{ color: "black", opacity: 1 }}>
                   All Roles
                 </Dropdown.Item>
-                <Dropdown.Item eventKey="Admin" style={{ color: "black", opacity: 1 }}>Admin</Dropdown.Item>
-                <Dropdown.Item eventKey="Instructor" style={{ color: "black", opacity: 1 }}>Instructor</Dropdown.Item>
-                <Dropdown.Item eventKey="User" style={{ color: "black", opacity: 1 }}>User</Dropdown.Item>
+                <Dropdown.Item eventKey="Admin" style={{ color: "black", opacity: 1 }}>
+                  Admin
+                </Dropdown.Item>
+                <Dropdown.Item eventKey="Instructor" style={{ color: "black", opacity: 1 }}>
+                  Instructor
+                </Dropdown.Item>
+                <Dropdown.Item eventKey="LEARNER" style={{ color: "black", opacity: 1 }}>
+                  LEARNER
+                </Dropdown.Item>
               </Dropdown.Menu>
             </Dropdown>
           </div>
@@ -369,82 +553,127 @@ const UserManagementView = () => {
         <table className="user-table">
           <thead>
             <tr>
-              <th>Username</th>
+              <th>FullName</th>
               <th>Email</th>
               <th>Role</th>
               <th>Status</th>
-              <th>Date creation</th>
               <th>Activity</th>
             </tr>
           </thead>
           <tbody>
-            {filteredUsers.map((user) => (
-              <tr key={user.id}>
-                <td>
-                  <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                    {user.avatar ? (
-                      <img
-                        src={user.avatar}
-                        alt=""
-                        style={{ width: 36, height: 36, borderRadius: "50%", objectFit: "cover" }}
-                      />
-                    ) : (
-                      <div
-                        className="avatar-circle"
-                        style={{ background: getAvatarColor(user.role) }}
-                      >
-                        {user.username.charAt(0).toUpperCase()}
-                      </div>
-                    )}
-                    <div>
-                      <div style={{ fontWeight: "600" }}>{user.username}</div>
-                      <div style={{ fontSize: "12px", color: "#999" }}>ID: {user.id}</div>
-                    </div>
-                  </div>
-                </td>
-                <td>
-                  <span style={{ color: "#666" }}>✉️</span> {user.email}
-                </td>
-                <td>
-                  <Badge
-                    pill
-                    style={{
-                      background: getRoleColor(user.role).bg,
-                      color: getRoleColor(user.role).text,
-                    }}
-                  >
-                    🎓 {user.role}
-                  </Badge>
-                </td>
-                <td>
-                  <div className="status-badge">
-                    <span
-                      className="status-dot"
-                      style={{ background: getStatusColor(user.status) }}
-                    ></span>
-                    {user.status}
-                  </div>
-                </td>
-                <td>{user.dateCreation}</td>
-                <td>
-                  <button className="action-btn" onClick={() => openEditModal(user)}>
-                    <FaEdit /> Edit
-                  </button>
-                  <button
-                    className="action-btn delete-btn"
-                    onClick={() => {
-                      setSelectedUser(user);
-                      setShowDeleteModal(true);
-                    }}
-                  >
-                    <FaTrash />
-                  </button>
+            {filteredUsers.length === 0 ? (
+              <tr>
+                <td colSpan="5" className="text-center py-4">
+                  No users found
                 </td>
               </tr>
-            ))}
+            ) : (
+              filteredUsers.map((user) => (
+                <tr key={user.id}>
+                  <td>
+                    <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                      {user.avatar ? (
+                        <img
+                          src={user.avatar}
+                          alt=""
+                          style={{ width: 36, height: 36, borderRadius: "50%", objectFit: "cover" }}
+                        />
+                      ) : (
+                        <div
+                          className="avatar-circle"
+                          style={{ background: getAvatarColor(user.roles) }}
+                        >
+                          {(user.name || "U").charAt(0).toUpperCase()}
+                        </div>
+                      )}
+                      <div>
+                        <div style={{ fontWeight: "600" }}>
+                          {user.name || (
+                            <span style={{ color: "#999", fontStyle: "italic" }}>No name</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    {" "}
+                    <div style={{ fontWeight: "600" }}>
+                      {user.email || (
+                        <span style={{ color: "#999", fontStyle: "italic" }}>No email</span>
+                      )}
+                    </div>
+                  </td>
+                  <td>
+                    {" "}
+                    <Badge
+                      pill
+                      style={{
+                        background: getRoleColor(user.roles).bg,
+                        color: getRoleColor(user.roles).text,
+                      }}
+                    >
+                      🎓 {getRoleName(user.roles)}
+                    </Badge>
+                  </td>
+                  <td>
+                    <div className="status-badge">
+                      <span
+                        className="status-dot"
+                        style={{ background: getStatusColor(user.status) }}
+                      ></span>
+                      {user.status}
+                    </div>
+                  </td>
+
+                  <td>
+                    <button
+                      className="action-btn"
+                      onClick={() => openEditModal(user)}
+                      disabled={loading}
+                    >
+                      <FaEdit /> Edit
+                    </button>
+                    <button
+                      className="action-btn delete-btn"
+                      onClick={() => {
+                        setSelectedUser(user);
+                        setShowDeleteModal(true);
+                      }}
+                      disabled={loading}
+                    >
+                      <FaTrash />
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
+
+      {/* Pagination */}
+      {pagination.totalPages > 1 && (
+        <div className="d-flex justify-content-center mt-4">
+          <Button
+            variant="outline-primary"
+            disabled={pagination.page === 1 || loading}
+            onClick={() => fetchUsers(pagination.page - 1)}
+            className="me-2"
+          >
+            Previous
+          </Button>
+          <span className="align-self-center mx-3">
+            Page {pagination.page} of {pagination.totalPages}
+          </span>
+          <Button
+            variant="outline-primary"
+            disabled={pagination.page === pagination.totalPages || loading}
+            onClick={() => fetchUsers(pagination.page + 1)}
+          >
+            Next
+          </Button>
+        </div>
+      )}
 
       {/* Create Modal */}
       <Modal
@@ -462,13 +691,13 @@ const UserManagementView = () => {
           <Row>
             <Col md={7}>
               <Form.Label className="fw-semibold">
-                Account's name <span style={{ color: "red" }}>*</span>
+                FullName <span style={{ color: "red" }}>*</span>
               </Form.Label>
               <input
                 className="modal-input"
                 placeholder="User1"
-                value={newUser.username}
-                onChange={(e) => setNewUser({ ...newUser, username: e.target.value })}
+                value={newUser.name}
+                onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
               />
 
               <Form.Label className="fw-semibold">
@@ -482,7 +711,7 @@ const UserManagementView = () => {
                 onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
               />
 
-              <Form.Label className="fw-semibold">
+              {/* <Form.Label className="fw-semibold">
                 Password <span style={{ color: "red" }}>*</span>
               </Form.Label>
               <div className="password-wrapper">
@@ -522,18 +751,20 @@ const UserManagementView = () => {
                 >
                   {showPassword.confirm ? <FaEyeSlash /> : <FaEye />}
                 </span>
-              </div>
+              </div> */}
 
-              <Form.Label className="fw-semibold">Role</Form.Label>
+              <Form.Label className="fw-semibold">
+                Role <span style={{ color: "red" }}>*</span>
+              </Form.Label>
               <select
                 className="modal-input"
                 value={newUser.role}
                 onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
               >
                 <option value="">Choose role</option>
-                <option value="Admin">Admin</option>
-                <option value="Instructor">Instructor</option>
-                <option value="User">User</option>
+                <option value="ADMIN">Admin</option>
+                <option value="INSTRUCTOR">Instructor</option>
+                <option value="LEARNER">Learner</option>
               </select>
             </Col>
             <Col md={5}>
@@ -563,8 +794,8 @@ const UserManagementView = () => {
           </Row>
         </Modal.Body>
         <Modal.Footer style={{ border: "none" }}>
-          <Button variant="dark" className="create-btn" onClick={handleCreate}>
-            Create account
+          <Button variant="dark" className="create-btn" onClick={handleCreate} disabled={loading}>
+            {loading ? "Creating..." : "Create account"}
           </Button>
         </Modal.Footer>
       </Modal>
@@ -584,19 +815,22 @@ const UserManagementView = () => {
           <p style={{ marginBottom: "24px" }}>Update account information</p>
           <Row>
             <Col md={7}>
-              <Form.Label className="fw-semibold">Account's name</Form.Label>
+              <Form.Label className="fw-semibold">FullName</Form.Label>
               <input
                 className="modal-input"
-                value={editUser.username}
-                onChange={(e) => setEditUser({ ...editUser, username: e.target.value })}
+                value={editUser.name ? editUser.name : "Anonymous"}
+                onChange={(e) => setEditUser({ ...editUser, name: e.target.value })}
               />
-
               <Form.Label className="fw-semibold">Email</Form.Label>
               <input
                 className="modal-input"
                 type="email"
                 value={editUser.email}
-                onChange={(e) => setEditUser({ ...editUser, email: e.target.value })}
+                disabled // Thêm disabled nếu không cho sửa email
+                style={{
+                  backgroundColor: "#f5f5f5", // Màu xám nhạt để biết là disabled
+                  cursor: "not-allowed",
+                }}
               />
 
               <Form.Label className="fw-semibold">Role</Form.Label>
@@ -605,9 +839,18 @@ const UserManagementView = () => {
                 value={editUser.role}
                 onChange={(e) => setEditUser({ ...editUser, role: e.target.value })}
               >
-                <option value="Admin">Admin</option>
-                <option value="Instructor">Instructor</option>
-                <option value="User">User</option>
+                <option value="ADMIN">Admin</option>
+                <option value="INSTRUCTOR">Instructor</option>
+                <option value="LEARNER">Learner</option>
+              </select>
+              <Form.Label className="fw-semibold">Status</Form.Label>
+              <select
+                className="modal-input"
+                value={editUser.status}
+                onChange={(e) => setEditUser({ ...editUser, status: e.target.value })}
+              >
+                <option value="ACTIVE">Active</option>
+                <option value="INACTIVE">Inactive</option>
               </select>
             </Col>
             <Col md={5}>
@@ -637,8 +880,8 @@ const UserManagementView = () => {
           </Row>
         </Modal.Body>
         <Modal.Footer style={{ border: "none" }}>
-          <Button variant="dark" className="create-btn" onClick={handleEdit}>
-            Save Changes
+          <Button variant="dark" className="create-btn" onClick={handleEdit} disabled={loading}>
+            {loading ? "Saving..." : "Save Changes"}
           </Button>
         </Modal.Footer>
       </Modal>
@@ -655,14 +898,14 @@ const UserManagementView = () => {
           <div style={{ fontSize: "48px", marginBottom: "16px" }}>⚠️</div>
           <h5 style={{ fontWeight: "700", marginBottom: "12px" }}>Delete User?</h5>
           <p style={{ marginBottom: "24px" }}>
-            Are you sure you want to delete "{selectedUser?.username}"?
+            Are you sure you want to delete "{selectedUser?.name || "this user"}"?
           </p>
           <div style={{ display: "flex", gap: "12px", justifyContent: "center" }}>
             <Button variant="light" onClick={() => setShowDeleteModal(false)}>
               Cancel
             </Button>
-            <Button variant="danger" onClick={handleDelete}>
-              Delete
+            <Button variant="danger" onClick={handleDelete} disabled={loading}>
+              {loading ? "Deleting..." : "Delete"}
             </Button>
           </div>
         </Modal.Body>

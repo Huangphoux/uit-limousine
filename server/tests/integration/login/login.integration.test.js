@@ -1,6 +1,6 @@
 import { loginUseCase, prisma } from "../../../src/composition-root.js";
 import { ERROR_CATALOG } from "../../../constants/errors.js";
-import { user, input } from "./test-data.js";
+import { getUser, password, input } from "./test-data.js";
 import { SUCCESS_CATALOG } from "../../../constants/messages.js";
 import z from "zod";
 
@@ -9,9 +9,9 @@ jest.setTimeout(40000);
 const testLoginSchema = z.object({
   accessToken: z.string(),
   user: z.object({
-    id: z.literal(user.id),
-    email: z.literal(user.email),
-    fullname: z.literal(user.username),
+    id: z.string(),
+    email: z.string(),
+    fullname: z.string(),
     role: z.array(z.string()), // Changed from tuple to array
   }),
 });
@@ -19,8 +19,18 @@ const testLoginSchema = z.object({
 describe("Login integration test", () => {
   let test_input;
   let test_output;
+  let testRole;
+  let user;
 
   beforeAll(async () => {
+    // Find or create role to satisfy foreign key constraint
+    testRole = await prisma.role.upsert({
+      where: { name: "LEARNER" },
+      update: {},
+      create: { name: "LEARNER", desc: "Regular learner" },
+    });
+
+    user = getUser(testRole.id);
     await prisma.user.create({
       data: user,
     });
@@ -28,6 +38,7 @@ describe("Login integration test", () => {
 
   afterAll(async () => {
     await prisma.user.deleteMany({ where: { id: user.id } });
+    await prisma.userRole.deleteMany({ where: { userId: user.id } });
   });
 
   describe("Normal case", () => {

@@ -7,6 +7,7 @@ export class SearchCoursesController {
 
     async execute(req, res) {
         try {
+
             const result = await this.#useCase.execute(req.query);
             res.json({
                 success: true,

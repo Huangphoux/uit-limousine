@@ -15,6 +15,11 @@ export class UserRepositoryPostgree {
 
         return UserEntity.rehydrate(raw);
     }
+    async findRoleByName(name) {
+        return await this.prisma.role.findUnique({
+            where: { name: name }
+        });
+    }
 
     async findByEmail(email) {
         const raw = await this.prisma.user.findUnique({
@@ -25,14 +30,23 @@ export class UserRepositoryPostgree {
         return UserEntity.rehydrate(raw);
     }
 
+    // Trong UserRepositoryPostgree.js
     async add(user) {
+        console.log("Dữ liệu user vào Repo:", JSON.stringify(user, null, 2));
+
         const raw = await this.prisma.user.create({
             data: {
                 ...toPersistence(user, false),
                 roles: {
-                    create: user.roles.map(r => ({
-                        roleId: r.id,
-                    }))
+                    create: (user.roles || [])
+                        .filter(r => r !== null)
+                        .map(r => {
+                            // Lấy giá trị ID từ bất cứ field nào có dữ liệu
+                            const rid = r.roleId ?? r.id;
+                            return {
+                                roleId: typeof rid === 'string' ? parseInt(rid) : rid
+                            };
+                        })
                 }
             },
             select: UserRepositoryPostgree.baseQuery
@@ -47,6 +61,11 @@ export class UserRepositoryPostgree {
             data: {
                 ...toPersistence(user, false),
                 roles: {
+                    // Xóa các role không còn nằm trong danh sách user.roles
+                    deleteMany: {
+                        roleId: { notIn: user.roles.map(r => r.id) }
+                    },
+                    // Tạo hoặc kết nối các role có trong danh sách
                     connectOrCreate: user.roles.map(r => ({
                         where: {
                             userId_roleId: {
@@ -66,6 +85,12 @@ export class UserRepositoryPostgree {
         const domainUser = UserEntity.rehydrate(raw);
 
         return domainUser;
+    }
+
+    async delete(id) {
+        await this.prisma.user.delete({
+            where: { id: id }
+        });
     }
 
     static baseQuery = buildQuery(userSchema);

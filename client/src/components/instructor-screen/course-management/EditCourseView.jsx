@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Container, Row, Col, Button, Form } from "react-bootstrap";
+import { Container, Row, Col, Button, Form, Modal } from "react-bootstrap";
 import { useNavigate, useLocation } from "react-router-dom";
 import { FiFolderPlus } from "react-icons/fi";
 import { MdDeleteOutline } from "react-icons/md";
@@ -9,34 +9,161 @@ import ReadingLessonContent from "./ReadingLessonContent";
 import AssignmentLessonContent from "./AssignmentLessonContent";
 import AssignmentGradingDetail from "./AssignmentGradingDetail";
 
-// import Header from "../../Header";
 import "./EditCourseView.css";
+import { toast } from "sonner";
+const API_URL = import.meta.env.VITE_API_URL;
 
 const EditCourseView = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const mainContentRef = useRef(null);
   const [assignmentActiveTab, setAssignmentActiveTab] = useState("edit");
+  const [showCourseSettingsModal, setShowCourseSettingsModal] = useState(false);
 
   const [courseData, setCourseData] = useState({
     title: "Demo Course",
     instructor: "Instructor Name",
     modules: [],
   });
+  const [loading, setLoading] = useState(false);
 
-  // Load course data from navigation state
+  const fetchCourseDetails = async (courseId) => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem("accessToken");
+      const userStr = localStorage.getItem("user");
+      const user = JSON.parse(userStr);
+
+      // Fetch course materials
+      const materialsResponse = await fetch(`${API_URL}/courses/${courseId}/materials`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const materialsResult = await materialsResponse.json();
+
+      if (!materialsResponse.ok) {
+        throw new Error(materialsResult.message || "Failed to load course materials");
+      }
+
+      // Fetch course details
+      const courseResponse = await fetch(`${API_URL}/courses/${courseId}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const courseResult = await courseResponse.json();
+
+      if (!courseResponse.ok) {
+        throw new Error("Failed to load course details");
+      }
+
+      const course = courseResult.data || courseResult;
+      const materials = materialsResult.data;
+
+      // Normalize modules and lessons
+      const normalizedModules = (materials.modules || []).map((m) => ({
+        id: m.id,
+        title: m.title,
+        position: m.order ?? m.position,
+        lessons: (m.lessons || []).map((l) => {
+          // Map content type
+          const lessonType = mapContentTypeToUI(l.type || l.contentType);
+
+          // Convert duration to MM:SS format
+          const durationSec = l.duration || l.durationSec || 600;
+          const duration = `${Math.floor(durationSec / 60)}:${String(durationSec % 60).padStart(2, "0")}`;
+
+          const lesson = {
+            id: l.id,
+            title: l.title,
+            type: lessonType,
+            description: l.content || l.description || "",
+            duration: duration,
+            isCompleted: l.isCompleted || false,
+          };
+
+          // Handle VIDEO type
+          if (lessonType === "Video" && l.mediaUrl) {
+            lesson.videoUrl = l.mediaUrl;
+          }
+
+          // Handle READING type
+          if (lessonType === "Reading" && l.content) {
+            lesson.readingContent = l.content;
+          }
+
+          // Handle ASSIGNMENT type - use nested assignment data if available
+          if (lessonType === "Assignment") {
+            lesson.assignmentId = l.assignmentId;
+
+            // Use nested assignment data from API response
+            if (l.assignment) {
+              const assignment = l.assignment;
+              lesson.description = assignment.description || "";
+              lesson.maxPoints = assignment.maxPoints || 100;
+              lesson.maxScore = assignment.maxPoints || 100;
+
+              // Map dueDate
+              if (assignment.dueDate) {
+                const dueDateTime = new Date(assignment.dueDate);
+                lesson.dueDate = dueDateTime.toISOString().split("T")[0]; // YYYY-MM-DD
+                lesson.dueTime = dueDateTime.toTimeString().slice(0, 5); // HH:MM
+              }
+            }
+          }
+
+          return lesson;
+        }),
+      }));
+
+      setCourseData({
+        id: course.id,
+        title: course.title || "Untitled Course",
+        description: course.description || course.shortDesc || "",
+        instructor: course.instructor?.name || course.instructor?.fullName || "Instructor Name",
+        image: course.coverImage || course.thumbnail || course.image || "",
+        status: course.published ? "published" : "draft",
+        modules: normalizedModules,
+        level: course.level || "",
+        language: course.language,
+        price: course.price,
+        rating: course.rating,
+        enrollmentCount: course.enrolledStudents || course.enrollmentCount || course.students || 0,
+      });
+    } catch (error) {
+      console.error("Error fetching course:", error);
+      toast.error("Failed to load course details: " + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+  // Load course data from navigation state or fetch from API
   useEffect(() => {
     if (location.state?.courseData) {
       const course = location.state.courseData;
-      setCourseData({
-        id: course.id,
-        title: course.title,
-        description: course.description,
-        instructor: "Instructor Name", // You can get this from context/auth
-        image: course.image,
-        status: course.status,
-        modules: course.modules || [],
-      });
+
+      // If we have a course ID, fetch full details from API
+      if (course.id) {
+        fetchCourseDetails(course.id);
+      } else {
+        // Fallback: use data from navigation state
+        setCourseData({
+          id: course.id,
+          title: course.title,
+          description: course.description,
+          instructor: "Instructor Name",
+          image: course.image,
+          status: course.status,
+          modules: course.modules || [],
+        });
+      }
     }
   }, [location.state]);
 
@@ -51,6 +178,24 @@ const EditCourseView = () => {
     description: "",
     files: [],
   });
+
+  // Map between backend contentType values and UI labels
+  const mapContentTypeToUI = (contentType) => {
+    if (!contentType) return "Video";
+    const ct = String(contentType).toLowerCase();
+    if (ct === "video") return "Video";
+    if (ct === "article") return "Reading";
+    if (ct === "file" || ct === "assignment") return "Assignment";
+    return ct.charAt(0).toUpperCase() + ct.slice(1);
+  };
+
+  const mapUIToContentType = (uiType) => {
+    if (!uiType) return "video";
+    if (uiType === "Video") return "video";
+    if (uiType === "Reading") return "article";
+    if (uiType === "Assignment") return "assignment";
+    return String(uiType).toLowerCase();
+  };
 
   // Add new module
   const handleAddModule = () => {
@@ -97,6 +242,14 @@ const EditCourseView = () => {
     const module = courseData.modules.find((m) => m.id === moduleId);
     const lesson = module?.lessons.find((l) => l.id === lessonId);
     if (lesson) {
+      console.log(
+        "Selecting lesson:",
+        lesson.title,
+        "videoUrl:",
+        lesson.videoUrl,
+        "mediaUrl:",
+        lesson.mediaUrl
+      );
       setSelectedLesson({ moduleId, lessonId });
       setLessonForm(lesson);
       if (lesson.type === "Assignment") {
@@ -107,6 +260,32 @@ const EditCourseView = () => {
 
   // Update lesson form
   const handleLessonFormChange = (field, value) => {
+    // Validate dueDate for Assignment lessons - must be in the future
+    if (field === "dueDate" && value) {
+      const selectedDate = new Date(value);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      if (selectedDate < today) {
+        toast.error("Due date must be in the future");
+        return;
+      }
+    }
+
+    // Validate combined dueDate and dueTime
+    if (field === "dueTime" && value) {
+      const dueDate = lessonForm.dueDate;
+      if (dueDate) {
+        const selectedDateTime = new Date(dueDate + "T" + value);
+        const now = new Date();
+
+        if (selectedDateTime <= now) {
+          toast.error("Due date and time must be in the future");
+          return;
+        }
+      }
+    }
+
     setLessonForm((prev) => {
       let updatedForm = { ...prev, [field]: value };
 
@@ -418,9 +597,238 @@ const EditCourseView = () => {
     return lessonIndex < module.lessons.length - 1 || moduleIndex < courseData.modules.length - 1;
   };
 
+  const handleSaveCourse = async (e) => {
+    e.preventDefault();
+    try {
+      const token = localStorage.getItem("accessToken");
+      const userStr = localStorage.getItem("user");
+
+      if (!token || !userStr) {
+        toast.error("Please login first to update course.");
+        return;
+      }
+
+      const user = JSON.parse(userStr);
+      const authId = user.id;
+
+      // Deep snapshot for logging
+      const course = JSON.parse(JSON.stringify(courseData));
+
+      // Create Assignment resources for NEW assignment lessons only
+      // Existing assignments will be updated via the course update endpoint
+      for (const module of course.modules || []) {
+        for (const lesson of module.lessons || []) {
+          if (lesson.type === "Assignment" && !lesson.assignmentId) {
+            // build assignment payload
+            const assignmentPayload = {
+              courseId: course.id,
+              title: lesson.title || "Assignment",
+              description: lesson.description || lesson.content || "",
+              dueDate:
+                lesson.dueDate && lesson.dueTime
+                  ? new Date(lesson.dueDate + "T" + lesson.dueTime).toISOString()
+                  : undefined,
+              maxPoints: lesson.maxScore || lesson.maxPoints || 100,
+            };
+
+            // Create new assignment
+            console.log(
+              "Creating assignment for lesson",
+              lesson.id || lesson.title,
+              assignmentPayload
+            );
+
+            const resp = await fetch(`${API_URL}/assignments`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify(assignmentPayload),
+            });
+
+            const created = await resp.json();
+            if (!resp.ok) {
+              const err =
+                created?.data ||
+                created?.error?.message ||
+                created?.message ||
+                "Failed to create assignment";
+              throw new Error(err);
+            }
+
+            // Try to extract assignment id from common response shapes
+            const assignmentId =
+              created?.data?.id ||
+              created?.id ||
+              created?.assignment?.id ||
+              (created?.data?.assignment && created.data.assignment.id);
+            if (!assignmentId) {
+              console.warn("Assignment created but id not found in response:", created);
+            } else {
+              lesson.assignmentId = assignmentId;
+              // ensure lesson contentType set to 'assignment'
+              lesson.contentType = "assignment";
+            }
+          }
+        }
+      }
+
+      console.log("Save Course Debug:");
+      console.log("- User ID (authId):", authId);
+      console.log("- Course ID:", course.id);
+      console.log("- Full courseData snapshot:", course);
+
+      // Prepare modules data for backend - transform to match backend schema
+      const modulesData = course.modules.map((module, moduleIndex) => ({
+        id: module.id,
+        title: module.title,
+        position: moduleIndex,
+        lessons: (module.lessons || []).map((lesson, lessonIndex) => {
+          console.log("Processing lesson for save:", lesson.title, "Type:", lesson.type);
+          console.log("- videoUrl:", lesson.videoUrl);
+          console.log("- readingContent:", lesson.readingContent);
+
+          // Determine mediaUrl based on lesson type
+          let mediaUrl = null;
+          if (lesson.type === "Video" && lesson.videoUrl) {
+            mediaUrl = lesson.videoUrl;
+            console.log("- Setting mediaUrl for Video:", mediaUrl);
+          }
+
+          // For reading lessons, use readingContent in content field
+          let content = lesson.description || lesson.content || "";
+          if (lesson.type === "Reading" && lesson.readingContent) {
+            content = lesson.readingContent;
+            console.log("- Setting content for Reading:", content.substring(0, 50));
+          }
+
+          const lessonData = {
+            id: lesson.id,
+            title: lesson.title,
+            content: content,
+            mediaUrl: mediaUrl || undefined,
+            contentType: mapUIToContentType(lesson.type) || "video",
+            assignmentId: lesson.assignmentId ? lesson.assignmentId : undefined,
+            durationSec: lesson.duration ? parseDurationToSeconds(lesson.duration) : null,
+            position: lessonIndex,
+          };
+
+          // ✅ THÊM: Luôn gửi assignment fields cho lesson type Assignment
+          if (lesson.type === "Assignment") {
+            // DueDate
+            if (lesson.dueDate) {
+              const dueTimeStr = lesson.dueTime || "23:59";
+              lessonData.dueDate = new Date(lesson.dueDate + "T" + dueTimeStr).toISOString();
+            }
+
+            // MaxPoints
+            lessonData.maxPoints = lesson.maxScore || lesson.maxPoints || 100;
+          }
+
+          console.log("- Final lesson data:", lessonData);
+          return lessonData;
+        }),
+      }));
+
+      // Backend now accepts: authId, id, title, description, price, level, language, coverImage, modules
+      const payload = {
+        authId,
+        id: course.id,
+        title: course.title || "Untitled Course",
+        description: course.description || "",
+        price: typeof course.price === "number" ? course.price : Number(course.price) || 0,
+        level: course.level || null,
+        language: course.language || null,
+        coverImage: course.thumbnail || course.image || course.coverImage || null,
+        modules: modulesData,
+      };
+
+      console.log("Sending payload:", payload);
+
+      const response = await fetch(`${API_URL}/courses/${courseData.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await response.json();
+      console.log("Save response:", data);
+
+      if (!response.ok) {
+        const errorMessage =
+          data.data || data.error?.message || data.message || "Update course failed";
+        throw new Error(errorMessage);
+      }
+
+      toast.success("Course updated successfully!");
+      // signal parent page to refresh course list
+      try {
+        localStorage.setItem("courses_needs_refresh", "1");
+      } catch (e) {
+        /* ignore */
+        console.log(e);
+      }
+      navigate(-1);
+    } catch (error) {
+      console.error("Error saving course:", error);
+      toast.error("Failed to update course: " + error.message);
+    }
+  };
+
+  // Helper function to parse duration string to seconds
+  const parseDurationToSeconds = (duration) => {
+    if (typeof duration === "number") return duration;
+    if (!duration || typeof duration !== "string") return null;
+
+    const parts = duration.split(":");
+    if (parts.length === 2) {
+      // Format: MM:SS
+      return parseInt(parts[0]) * 60 + parseInt(parts[1]);
+    } else if (parts.length === 3) {
+      // Format: HH:MM:SS
+      return parseInt(parts[0]) * 3600 + parseInt(parts[1]) * 60 + parseInt(parts[2]);
+    }
+    return null;
+  };
+
   return (
     <>
       <div style={{ minHeight: "100vh", background: "#f8f9fa" }}>
+        {/* Loading State */}
+        {loading && (
+          <div
+            style={{
+              position: "fixed",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: "rgba(255, 255, 255, 0.9)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: 9999,
+            }}
+          >
+            <div className="text-center">
+              <div
+                className="spinner-border text-primary"
+                role="status"
+                style={{ width: "3rem", height: "3rem" }}
+              >
+                <span className="visually-hidden">Loading...</span>
+              </div>
+              <div className="mt-3">
+                <h5 style={{ color: "#6c757d" }}>Loading course details...</h5>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Header */}
         <div className="edit-course-header">
           <Container fluid>
@@ -437,54 +845,26 @@ const EditCourseView = () => {
                 </div>
               </Col>
               <Col md={6}>
-                {/* <div
+                <div
                   className="d-flex justify-content-end align-items-center"
                   style={{ gap: "0.75rem" }}
                 >
-                  <span style={{ fontSize: "0.9rem", color: "#333" }}>Progress</span>
-                  <span style={{ fontSize: "0.9rem", color: "#333" }}>
-                    {Math.round(
-                      (courseData.modules.reduce(
-                        (acc, mod) => acc + mod.lessons.filter((l) => l.isCompleted).length,
-                        0
-                      ) /
-                        Math.max(
-                          courseData.modules.reduce((acc, mod) => acc + mod.lessons.length, 0),
-                          1
-                        )) *
-                        100
-                    )}
-                    %
-                  </span>
-                  <div
+                  <button
+                    className="btn btn-outline-primary"
+                    onClick={() => setShowCourseSettingsModal(true)}
                     style={{
-                      width: "120px",
-                      height: "8px",
-                      backgroundColor: "#e0e0e0",
-                      borderRadius: "10px",
-                      overflow: "hidden",
+                      padding: "0.5rem 1rem",
+                      borderRadius: "0.375rem",
+                      fontWeight: "500",
                     }}
                   >
-                    <div
-                      style={{
-                        height: "100%",
-                        backgroundColor: "#2196f3",
-                        transition: "width 0.3s ease",
-                        width: `${Math.round(
-                          (courseData.modules.reduce(
-                            (acc, mod) => acc + mod.lessons.filter((l) => l.isCompleted).length,
-                            0
-                          ) /
-                            Math.max(
-                              courseData.modules.reduce((acc, mod) => acc + mod.lessons.length, 0),
-                              1
-                            )) *
-                            100
-                        )}%`,
-                      }}
-                    />
-                  </div>
-                </div> */}
+                    <i className="bi bi-gear me-1"></i>
+                    Course Settings
+                  </button>
+                  <button className="edit-save-btn" onClick={(e) => handleSaveCourse(e)}>
+                    Save
+                  </button>
+                </div>
               </Col>
             </Row>
           </Container>
@@ -940,6 +1320,143 @@ const EditCourseView = () => {
           </Col>
         </Row>
       </div>
+
+      {/* Course Settings Modal */}
+      <Modal
+        show={showCourseSettingsModal}
+        onHide={() => setShowCourseSettingsModal(false)}
+        size="lg"
+        centered
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>Course Settings</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Form>
+            <Form.Group className="mb-3">
+              <Form.Label>Course Title *</Form.Label>
+              <Form.Control
+                className="edit-course-modal-form-control"
+                type="text"
+                placeholder="Enter course title"
+                value={courseData.title || ""}
+                onChange={(e) => setCourseData({ ...courseData, title: e.target.value })}
+              />
+            </Form.Group>
+
+            <Form.Group className="mb-3">
+              <Form.Label>Description</Form.Label>
+              <Form.Control
+                className="edit-course-modal-form-control"
+                as="textarea"
+                rows={4}
+                placeholder="Enter course description"
+                value={courseData.description || ""}
+                onChange={(e) => setCourseData({ ...courseData, description: e.target.value })}
+              />
+            </Form.Group>
+
+            <Row>
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Price ($)</Form.Label>
+                  <Form.Control
+                    className="edit-course-modal-form-control"
+                    type="number"
+                    placeholder="0"
+                    min="0"
+                    step="0.01"
+                    value={courseData.price || 0}
+                    onChange={(e) =>
+                      setCourseData({ ...courseData, price: parseFloat(e.target.value) || 0 })
+                    }
+                  />
+                  <Form.Text className="text-muted">Set to 0 for free course</Form.Text>
+                </Form.Group>
+              </Col>
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Level</Form.Label>
+                  <Form.Select
+                    className="edit-course-modal-form-control"
+                    value={courseData.level || "Beginner"}
+                    onChange={(e) => setCourseData({ ...courseData, level: e.target.value })}
+                  >
+                    <option value="Beginner">Beginner</option>
+                    <option value="Intermediate">Intermediate</option>
+                    <option value="Advanced">Advanced</option>
+                  </Form.Select>
+                </Form.Group>
+              </Col>
+            </Row>
+
+            <Row>
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Language</Form.Label>
+                  <Form.Control
+                    className="edit-course-modal-form-control"
+                    type="text"
+                    placeholder="e.g., English, Vietnamese"
+                    value={courseData.language || ""}
+                    onChange={(e) => setCourseData({ ...courseData, language: e.target.value })}
+                  />
+                </Form.Group>
+              </Col>
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Thumbnail URL</Form.Label>
+                  <Form.Control
+                    type="text"
+                    className="edit-course-modal-form-control"
+                    placeholder="https://example.com/image.jpg"
+                    value={courseData.thumbnail || courseData.image || ""}
+                    onChange={(e) =>
+                      setCourseData({
+                        ...courseData,
+                        thumbnail: e.target.value,
+                        image: e.target.value,
+                      })
+                    }
+                  />
+                </Form.Group>
+              </Col>
+            </Row>
+
+            {(courseData.thumbnail || courseData.image) && (
+              <div className="mb-3 text-center">
+                <img
+                  src={courseData.thumbnail || courseData.image}
+                  alt="Course thumbnail preview"
+                  style={{
+                    maxWidth: "100%",
+                    maxHeight: "200px",
+                    borderRadius: "0.375rem",
+                    objectFit: "cover",
+                  }}
+                  onError={(e) => {
+                    e.target.style.display = "none";
+                  }}
+                />
+              </div>
+            )}
+          </Form>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowCourseSettingsModal(false)}>
+            Cancel
+          </Button>
+          <Button
+            variant="primary"
+            onClick={() => {
+              setShowCourseSettingsModal(false);
+              toast.success("Course settings updated! Don't forget to save.");
+            }}
+          >
+            Apply Changes
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </>
   );
 };

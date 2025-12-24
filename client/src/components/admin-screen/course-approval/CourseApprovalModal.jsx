@@ -76,6 +76,7 @@ const CourseApprovalModal = ({ show, onClose, onApprove, onDeny, courseData }) =
       courseData.modules.forEach((module) => {
         initialExpandedState[module.id] = true; // Start with all modules expanded
       });
+
       setExpandedModules(initialExpandedState);
     }
   }, [courseData]);

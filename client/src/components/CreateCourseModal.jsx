@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { Modal, Form, Button, Row, Col, InputGroup } from "react-bootstrap";
 import { FaTimes, FaUpload } from "react-icons/fa";
+import { toast } from "sonner";
+const API_URL = import.meta.env.VITE_API_URL;
 
 const CreateCourseModal = ({ show, onClose, onSave }) => {
   const [formData, setFormData] = useState({
@@ -100,12 +102,65 @@ const CreateCourseModal = ({ show, onClose, onSave }) => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (validateForm()) {
-      onSave(formData);
-      handleClose();
+      try {
+        // Get token and user info from localStorage
+        const token = localStorage.getItem("accessToken");
+        const userStr = localStorage.getItem("user");
+
+        if (!token || !userStr) {
+          toast.error("Please login first to create a course request.");
+          return;
+        }
+
+        const user = JSON.parse(userStr);
+        const applicantId = user.id;
+
+        const response = await fetch(`${API_URL}/instructor/apply`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            applicantId: applicantId,
+            requestedCourseTitle: formData.courseName,
+            requestedCourseSummary: formData.description,
+            portfolioUrl: formData.requirement || "",
+          }),
+        });
+
+        const data = await response.json();
+
+        console.log(data);
+
+        if (!response.ok) {
+          // Handle specific error cases
+          if (response.status === 409) {
+            throw new Error(
+              "You already have a pending application. Please wait for admin to review it before submitting a new one."
+            );
+          }
+
+          // Handle other error response formats
+          const errorMessage =
+            data.data || data.error?.message || data.message || "Create course request failed";
+          throw new Error(errorMessage);
+        }
+
+        // Show success message
+        toast.success(
+          "Course creation request submitted successfully! Admin will review your request."
+        );
+
+        onSave(formData);
+      } catch (error) {
+        console.log(error);
+        toast.error("Failed to submit course creation request: " + error.message);
+      }
     }
   };
 

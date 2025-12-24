@@ -9,13 +9,14 @@ const fileStorageService = new FileStorageService(config.upload.uploadDir);
 export const submitAssignment = async (req, res) => {
   try {
     const { assignmentId } = req.params;
-    const { content, studentId } = req.body;
+    const { content, authId } = req.body;
     const file = req.file;
+    const studentId = authId;
 
     if (!studentId) {
       return res.status(400).json({
         success: false,
-        message: 'Please provide studentId'
+        message: 'Authentication required'
       });
     }
 
@@ -58,6 +59,8 @@ export const submitAssignment = async (req, res) => {
     });
 
   } catch (error) {
+
+
     if (error.message === 'Assignment not found') {
       return res.status(404).json({
         success: false,
@@ -66,13 +69,53 @@ export const submitAssignment = async (req, res) => {
     }
 
     if (error.message === 'You are not enrolled in this course' ||
-        error.message === 'You have already submitted this assignment') {
+      error.message === 'You have already submitted this assignment') {
       return res.status(403).json({
         success: false,
         message: error.message
       });
     }
 
+    return res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: error.message
+    });
+  }
+};
+
+export const getSubmission = async (req, res) => {
+
+  try {
+    const { assignmentId } = req.params;
+    const studentId = req.body.authId;
+    if (!studentId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide studentId'
+      });
+    }
+    const submission = await courseUseCase.getSubmission(assignmentId, studentId);
+
+    if (!submission) {
+      return res.status(404).json({
+        success: false,
+        message: 'Submission not found'
+      });
+    }
+    const submissionDTO = SubmissionMapper.toDTO(submission);
+
+    return res.status(200).json({
+      success: true,
+      data: submissionDTO
+    });
+  } catch (error) {
+    if (error.message === 'Assignment not found') {
+      return res.status(404).json({
+        success: false,
+        message: error.message
+      });
+    }
     return res.status(500).json({
       success: false,
       message: 'Internal server error',

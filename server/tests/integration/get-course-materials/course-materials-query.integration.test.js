@@ -1,6 +1,6 @@
 import { outputSchema } from "../../../src/application_layer/courses/course-materials-query.usecase";
 import { courseMaterialsQueryUsecase, prisma } from "../../../src/composition-root"
-import { user, course, module, lessons, input, enrollment } from "./test-data";
+import { user, course, module, lessons, input } from "./test-data";
 
 jest.setTimeout(20000);
 
@@ -13,9 +13,18 @@ describe('Get course materials integration test', () => {
         await prisma.course.create({ data: course });
         await prisma.module.create({ data: module });
         await prisma.lesson.createMany({ data: lessons });
+        await prisma.enrollment.create({ 
+            data: {
+                userId: user.id,
+                courseId: course.id,
+                status: 'ENROLLED',
+                isPaid: true
+            } 
+        });
     });
 
     afterAll(async () => {
+        await prisma.enrollment.deleteMany({ where: { userId: user.id } });
         await prisma.user.delete({ where: { id: user.id } });
         await prisma.course.delete({ where: { id: course.id } });
     });

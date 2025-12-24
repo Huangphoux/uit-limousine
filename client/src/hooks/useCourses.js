@@ -21,6 +21,17 @@ export const useCourses = (initialCourses = []) => {
       if (params.category) queryParams.append("category", params.category);
       if (params.page) queryParams.append("page", params.page);
       if (params.limit) queryParams.append("limit", params.limit);
+      // If requesting instructor's courses, include instructorId
+      try {
+        const userStr = localStorage.getItem("user");
+        if (userStr && params.onlyMyCourses) {
+          const user = JSON.parse(userStr);
+          if (user && user.id) queryParams.append("instructorId", user.id);
+        }
+      } catch (e) {
+        // ignore parsing errors
+        console.log(e);
+      }
 
       const queryString = queryParams.toString();
       const url = `${API_URL}/courses${queryString ? `?${queryString}` : ""}`;
@@ -98,11 +109,11 @@ export const useCourses = (initialCourses = []) => {
 
     // Real API call
     try {
-      const response = await fetch(`${API_URL}/api/courses/${courseId}/enroll`, {
+      const response = await fetch(`${API_URL}/courses/${courseId}/enroll`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
         },
       });
 
@@ -142,11 +153,11 @@ export const useCourses = (initialCourses = []) => {
 
     // Real API call
     try {
-      const response = await fetch(`${API_URL}/api/courses/${courseId}/unsubscribe`, {
+      const response = await fetch(`${API_URL}/courses/${courseId}/unenroll`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
         },
       });
 

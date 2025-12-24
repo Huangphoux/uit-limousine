@@ -6,6 +6,7 @@ import ToastContainer from "../components/ToastContainer";
 import CourseDetailModal from "../components/CourseDetailModal";
 import { useCourses } from "../hooks/useCourses";
 import { useNotificationContext } from "../hooks/useNotificationContext";
+import { toast } from "sonner";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -16,7 +17,10 @@ const NewPage = () => {
   const [showModal, setShowModal] = useState(false);
   const [loadingCourseDetail, setLoadingCourseDetail] = useState(false);
   const [courseDetailError, setCourseDetailError] = useState(null);
-
+  const [isSearching, setIsSearching] = useState(false);
+  const [lastSearchTerm, setLastSearchTerm] = useState("");
+  const [enrolledCourseIds, setEnrolledCourseIds] = useState([]);
+  const token = localStorage.getItem("accessToken");
   // Use the custom hook for course management
   const {
     courses,
@@ -31,38 +35,41 @@ const NewPage = () => {
 
   // Use the custom hook for notifications
   const { notifications, addNotification } = useNotificationContext();
-
-  // Initialize filtered courses
-  useEffect(() => {
-    setFilteredCourses(courses);
-  }, [courses]);
-
   // Fetch courses from API on component mount
   useEffect(() => {
     fetchCourses();
   }, []);
 
-  // Debounced search effect - triggers 1 second after user stops typing
-  useEffect(() => {
-    const debounceTimer = setTimeout(() => {
-      if (searchTerm.trim() === "") {
-        // If search is empty, show all courses
-        setFilteredCourses(courses);
-      } else {
-        // Perform search after 1 second delay
-        const filtered = searchCourses(searchTerm, courses);
-        setFilteredCourses(filtered);
-      }
-    }, 1000);
-
-    // Cleanup: clear the timeout if user types again before 1 second
-    return () => clearTimeout(debounceTimer);
-  }, [searchTerm, courses, searchCourses]);
-
   const handleSearch = () => {
     const filtered = searchCourses(searchTerm, courses);
     setFilteredCourses(filtered);
   };
+  // ✅ THÊM: Search qua API
+  useEffect(() => {
+    // Nếu search term thay đổi, hiển thị loading ngay lập tức
+    if (searchTerm !== lastSearchTerm) {
+      setIsSearching(true);
+    }
+
+    const debounceTimer = setTimeout(async () => {
+      setLastSearchTerm(searchTerm);
+
+      try {
+        await fetchCourses({
+          search: searchTerm.trim() || undefined,
+          limit: 100,
+        });
+      } catch (err) {
+        console.error("Search error:", err);
+      } finally {
+        // Delay nhỏ để tránh flicker
+        setTimeout(() => {
+          setIsSearching(false);
+        }, 150);
+      }
+    }, 500);
+    return () => clearTimeout(debounceTimer);
+  }, [searchTerm]);
 
   const handleEnroll = async (courseId, course, type) => {
     if (type === "success") {
@@ -72,25 +79,28 @@ const NewPage = () => {
       }
       const result = await enrollInCourse(courseId);
       if (result.success) {
-        addNotification("success", course.title);
+        addNotification("success", `Enrolled in ${course.title}`);
         // Hook already updates courses, so just update filteredCourses to keep them in sync
-        setFilteredCourses((prevFiltered) =>
-          prevFiltered.map((c) => (c.id === courseId ? { ...c, enrolled: true } : c))
-        );
+        setCourses((prev) => prev.map((c) => (c.id === courseId ? { ...c, enrolled: true } : c)));
+
+        // Nếu Modal đang mở, cập nhật luôn object đang chọn
+        setSelectedCourse((prev) => ({ ...prev, enrolled: true }));
       } else {
-        addNotification("error", `Failed to enroll: ${result.error}`);
+        addNotification("error", `Enrollment failed: ${result.error}`);
       }
     } else if (type === "unsubscribe") {
       // Handle unsubscribe using the hook function
       const result = await unsubscribeFromCourse(courseId);
       if (result.success) {
-        // Hook already updates courses, so just update filteredCourses to keep them in sync
+        setEnrolledCourseIds((prev) => prev.filter((id) => id !== courseId));
+
+        setSelectedCourse((prev) => (prev ? { ...prev, enrolled: false } : null));
+
         setFilteredCourses((prevFiltered) =>
           prevFiltered.map((c) => (c.id === courseId ? { ...c, enrolled: false } : c))
         );
+
         addNotification("unsubscribe", course.title);
-      } else {
-        addNotification("error", `Failed to unsubscribe: ${result.error}`);
       }
     } else if (type === "payment") {
       // Handle payment confirmation - update isPaid status
@@ -114,9 +124,10 @@ const NewPage = () => {
     setSelectedCourse(null);
 
     try {
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("accessToken");
       const headers = {
         "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
       };
 
       if (token) {
@@ -136,14 +147,13 @@ const NewPage = () => {
 
       // Debug: Log the actual API response
       console.log("API Response:", result);
-
       // Check if we have a valid course object (API returns course directly, not wrapped in success/data)
       if (result && result.id) {
         // Map API response to the format expected by the modal
         const courseDetail = {
           id: result.id,
           title: result.title,
-          provider: result.instructor?.fullName || "Unknown Instructor",
+          provider: result.provider || "Stanford University",
           category: course.category || "General",
           description: result.description || result.shortDesc || "No description available",
           rating: result.rating || 0,
@@ -152,7 +162,7 @@ const NewPage = () => {
           duration: course.duration || "N/A",
           image: result.coverImage || course.image,
           enrolled: course.enrolled || false,
-          instructor: result.instructor?.fullName || "Unknown Instructor",
+          instructor: result.instructor?.name || "Unknown Instructor",
           price: result.price || 0,
           isPaid: course.isPaid || false,
           // Additional details from API
@@ -226,6 +236,32 @@ const NewPage = () => {
 
           .header-section {
             animation: fadeInUp 0.8s ease-out;
+          }
+            .course-item-container {
+            transition: all 0.4s ease-in-out;
+          }
+          .searching-overlay {
+            opacity: 1;
+            pointer-events: none;
+            filter: grayscale(0.5);
+          }
+          .skeleton-card {
+            background: #e9ecef;
+            height: 350px;
+            border-radius: 1rem;
+            position: relative;
+            overflow: hidden;
+          }
+          .skeleton-card::after {
+            content: "";
+            position: absolute;
+            top: 0; right: 0; bottom: 0; left: 0;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            animation: skeleton-wave 1.5s infinite;
+          }
+          @keyframes skeleton-wave {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
           }
 
           .search-section {
@@ -506,31 +542,42 @@ const NewPage = () => {
           </Row>
 
           {/* Courses Grid */}
-          <Row className="courses-grid">
-            {filteredCourses
-              .filter((course) => course && course.id)
-              .map((course, index) => (
-                <Col
-                  key={course.id}
-                  lg={4}
-                  md={6}
-                  className="mb-4"
-                  style={{
-                    animation: `fadeInUp 0.6s ease-out ${index * 0.1}s backwards`,
-                  }}
-                >
-                  <CourseCard
-                    course={course}
-                    onEnroll={handleEnroll}
-                    onCardClick={handleCardClick}
-                    darkTheme={true}
-                  />
-                </Col>
-              ))}
+          <Row
+            className={`courses-grid ${isSearching ? "searching-overlay" : ""}`}
+            style={{ transition: "opacity 0.3s" }}
+          >
+            {" "}
+            {loading && courses.length === 0
+              ? Array.from({ length: 6 }).map((_, i) => (
+                  <Col key={i} lg={4} md={6} className="mb-4">
+                    <div className="skeleton-card" />
+                  </Col>
+                ))
+              : // HIỂN THỊ DANH SÁCH KHÓA HỌC
+                courses
+                  .filter((course) => course && course.id)
+                  .map((course) => (
+                    <Col
+                      key={course.id}
+                      lg={4}
+                      md={6}
+                      className="mb-4 course-item-container"
+                      style={{
+                        animation: `fadeInUp 0.5s ease-out forwards`,
+                      }}
+                    >
+                      <CourseCard
+                        course={course}
+                        onEnroll={handleEnroll}
+                        onCardClick={handleCardClick}
+                        darkTheme={true}
+                      />
+                    </Col>
+                  ))}
           </Row>
 
           {/* No Results */}
-          {filteredCourses.length === 0 && !loading && (
+          {courses.length === 0 && !loading && (
             <Row className="mt-5 no-results">
               <Col className="text-center py-5">
                 <div
@@ -563,6 +610,17 @@ const NewPage = () => {
                 </p>
               </Col>
             </Row>
+          )}
+          {isSearching && courses.length > 0 && (
+            <div className="text-center mt-3">
+              <Spinner animation="grow" size="sm" variant="primary" />
+              <span className="ms-2 text-muted">Updating results...</span>
+            </div>
+          )}
+
+          {/* No Results - Chỉ hiện khi thực sự không còn gì và không đang loading */}
+          {courses.length === 0 && !loading && !isSearching && (
+            <Row className="mt-5 no-results">...</Row>
           )}
         </Container>
 

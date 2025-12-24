@@ -4,7 +4,7 @@ import Header from "../components/Header";
 import useNotifications from "../hooks/useNotifications";
 import NotificationPanel from "../components/NotificationPanel";
 
-const NewPageLayout = () => {
+const NewPageLayout = ({ children }) => {
   const notificationProps = useNotifications();
 
   return (
@@ -14,7 +14,13 @@ const NewPageLayout = () => {
         onBellClick={notificationProps.openPanel}
       />
       <Container className="mt-5 pt-5">
-        <Outlet context={notificationProps} />
+        {children ? (
+          // Render children when NewPageLayout is used as a wrapper
+          children
+        ) : (
+          // Default behavior for route nesting
+          <Outlet context={notificationProps} />
+        )}
       </Container>
 
       {/* Notification Panel is now managed by the layout */}
