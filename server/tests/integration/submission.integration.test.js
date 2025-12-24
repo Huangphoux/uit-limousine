@@ -100,7 +100,7 @@ describe('Submit Assignment API', () => {
       .set('Authorization', `Bearer ${authToken}`)
       .field('studentId', data.studentId)
       .field('content', data.content || '');
-      .send(data);
+      // .send(data);
 
   it('should submit with file successfully', async () => {
     const newAssignment = await prisma.assignment.create({
