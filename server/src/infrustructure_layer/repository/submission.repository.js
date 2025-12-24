@@ -1,17 +1,12 @@
-import prisma from '../../lib/prisma.js';
+import { PrismaClient } from '@prisma/client';
+const prisma = new PrismaClient();
 
 export default class SubmissionRepository {
   async create(submissionData) {
+    
     try {
       const result = await prisma.submission.create({
-        data: {
-          assignmentId: submissionData.assignmentId,
-          studentId: submissionData.studentId,
-          content: submissionData.content,
-          fileUrl: submissionData.fileUrl,
-          status: submissionData.status,
-          submittedAt: submissionData.submittedAt
-        },
+        data: submissionData,
         include: {
           assignment: true,
           student: {
@@ -19,22 +14,23 @@ export default class SubmissionRepository {
           }
         }
       });
-
+      
       return result;
     } catch (error) {
-      
-      throw error('failed!');
+      console.error('[SubmissionRepo] Create error:', error.message);
+      throw error;
     }
   }
-n
+
   async findByAssignmentAndStudent(assignmentId, studentId) {
+    
     const result = await prisma.submission.findFirst({
       where: {
         assignmentId,
         studentId
       }
     });
-
+    
     return result;
   }
 
