@@ -22,6 +22,18 @@ export const outputSchema = z.object({
     total: z.number().int().min(1),
     page: z.number().int().min(1).optional(),
     totalPages: z.number().int().min(1).optional(),
+    stats: z.object({
+        total: z.number().int().min(0),
+        byRole: z.object({
+            LEARNER: z.number().int().min(0),
+            INSTRUCTOR: z.number().int().min(0),
+            ADMIN: z.number().int().min(0),
+        }),
+        byStatus: z.object({
+            ACTIVE: z.number().int().min(0),
+            INACTIVE: z.number().int().min(0),
+        }),
+    }).optional(),
 })
 
 export class GetUsersUsecase {
@@ -38,17 +50,24 @@ export class GetUsersUsecase {
         log.info("Task started");
 
         try {
-            const result = await this.userReadAccessor.findUsers({
-                role: parsedInput.role,
-                page: parsedInput.page,
-                status: parsedInput.status,
-                limit: parsedInput.limit,
-                select: covertShemaToSelect(outputSchema.shape.users.element.shape),
-            });
+            // Get paginated users and stats in parallel
+            const [result, stats] = await Promise.all([
+                this.userReadAccessor.findUsers({
+                    role: parsedInput.role,
+                    page: parsedInput.page,
+                    status: parsedInput.status,
+                    limit: parsedInput.limit,
+                    select: covertShemaToSelect(outputSchema.shape.users.element.shape),
+                }),
+                this.userReadAccessor.getUserStats()
+            ]);
 
-            const output = outputSchema.parse(result);
-            output.page = parsedInput.page;
-            output.totalPages = Math.ceil(output.total / parsedInput.limit);
+            const output = outputSchema.parse({
+                ...result,
+                page: parsedInput.page,
+                totalPages: Math.ceil(result.total / parsedInput.limit),
+                stats: stats
+            });
 
             log.info("Task completed");
             return output;

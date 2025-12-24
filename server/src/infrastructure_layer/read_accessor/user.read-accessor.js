@@ -58,6 +58,53 @@ export class UserReadAccessor {
         });
     }
 
+    // Get user statistics (count by role and status)
+    async getUserStats() {
+        // Get all users count first
+        const totalCount = await this.prisma.user.count();
+
+        // Count by role using groupBy
+        const roleStats = await this.prisma.user.findMany({
+            select: {
+                roles: {
+                    select: {
+                        role: { select: { name: true } }
+                    }
+                }
+            }
+        });
+
+        // Process role counts (a user can have multiple roles)
+        const roleCounts = {
+            LEARNER: 0,
+            INSTRUCTOR: 0,
+            ADMIN: 0
+        };
+
+        roleStats.forEach(user => {
+            user.roles?.forEach(r => {
+                const roleName = r.role.name;
+                if (roleCounts.hasOwnProperty(roleName)) {
+                    roleCounts[roleName]++;
+                }
+            });
+        });
+
+        // Count by status
+        const [activeCount, inactiveCount] = await Promise.all([
+            this.prisma.user.count({ where: { status: "ACTIVE" } }),
+            this.prisma.user.count({ where: { status: "INACTIVE" } })
+        ]);
+
+        return {
+            total: totalCount,
+            byRole: roleCounts,
+            byStatus: {
+                ACTIVE: activeCount,
+                INACTIVE: inactiveCount
+            }
+        };
+    }
     async isInstructor(id) {
         const count = await this.prisma.user.count({
             where: {

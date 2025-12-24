@@ -36,6 +36,18 @@ const UserManagementView = () => {
     page: 1,
     totalPages: 1,
   });
+  const [userStats, setUserStats] = useState({
+    total: 0,
+    byRole: {
+      LEARNER: 0,
+      INSTRUCTOR: 0,
+      ADMIN: 0,
+    },
+    byStatus: {
+      ACTIVE: 0,
+      INACTIVE: 0,
+    },
+  });
 
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState("All");
@@ -95,6 +107,10 @@ const UserManagementView = () => {
           page: result.data.page,
           totalPages: result.data.totalPages,
         });
+        // Set stats from API if available
+        if (result.data.stats) {
+          setUserStats(result.data.stats);
+        }
       }
     } catch (err) {
       setError(err.message);
@@ -158,31 +174,31 @@ const UserManagementView = () => {
     },
     {
       label: "Learner",
-      count: users.filter((u) => u.roles?.includes("LEARNER")).length,
+      count: userStats.byRole?.LEARNER || 0,
       icon: <FaUsers className="text-white" />,
       bg: "rgba(232, 47, 161, 0.7)",
     },
     {
       label: "Instructor",
-      count: users.filter((u) => u.roles?.includes("INSTRUCTOR")).length,
+      count: userStats.byRole?.INSTRUCTOR || 0,
       icon: <FaUserGraduate className="text-white" />,
       bg: "#28a745",
     },
     {
       label: "Admin",
-      count: users.filter((u) => u.roles?.includes("ADMIN")).length,
+      count: userStats.byRole?.ADMIN || 0,
       icon: <FaUserShield className="text-white" />,
       bg: "orange",
     },
     {
       label: "Active",
-      count: users.filter((u) => u.status === "ACTIVE").length,
+      count: userStats.byStatus?.ACTIVE || 0,
       icon: <FaCheckCircle className="text-white" />,
       bg: "#17a2b8",
     },
     {
       label: "Inactive",
-      count: users.filter((u) => u.status === "INACTIVE").length,
+      count: userStats.byStatus?.INACTIVE || 0,
       icon: <FaTimesCircle className="text-white" />,
       bg: "#dc3545",
     },
