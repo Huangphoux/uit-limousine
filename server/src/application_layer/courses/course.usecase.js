@@ -8,19 +8,33 @@ export default class CourseUseCase {
     this.submissionRepo = new SubmissionRepository();
     this.assignmentRepo = new AssignmentRepository();
     this.enrollmentRepo = new EnrollmentRepository();
+    this.enrollmentRepo = new EnrollmentRepository();
   }
 
-  async submitAssignment(assignmentId, studentId, { content, fileUrl }) {
+  async submitAssignment(assignmentId, studentId, fileInfo) {
     const assignment = await this.assignmentRepo.findById(assignmentId);
-    if (!assignment) throw new Error('Assignment not found');
 
-    const enrollment = await this.enrollmentRepo.findByUserAndCourse(studentId, assignment.courseId);
+    if (!assignment) {
+      throw new Error('Assignment not found');
+    }
+
+    const enrollment = await this.enrollmentRepo.findByUserAndCourse(
+      studentId,
+      assignment.courseId
+    );
+
     if (!enrollment || enrollment.status !== 'ENROLLED') {
       throw new Error('You are not enrolled in this course');
     }
 
-    const existingSubmission = await this.submissionRepo.findByAssignmentAndStudent(assignmentId, studentId);
-    if (existingSubmission) throw new Error('You have already submitted this assignment');
+    const existingSubmission = await this.submissionRepo.findByAssignmentAndStudent(
+      assignmentId,
+      studentId
+    );
+
+    if (existingSubmission) {
+      throw new Error('You have already submitted this assignment');
+    }
 
     let status = 'SUBMITTED';
     if (assignment.dueDate && new Date() > new Date(assignment.dueDate)) {
@@ -30,8 +44,8 @@ export default class CourseUseCase {
     const submissionData = {
       assignmentId,
       studentId,
-      content: content || null,
-      fileUrl: fileUrl || null,
+      content: fileInfo.content || null,
+      fileUrl: fileInfo.fileUrl || null,
       status,
       submittedAt: new Date()
     };

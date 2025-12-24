@@ -25,7 +25,7 @@ router.get(
   authenticationMiddleware,
   controller(courseMaterialsQueryUsecase)
 );
-router.post("/assignments/:assignmentId/submit", authenticationMiddleware, submitAssignment);
+router.post("/assignments/:assignmentId/submit", authenticationMiddleware, submissionUploadMiddleware, submitAssignment);
 router.get("/assignments/:assignmentId/submission", authenticationMiddleware, getSubmission);
 router.put("/:courseId", authenticationMiddleware, controller(modifyCourseUsecase));
 // Router

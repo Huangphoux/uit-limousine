@@ -1,16 +1,16 @@
 import CourseUseCase from '../../../application_layer/courses/course.usecase.js';
 import SubmissionMapper from '../../../infrastructure_layer/mapper/submission.mapper.js';
+import FileStorageService from '../../../infrastructure_layer/storage/file-storage.service.js';
+import { config } from '../../../config.js';
 
 const courseUseCase = new CourseUseCase();
+const fileStorageService = new FileStorageService(config.upload.uploadDir);
 
 export const submitAssignment = async (req, res) => {
-
-
   try {
     const { assignmentId } = req.params;
-    const { content, fileUrl } = req.body;
-    const studentId = req.body.authId;
-
+    const { content, studentId } = req.body;
+    const file = req.file;
 
     if (!studentId) {
       return res.status(400).json({
@@ -19,30 +19,40 @@ export const submitAssignment = async (req, res) => {
       });
     }
 
-    if (!content && !fileUrl) {
+    if (!content && !file) {
       return res.status(400).json({
         success: false,
         message: 'Please provide either content or file'
       });
     }
 
-
+    let fileData = null;
+    if (file) {
+      fileData = await fileStorageService.saveSubmissionFile(
+        file,
+        studentId,
+        assignmentId
+      );
+    }
 
     const submission = await courseUseCase.submitAssignment(
       assignmentId,
       studentId,
-      { content, fileUrl }
+      {
+        content: content || null,
+        fileUrl: fileData ? fileData.fileUrl : null,
+        fileName: fileData ? fileData.fileName : null,
+        fileSize: fileData ? fileData.fileSize : null,
+        mimeType: fileData ? fileData.mimeType : null
+      }
     );
-
-
 
     const submissionDTO = SubmissionMapper.toDTO(submission);
 
-
     return res.status(201).json({
       success: true,
-      message: submission.status === 'LATE'
-        ? 'Assignment submitted successfully (Late submission)'
+      message: submission.status === 'LATE' 
+        ? 'Assignment submitted successfully (Late submission)' 
         : 'Assignment submitted successfully',
       data: submissionDTO
     });

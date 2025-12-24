@@ -292,8 +292,8 @@ async function main() {
   console.log("8) Creating enrollments...");
   await prisma.enrollment.createMany({
     data: [
-      { userId: learner1.id, courseId: course.id, status: "ENROLLED", isPaid: false },
-      { userId: learner2.id, courseId: course.id, status: "PENDING", isPaid: false },
+      { userId: learner1.id, courseId: course.id, status: 'ENROLLED', isPaid: false },
+      { userId: learner2.id, courseId: course.id, status: 'ENROLLED', isPaid: false },
     ],
   });
 
