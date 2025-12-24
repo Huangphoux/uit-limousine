@@ -84,7 +84,7 @@ export class UserReadAccessor {
         roleStats.forEach(user => {
             user.roles?.forEach(r => {
                 const roleName = r.role.name;
-                if (roleCounts.hasOwnProperty(roleName)) {
+                if (Object.hasOwn(roleCounts, roleName)) {
                     roleCounts[roleName]++;
                 }
             });
