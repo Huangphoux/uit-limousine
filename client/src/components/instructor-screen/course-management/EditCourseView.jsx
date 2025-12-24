@@ -135,7 +135,7 @@ const EditCourseView = () => {
         language: course.language,
         price: course.price,
         rating: course.rating,
-        enrollmentCount: course.students || course.enrollmentCount,
+        enrollmentCount: course.enrolledStudents || course.enrollmentCount || course.students || 0,
       });
     } catch (error) {
       console.error("Error fetching course:", error);

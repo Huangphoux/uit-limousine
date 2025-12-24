@@ -249,7 +249,7 @@ const CourseCard = ({ course, onCardClick }) => {
                 {course.rating}
               </span>
               <span className="small" style={{ color: textColors.students, fontSize: "0.85rem" }}>
-                👥 {(course.students || course.enrollmentCount || 0).toLocaleString()}
+                👥 {(course.enrolledStudents || course.enrollmentCount || course.students || 0).toLocaleString()}
               </span>
             </div>
 
