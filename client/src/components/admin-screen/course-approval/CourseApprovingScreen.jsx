@@ -65,12 +65,6 @@ const CourseApprovingScreen = ({
       icon: <FaClock className="text-white" />,
       bgColor: "#FFA500",
     },
-    {
-      title: "Denied",
-      value: courseApprovalStats.deniedCourses.toString(),
-      icon: <FaTimes className="text-white" />,
-      bgColor: "#DC3545",
-    },
   ];
 
   return (
@@ -78,13 +72,14 @@ const CourseApprovingScreen = ({
       {/* Stats Cards */}
       <Row className="mb-2 stats-section">
         {courseApprovalStatsCards.map((card, index) => (
-          <Col md={4} key={index} className="mb-3">
+          <Col md={6} key={index} className="mb-3">
             <Card className="h-100 border-0 shadow-sm" style={{ backgroundColor: "#BBEDF9" }}>
               <Card.Body className="p-4">
                 <div className="d-flex justify-content-between align-items-start">
-                  <div>
+                  <div style={{ flex: 1 }}>
                     <h6 className="text-black mb-2">{card.title}</h6>
                     <h2 className="mb-0 fw-bold text-black">{card.value}</h2>
+                    <div className="text-muted mt-2" style={{ fontSize: "15px" }}>{card.description}</div>
                   </div>
                   <div
                     className="rounded p-3 d-flex align-items-center justify-content-center"
@@ -144,7 +139,7 @@ const CourseApprovingScreen = ({
         </Col>
         <Col md={4}>
           <div className="d-flex gap-2 justify-content-end">
-            {["All", "Waiting", "Denied"].map((filter) => (
+            {["All", "Waiting"].map((filter) => (
               <Button
                 key={filter}
                 variant={statusFilter === filter ? "dark" : "outline-secondary"}

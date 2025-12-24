@@ -60,6 +60,7 @@ export class SearchCoursesUseCase {
         thumbnail: courseEntity.coverImg,
         rating: courseEntity.rating || 0,
         enrollmentCount: courseEntity.enrollmentCount || 0,
+        enrolledStudents: courseEntity.enrollmentCount || 0,
         price: courseEntity.price || 0,
         createdAt: courseEntity.createdAt,
         enrolled: courseEntity.isEnrolledByCurrentUser || false,

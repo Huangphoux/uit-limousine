@@ -121,16 +121,31 @@ export class CourseRepository {
     });
 
     // Trả về dữ liệu đã được map thêm field isEnrolled
-    return result.map((course) => {
+    // Nếu là instructor view (instructorId được truyền), lấy thêm enrollmentCount
+    return await Promise.all(result.map(async (course) => {
       const courseEntity = CourseEntity.rehydrate(course);
 
       // Gán thêm thuộc tính động để UseCase có thể dùng
-      // (Hoặc nếu CourseEntity của bạn có hàm toJSON, hãy thêm vào đó)
-      return {
+      const mapped = {
         ...courseEntity,
         isEnrolledByCurrentUser: course.enrollments?.length > 0,
       };
-    });
+
+      // Nếu là instructor view, lấy tổng số enrolled students
+      if (instructorId) {
+        const enrollmentCount = await this.prisma.enrollment.count({
+          where: {
+            courseId: course.id,
+            status: "ENROLLED",
+          },
+        });
+        mapped.enrollmentCount = enrollmentCount;
+      } else {
+        mapped.enrollmentCount = 0;
+      }
+
+      return mapped;
+    }));
   }
 
   /**
