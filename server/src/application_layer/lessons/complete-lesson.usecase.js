@@ -9,7 +9,8 @@ const inputSchema = z.object({
 
 const outputSchema = z.object({
     lessonId: z.string(),
-    completedAt: z.date(),
+    completedAt: z.date().nullable(),
+    progress: z.number(),
     courseProgress: z.number(),
 })
 
@@ -24,7 +25,7 @@ export class CompleteLessonUseCase {
     async execute(input) {
         const parsedInput = inputSchema.parse(input);
         const log = logger.child({
-            task: "Completing lesson",
+            task: "Toggling lesson complete status",
             studentId: parsedInput.authId,
         });
         log.info("Task started");
@@ -43,13 +44,20 @@ export class CompleteLessonUseCase {
 
         let lessonProgress = await this.lessonProgressRepository.findByUserAndLessonId(parsedInput.authId, parsedInput.lessonId);
         let savedLessonProgress = null;
+        
         if (!lessonProgress) {
+            // Lesson not started yet - create and mark as complete
             lessonProgress = LessonProgressEntity.create({ userId: parsedInput.authId, lessonId: parsedInput.lessonId });
             lessonProgress.complete();
             savedLessonProgress = await this.lessonProgressRepository.add(lessonProgress);
         }
         else {
-            lessonProgress.complete();
+            // Toggle: if complete, mark undone; if not complete, mark done
+            if (lessonProgress.progress >= 1.0) {
+                lessonProgress.uncomplete();
+            } else {
+                lessonProgress.complete();
+            }
             savedLessonProgress = await this.lessonProgressRepository.save(lessonProgress);
         }
 
@@ -65,6 +73,7 @@ export class CompleteLessonUseCase {
         return outputSchema.parse({
             lessonId: savedLessonProgress.lessonId,
             completedAt: savedLessonProgress.completedAt,
+            progress: savedLessonProgress.progress,
             courseProgress,
         });
     }
