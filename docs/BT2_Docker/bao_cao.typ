@@ -30,61 +30,43 @@ Bài tập thực hành lần 2",
 #show link: underline
 
 
-= Phần A: Phân tích source code
-== Loại ứng dụng
-- Ứng dụng web Full Stack
-== Công nghệ sử dụng
-- Ngôn ngữ lập trình: JavaScript
-- Framework:
-  - Front End: #link("https://react.dev/")[React]
-  - Back End: #link("https://expressjs.com/")[Express]
+= Phân tích source code
+#include "phan_tich_source_code.typ"
 
-== Cách chạy ứng dụng không sử dụng Docker
-- Tải về #link("https://github.com/Huangphoux/uit-limousine/archive/refs/heads/main.zip")[source code] của đồ án
+= Docker hoá ứng dụng
+#include "dockerfiles.typ"
 
-=== Dành cho người dùng Windows
-- Truy cập thư mục `scripts`
-- Nhấn đúp chuột để chạy các script sau
-  - `0_download_node.bat`: Tải NVM, Node Version Manager, trình quản lý phiên bản của Node trên Windows.
-  - `1_install_node.bat`: Tải Node phiên bản 22.18.0 (LTS)
-  - `2_install_dependencies.bat`: Cài đặt các package phụ thuộc mà client, server và hệ thống cần để vận hành.
-  - `4_dev.bat`: Cho client lẫn server chạy cùng lúc
+// 1 đứa sửa và chạy Dockerfile trong client sao cho không lỗi rồi báo cho người còn lại
+// 1 đứa trình bày trong báo cáo: giải thích từng dòng lệnh trong Dockerfile, chụp hình kết quả
 
-== Port mà ứng dụng sử dụng
-== Ứng dụng có sử dụng
-- Database hay không?
-- File upload hay không?
+// 1 đứa sửa và chạy Dockerfile trong server sao cho không lỗi rồi báo cho người còn lại
+// 1 đứa trình bày trong báo cáo: giải thích từng dòng lệnh trong Dockerfile, chụp hình kết quả
 
-= PHẦN B: DOCKER HÓA ỨNG DỤNG
-5.1. Tạo Dockerfile
-• Tạo file Dockerfile tại thư mục gốc của project
-• Dockerfile phải:
-o Cài đặt môi trường chạy phù hợp
-o Copy source code
-o Expose port cần thiết
-o Chạy được ứng dụng
-o Không hard-code thông tin nhạy cảm (mật khẩu, token).
-5.2. Build Docker image
-• Thực hiện build image từ Dockerfile
-• Ghi rõ:
-o Lệnh build
-o Tên image đã tạo
-5.3. Chạy Docker container
-• Chạy container từ image đã build
-• Mapping port để có thể truy cập từ trình duyệt
-• Kiểm tra ứng dụng hoạt động đúng
-• Bắt buộc chụp màn hình ứng dụng đang chạy
+= Deploy bằng Docker Compose
+#include "docker-compose.typ"
 
-= PHẦN C: DEPLOY BẰNG DOCKER COMPOSE
-• Tạo file docker-compose.yml
-• Sử dụng Docker Compose để deploy:
-o Ứng dụng
-o (Nếu có) database hoặc service phụ trợ
-• Hệ thống phải chạy được chỉ với một lệnh duy nhất: docker-compose up -d
+// 1 đứa sửa và chạy Dockerfile trong client sao cho không lỗi rồi báo cho người còn lại
+// 1 đứa trình bày trong báo cáo: giải thích từng dòng lệnh trong Dockerfile, chụp hình kết quả
 
-= PHẦN D: BÁO CÁO VÀ ĐÁNH GIÁ ĐÓNG GÓP CÁ NHÂN
-5.4. Báo cáo nhóm
-Báo cáo nhóm phải trình bày:
-• Phân tích source code
-• Quá trình Docker hóa và deploy
-• Kết quả đạt được (kèm hình ảnh minh chứng)
+= Bản tự đánh giá và đóng góp cá nhân
+== Trương Hoàng Phúc 23521224
+#include "phuc.typ"
+
+== Bùi Văn Tùng 23521736
+#include "tung.typ"
+
+== Vũ Quốc Huy 23520657
+#include "huy.typ"
+
+== Tạ Hoàng Hiệp 23520466
+#include "hiep.typ"
+
+== Đỗ Đình Khang 23520682
+#include "khang.typ"
+
+== Nguyễn Văn Hào 23520448
+#include "hao.typ"
+
+== Dương Quốc Hưng 23520557
+#include "hung.typ"
+
