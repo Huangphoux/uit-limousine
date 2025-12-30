@@ -23,7 +23,7 @@
 #image("../minh_chung/DockerServer3.png")
   - FROM node:20 - Sử dụng image Node.js phiên bản 20 làm môi trường cơ bản.
   - WORKDIR /app - Đặt thư mục làm việc trong container là /app.
-  - COPY package*.json ./ - Copy các file package.json và package-lock.json từ thư mục gốc của dự án vào thư mục /app trong container.
+  - COPY package\*.json ./ - Copy các file package.json và package-lock.json từ thư mục gốc của dự án vào thư mục /app trong container.
   - COPY prisma ./prisma - Copy thư mục prisma từ dự án vào container.
   - RUN npm install - Cài đặt tất cả các dependencies được liệt kê trong package.json.
   - COPY . .  - Copy toàn bộ mã nguồn từ thư mục gốc của dự án vào container.
