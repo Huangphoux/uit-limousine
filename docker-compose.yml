@@ -1,38 +1,18 @@
 services:
-  database:
-    container_name: database
-    image: postgres:latest
-    environment:
-      POSTGRES_USER: pern_db
-      POSTGRES_PASSWORD: root
-    volumes:
-      - ./database/docker_postgres_init.sql:/docker-entrypoint-initdb.d/docker_postgres_init.sql
-    ports:
-      - "5432:5432"
-
-  server:
-    container_name: server
-    build:
-      context: ./server
-      dockerfile: Dockerfile
+  lms_server:
+    container_name: lms_server
+    build: ./server
     ports:
       - "3000:3000"
     volumes:
       - ./server:/app
       - /app/node_modules
-    environment:
-      - NODE_ENV=development
-      - CHOKIDAR_USEPOLLING=true
-      - CHOKIDAR_INTERVAL=1000
-    command: npm run dev
-    depends_on:
-      - database
+    env_file:
+      - ./server/.env
 
-  client:
-    container_name: client
-    build:
-      context: ./client
-      dockerfile: Dockerfile
+  lms_client:
+    container_name: lms_client
+    build: ./client
     ports:
       - "5173:5173"
     volumes:
@@ -43,6 +23,5 @@ services:
       - CHOKIDAR_USEPOLLING=true
       - CHOKIDAR_INTERVAL=1000
       - VITE_FORCE_HMR=true
-    command: npm run dev -- --host 0.0.0.0 --force
     depends_on:
-      - server
+      - lms_server
