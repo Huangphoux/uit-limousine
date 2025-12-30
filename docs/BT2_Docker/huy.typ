@@ -1,15 +1,33 @@
 #set heading(offset: 2)
 
-- Mỗi sinh viên nộp 01 bản tự đánh giá cá nhân, độ dài khoảng ½ trang A4
-
 = Nội dung bản tự đánh giá cá nhân
-- Phần công việc cá nhân đã trực tiếp thực hiện trong nhóm
-(ví dụ: viết Dockerfile, cấu hình docker-compose, build image, deploy ứng dụng,
-kiểm thử, viết README, …)
-- Phần kiến thức cá nhân nắm rõ nhất trong bài thực hành
-(ví dụ: Docker image và container, port mapping, Docker Compose, quy trình
-deploy, …)
-- Một khó khăn kỹ thuật đã gặp trong quá trình thực hiện và cách giải quyết
-- Tự đánh giá mức độ đóng góp của bản thân trong nhóm (%)
-- Bản tự đánh giá phải trình bày trung thực, rõ ràng, có nội dung kỹ thuật cụ thể.
-- Giảng viên có thể sử dụng nội dung này để xem xét điều chỉnh điểm cá nhân khi cần thiết.
+= Phần công việc cá nhân đã trực tiếp thực hiện trong nhóm
+- Build Docker image cho server với lệnh:
+  ```bash
+  docker build -t uit-limousine-server .
+  ```
+- Chạy container từ image đã build:
+  ```bash
+  docker run -d -p 8080:3000 --name uit-limousine-server uit-limousine-server
+  ```
+- Kiểm tra ứng dụng hoạt động đúng trên localhost (http://localhost:8080).
+- Đính kèm hình ảnh minh chứng vào báo cáo.
+
+= Phần kiến thức cá nhân nắm rõ nhất trong bài thực hành
+- Nắm được khái niệm và ứng dụng của Docker.
+- Docker image và container:
+  - Hiểu cách tạo image từ Dockerfile.
+  - Hiểu cách chạy container từ image.
+- Quy trình deploy:
+  - Từ viết Dockerfile, build image, chạy container, đến kiểm tra ứng dụng.
+
+= Một khó khăn kỹ thuật đã gặp trong quá trình thực hiện và cách giải quyết
+- Khó khăn: Lỗi không nhận diện lệnh `docker` do Docker chưa được cài đặt hoặc chưa thêm vào `PATH`.
+- Cách giải quyết:
+  - Cài đặt Docker Desktop từ trang chính thức.
+  - Thêm đường dẫn Docker vào biến môi trường `PATH`.
+  - Kiểm tra lại bằng lệnh `docker --version`.
+
+= Tự đánh giá mức độ đóng góp của bản thân trong nhóm
+- Mức độ đóng góp: 10%
+- Đã hoàn thành công việc liên quan đến Dockerfile và kiểm chứng ứng dụng.
