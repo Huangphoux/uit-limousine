@@ -1,15 +1,20 @@
 #set heading(offset: 2)
 
-- Mỗi sinh viên nộp 01 bản tự đánh giá cá nhân, độ dài khoảng ½ trang A4
+= Công việc cá nhân
+- Thiết lập file `docker-compose.yml` để quản lý đồng thời hai service: Client và Server
+- Cấu hình Volume và biến môi trường (`CHOKIDAR_USEPOLLING`) để kích hoạt Hot Reload cho Frontend
+- Build và chạy hệ thống bằng lệnh: `docker-compose up -d --build`
+- Kiểm tra trạng thái container qua `docker ps` và xác nhận web chạy ổn định trên localhost
 
-= Nội dung bản tự đánh giá cá nhân
-- Phần công việc cá nhân đã trực tiếp thực hiện trong nhóm
-(ví dụ: viết Dockerfile, cấu hình docker-compose, build image, deploy ứng dụng,
-kiểm thử, viết README, …)
-- Phần kiến thức cá nhân nắm rõ nhất trong bài thực hành
-(ví dụ: Docker image và container, port mapping, Docker Compose, quy trình
-deploy, …)
-- Một khó khăn kỹ thuật đã gặp trong quá trình thực hiện và cách giải quyết
-- Tự đánh giá mức độ đóng góp của bản thân trong nhóm (%)
-- Bản tự đánh giá phải trình bày trung thực, rõ ràng, có nội dung kỹ thuật cụ thể.
-- Giảng viên có thể sử dụng nội dung này để xem xét điều chỉnh điểm cá nhân khi cần thiết.
+= Kiến thức nắm rõ
+- Hiểu rõ cấu trúc Docker Compose để điều phối nhiều container cùng lúc
+- Nắm vững cơ chế Volume Mapping để đồng bộ mã nguồn giữa máy host và container
+- Biết cách sử dụng Anonymous Volume để tránh xung đột thư mục `node_modules`
+- Hiểu cách debug lỗi cơ bản thông qua log của container
+
+= Khó khăn gặp phải
+- Gặp lỗi `EADDRINUSE: address already in use` do cổng 3000 bị chiếm dụng bởi tiến trình chạy ngầm
+- Giải quyết bằng cách tắt các tiến trình Node.js đang chạy local hoặc dùng `docker-compose down` để giải phóng tài nguyên trước khi khởi động lại
+
+= Mức độ đóng góp
+- 25% - Chịu trách nhiệm xây dựng file Docker Compose hoàn chỉnh, đảm bảo môi trường phát triển (Dev Environment) chạy đồng bộ cho cả Client và Server
