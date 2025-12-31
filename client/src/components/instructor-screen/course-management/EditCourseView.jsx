@@ -513,15 +513,54 @@ const EditCourseView = () => {
   };
 
   // Handle file upload
+  const lessonFilesRef = useRef({}); // key = lessonId, value = array of File objects
+
   const handleFileUpload = (e) => {
     const files = Array.from(e.target.files);
-    handleLessonFormChange("files", [...lessonForm.files, ...files]);
+    if (!lessonFilesRef.current[selectedLesson.lessonId]) {
+      lessonFilesRef.current[selectedLesson.lessonId] = [];
+    }
+    lessonFilesRef.current[selectedLesson.lessonId].push(...files);
+
+    // Update state with metadata only (for UI)
+    handleLessonFormChange("files", [
+      ...(lessonForm.files || []),
+      ...files.map((file) => ({
+        filename: file.name,
+        mimeType: file.type,
+        id: undefined,
+        lessonId: selectedLesson.lessonId,
+      })),
+    ]);
   };
 
   // Remove file
   const handleRemoveFile = (index) => {
     const newFiles = lessonForm.files.filter((_, i) => i !== index);
     handleLessonFormChange("files", newFiles);
+  };
+
+  const uploadLessonFiles = async (lessonId, files) => {
+    const token = localStorage.getItem("accessToken");
+    const formData = new FormData();
+
+    files.forEach((file) => {
+      formData.append("files", file, file.name);
+    });
+
+    const response = await fetch(`${API_URL}/lessons/${lessonId}/resources`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to upload files");
+    }
+
+    return response.json(); // returns uploaded file info (id, url, etc.)
   };
 
   // Get current module and lesson info for navigation
@@ -762,6 +801,16 @@ const EditCourseView = () => {
         const errorMessage =
           data.data || data.error?.message || data.message || "Update course failed";
         throw new Error(errorMessage);
+      }
+
+      for (const module of course.modules || []) {
+        console.log(module);
+        for (const lesson of module.lessons || []) {
+          const realFiles = lessonFilesRef.current[lesson.id] || [];
+          if (realFiles.length > 0) {
+            await uploadLessonFiles(lesson.id, realFiles);
+          }
+        }
       }
 
       toast.success("Course updated successfully!");

@@ -1,7 +1,8 @@
 import { logger } from "../../utils/logger.js";
 import { CourseEntity, courseSchema } from "../../domain_layer/course/course.entity.js";
-import { buildQuery } from "../../utils/query-builder.js";
 import { toPersistence } from "../../domain_layer/domain_service/factory.js";
+import { ModuleMapper } from "../mapper/module.mapper.js";
+import { CourseMapper } from "../mapper/course.mapper.js";
 
 export class CourseRepository {
   constructor(prisma) {
@@ -105,14 +106,14 @@ export class CourseRepository {
         // --- THÊM LOGIC CHECK ENROLL Ở ĐÂY ---
         enrollments: currentUserId
           ? {
-              where: {
-                userId: currentUserId,
-                status: "ENROLLED",
-              },
-              select: {
-                id: true, // Chỉ cần lấy id để biết có tồn tại hay không
-              },
-            }
+            where: {
+              userId: currentUserId,
+              status: "ENROLLED",
+            },
+            select: {
+              id: true, // Chỉ cần lấy id để biết có tồn tại hay không
+            },
+          }
           : false,
       },
       orderBy: {
@@ -369,5 +370,77 @@ export class CourseRepository {
     });
   }
 
-  static baseQuery = buildQuery(courseSchema);
+  async getById(id) {
+    const raw = await this.prisma.course.findUnique({
+      where: { id },
+      select: CourseRepository.baseQuery,
+    });
+
+    return CourseEntity.rehydrate(raw);
+  }
+
+  async smartSave(course) {
+    const existingModules = await this.prisma.module.findMany({
+      where: { courseId: course.id },
+      select: { id: true },
+    });
+
+    const existingModuleIds = existingModules.map(m => m.id);
+    const currentModuleIds = new Set(course.modules.map(m => m.id).filter(Boolean));
+
+    const deleteModuleIds = existingModuleIds.filter(id => !currentModuleIds.has(id));
+    const newModules = course.modules.filter(m => !m.id);
+    const updatedModules = course.modules.filter(m => m.id);
+
+    await this.prisma.$transaction([
+      this.prisma.course.update({
+        where: { id: course.id },
+        data: CourseMapper.toPersistence(course),
+      }),
+      this.prisma.module.deleteMany({
+        where: { id: { in: deleteModuleIds } }
+      }),
+      this.prisma.module.createMany({
+        data: newModules.map(ModuleMapper.toPersistence),
+      }),
+      ...updatedModules.map(m => this.prisma.module.update({
+        where: { id: m.id },
+        data: ModuleMapper.toPersistence(m),
+      }))
+    ])
+  }
+
+  async atomicSave(entity) {
+    const raw = await this.prisma.course.update({
+      where: { id: entity.id },
+      data: CourseMapper.toPersistence(entity),
+      select: CourseRepository.baseQuery,
+    });
+
+    return CourseMapper.toDomain(entity);
+  }
+
+  static baseQuery = {
+    id: true,
+    title: true,
+    shortDesc: true,
+    description: true,
+    language: true,
+    level: true,
+    price: true,
+    published: true,
+    publishDate: true,
+    coverImage: true,
+    createdAt: true,
+    updatedAt: true,
+    instructorId: true,
+    modules: {
+      select: {
+        id: true,
+        courseId: true,
+        title: true,
+        position: true,
+      }
+    }
+  };
 }

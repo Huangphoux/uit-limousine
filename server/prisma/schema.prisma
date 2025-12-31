@@ -103,21 +103,33 @@ model Module {
 }
 
 model Lesson {
-  id             String           @id @default(uuid())
-  moduleId       String
-  title          String
-  content        String? // markdown or rich text
-  mediaUrl       String? // optional video/file url
-  contentType    String? // "video" | "article" | "file" | "assignment"
-  assignmentId   String?
-  assignment     Assignment?      @relation(fields: [assignmentId], references: [id], onDelete: SetNull)
-  durationSec    Int? // for video lessons
-  position       Int              @default(0)
-  createdAt      DateTime         @default(now())
-  module         Module           @relation(fields: [moduleId], references: [id], onDelete: Cascade)
-  LessonProgress LessonProgress[]
+  id              String           @id @default(uuid())
+  moduleId        String
+  title           String
+  content         String? // markdown or rich text
+  mediaUrl        String? // optional video/file url
+  contentType     String? // "video" | "article" | "file" | "assignment"
+  assignmentId    String?
+  assignment      Assignment?      @relation(fields: [assignmentId], references: [id], onDelete: SetNull)
+  durationSec     Int? // for video lessons
+  position        Int              @default(0)
+  createdAt       DateTime         @default(now())
+  module          Module           @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  LessonProgress  LessonProgress[]
+  lessonResources LessonResource[]
 
   @@index([moduleId, position])
+}
+
+model LessonResource {
+  id        String   @id @default(uuid())
+  lessonId  String
+  fileId    String
+  filename  String
+  mimeType  String
+  createdAt DateTime @default(now())
+
+  lesson Lesson @relation(fields: [lessonId], references: [id])
 }
 
 model LessonProgress {

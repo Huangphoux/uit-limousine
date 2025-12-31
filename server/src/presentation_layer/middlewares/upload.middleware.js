@@ -48,7 +48,7 @@ const upload = multer({
 export function submissionUploadMiddleware(req, res, next) {
   const uploadHandler = upload.single('file');
 
-  uploadHandler(req, res, function(err) {
+  uploadHandler(req, res, function (err) {
     if (err instanceof multer.MulterError) {
       if (err.code === 'LIMIT_FILE_SIZE') {
         return res.status(400).json({
@@ -67,7 +67,7 @@ export function submissionUploadMiddleware(req, res, next) {
         message: err.message
       });
     }
-    
+
     if (err) {
       return res.status(400).json({
         success: false,

@@ -33,6 +33,12 @@ export const outputSchema = z.object({
             })
             .optional()
             .nullable(),
+          lessonResources: z.array(z.object({
+            id: z.string(),
+            lessonId: z.string(),
+            filename: z.string(),
+            mimeType: z.string(),
+          }))
         })
       ),
     })

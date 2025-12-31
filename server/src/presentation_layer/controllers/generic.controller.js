@@ -5,11 +5,15 @@ export function controller(usecase) {
         try {
             logger.debug(`Calling ${usecase.constructor.name}`);
 
+            let query = req.query || {};
+            let params = req.params || {};
+            let body = req.body || {}
+
             let input = {
-                ...req.query,
-                ...req.params,
-                ...req.body,
-                currentUserId: req.body.authId || null
+                ...query,
+                ...params,
+                ...body,
+                currentUserId: body.authId || null
             }
 
             const result = await usecase.execute(input);

@@ -1,3 +1,5 @@
+import { id } from "zod/v4/locales";
+
 export class CourseReadAccessor {
   constructor(prisma) {
     this.prisma = prisma;
@@ -39,6 +41,14 @@ export class CourseReadAccessor {
                     where: { userId },
                     select: { progress: true },
                   },
+                  lessonResources: {
+                    select: {
+                      id: true,
+                      lessonId: true,
+                      filename: true,
+                      mimeType: true,
+                    }
+                  },
                 },
               },
             },
@@ -74,6 +84,14 @@ export class CourseReadAccessor {
                     where: { userId },
                     select: { progress: true },
                   },
+                  lessonResources: {
+                    select: {
+                      id: true,
+                      lessonId: true,
+                      filename: true,
+                      mimeType: true,
+                    }
+                  },
                 },
               },
             },
@@ -94,18 +112,19 @@ export class CourseReadAccessor {
           assignmentId: l.assignmentId || null,
           assignment: l.assignment
             ? {
-                id: l.assignment.id,
-                title: l.assignment.title,
-                description: l.assignment.description,
-                dueDate: l.assignment.dueDate,
-                maxPoints: l.assignment.maxPoints,
-              }
+              id: l.assignment.id,
+              title: l.assignment.title,
+              description: l.assignment.description,
+              dueDate: l.assignment.dueDate,
+              maxPoints: l.assignment.maxPoints,
+            }
             : null,
           content: l.content,
           mediaUrl: l.mediaUrl,
           duration: l.durationSec,
           order: l.position,
           isCompleted: l.LessonProgress.some((p) => p.progress === 1),
+          lessonResources: l.lessonResources,
         })),
       })),
     };
