@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import request from 'supertest';
-import { prisma } from '../../../src/composition-root.js';
+import { prisma } from "../../composition-root.js";
 import app from '../../../src/app.js';
 
 describe('Grade Submission API - Complete Test Suite', () => {

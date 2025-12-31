@@ -1,4 +1,4 @@
-import { prisma, getUsersUsecase } from "../../../src/composition-root"
+import { prisma, getUsersUsecase } from "../../composition-root.js";
 import { outputSchema } from "../../../src/application_layer/instructor/get-users.usecase.js";
 import { ZodError } from "zod"
 import { user1, user2, input } from "./test-data.js";

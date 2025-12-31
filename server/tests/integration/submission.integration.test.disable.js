@@ -4,7 +4,7 @@ import path from 'path';
 import fs from 'fs';
 import prisma from '../../src/lib/prisma.js';
 import app from '../../src/app.js';
-import { loginUseCase } from '../../src/composition-root.js';
+import { loginUseCase } from "../../composition-root.js";
 import bcrypt from 'bcrypt';
 
 describe('Submit Assignment API', () => {

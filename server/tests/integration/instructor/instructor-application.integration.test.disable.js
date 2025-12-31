@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import request from 'supertest';
-import { prisma } from '../../../src/composition-root.js';
+import { prisma } from "../../composition-root.js";
 import app from '../../../src/app.js';
 
 describe('Instructor Application API - Complete Test Suite', () => {

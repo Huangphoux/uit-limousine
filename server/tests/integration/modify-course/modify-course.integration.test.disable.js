@@ -1,6 +1,6 @@
-import { prisma, modifyCourseUsecase } from "../../../src/composition-root"
-import { course, module, input, instructor } from "./test-data"
-import { outputSchema } from "../../../src/application_layer/courses/modify-course.usecase";
+import { prisma, modifyCourseUsecase } from "../../composition-root.js";
+import { course, module, input, instructor } from "./test-data.js"
+import { outputSchema } from "../../../src/application_layer/courses/modify-course.usecase.js";
 import { ZodError } from "zod"
 
 jest.setTimeout(20000);

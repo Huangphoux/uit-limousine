@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from "@jest/globals";
 import request from "supertest";
-import { prisma, modifyCourseUsecase } from "../../../src/composition-root.js";
+import { prisma, modifyCourseUsecase } from "../../composition-root.js";
 import app from "../../../src/app.js";
 import bcrypt from 'bcrypt';
 describe("Assignment end-to-end workflow (modify -> submit -> grade)", () => {

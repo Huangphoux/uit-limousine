@@ -1,6 +1,6 @@
 import app from '../../../src/app.js';
 import request from 'supertest';
-import { prisma, loginUseCase } from '../../../src/composition-root.js';
+import { prisma, loginUseCase } from "../../composition-root.js";
 import { course, user, userRole } from './search-courses.test-data.js';
 import bcrypt from 'bcrypt';
 

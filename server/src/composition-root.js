@@ -70,6 +70,7 @@ const transporter = nodemailer.createTransport({
     pass: config.email.pass,
   },
 });
+
 await mongoose.connect(config.database.mongo.url);
 const bucket = new GridFSBucket(mongoose.connection.db);
 

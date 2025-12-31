@@ -1,8 +1,6 @@
-import { completeLessonUseCase, prisma } from "../../../src/composition-root"
+import { completeLessonUseCase, prisma } from "../../composition-root.js";
 import z from "zod";
-import crypto from "crypto";
 import bcrypt from 'bcrypt';
-import { deserialize } from "v8";
 jest.setTimeout(20000);
 
 // ✅ FIX 1: Sửa schema
