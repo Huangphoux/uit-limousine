@@ -15,7 +15,7 @@ import assignmentsRouter from "./presentation_layer/routes/assignments.route.js"
 const app = express();
 app.use(
   cors({
-    origin: process.env.NODE_ENV === "production" ? ["https://uit-limousine.onrender.com"] : true, // Allow all origins in development
+    origin: process.env.NODE_ENV === "production" ? [config.frontend.url] : true, // Allow all origins in development
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
