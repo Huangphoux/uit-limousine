@@ -1,7 +1,7 @@
-import SubmissionRepository from '../../infrastructure_layer/repository/submission.repository.js';
-import AssignmentRepository from '../../infrastructure_layer/repository/assignment.repository.js';
-import EnrollmentRepository from '../../infrastructure_layer/repository/enrollment.repository.js';
-import SubmissionEntity from '../../domain_layer/submission.entity.js';
+import SubmissionRepository from "../../infrastructure_layer/repository/submission.repository.js";
+import AssignmentRepository from "../../infrastructure_layer/repository/assignment.repository.js";
+import EnrollmentRepository from "../../infrastructure_layer/repository/enrollment.repository.js";
+import SubmissionEntity from "../../domain_layer/submission.entity.js";
 
 export default class CourseUseCase {
   constructor() {
@@ -15,7 +15,7 @@ export default class CourseUseCase {
     const assignment = await this.assignmentRepo.findById(assignmentId);
 
     if (!assignment) {
-      throw new Error('Assignment not found');
+      throw new Error("Assignment not found");
     }
 
     const enrollment = await this.enrollmentRepo.findByUserAndCourse(
@@ -23,8 +23,8 @@ export default class CourseUseCase {
       assignment.courseId
     );
 
-    if (!enrollment || enrollment.status !== 'ENROLLED') {
-      throw new Error('You are not enrolled in this course');
+    if (!enrollment || enrollment.status !== "ENROLLED") {
+      throw new Error("You are not enrolled in this course");
     }
 
     const existingSubmission = await this.submissionRepo.findByAssignmentAndStudent(
@@ -33,13 +33,15 @@ export default class CourseUseCase {
     );
 
     if (existingSubmission) {
-      throw new Error('You have already submitted this assignment');
+      throw new Error("You have already submitted this assignment");
     }
 
-    let status = 'SUBMITTED';
+    // If assignment has a dueDate and it's past, reject submissions
     if (assignment.dueDate && new Date() > new Date(assignment.dueDate)) {
-      status = 'LATE';
+      throw new Error("Submission closed");
     }
+
+    let status = "SUBMITTED";
 
     const submissionData = {
       assignmentId,
@@ -47,7 +49,7 @@ export default class CourseUseCase {
       content: fileInfo.content || null,
       fileUrl: fileInfo.fileUrl || null,
       status,
-      submittedAt: new Date()
+      submittedAt: new Date(),
     };
 
     // 1. Tạo submission (giữ nguyên logic cũ)
@@ -55,10 +57,10 @@ export default class CourseUseCase {
 
     // --- BỔ SUNG LOGIC CẬP NHẬT LESSON PROGRESS ---
     try {
-      // Tìm lesson liên kết với assignment này thông qua Prisma trực tiếp 
+      // Tìm lesson liên kết với assignment này thông qua Prisma trực tiếp
       // hoặc qua LessonRepo nếu bạn đã tách Repo
       const lesson = await prisma.lesson.findFirst({
-        where: { assignmentId: assignmentId }
+        where: { assignmentId: assignmentId },
       });
 
       if (lesson) {
@@ -66,19 +68,19 @@ export default class CourseUseCase {
           where: {
             userId_lessonId: {
               userId: studentId,
-              lessonId: lesson.id
-            }
+              lessonId: lesson.id,
+            },
           },
           update: {
             progress: 1.0,
-            completedAt: new Date()
+            completedAt: new Date(),
           },
           create: {
             userId: studentId,
             lessonId: lesson.id,
             progress: 1.0,
-            completedAt: new Date()
-          }
+            completedAt: new Date(),
+          },
         });
         console.log(`Updated lesson progress for lesson: ${lesson.id}`);
       }

@@ -13,6 +13,7 @@ import mediaRouter from "./presentation_layer/routes/media.route.js";
 import { config } from "./config.js";
 import assignmentsRouter from "./presentation_layer/routes/assignments.route.js";
 import paymentsRouter from "./presentation_layer/routes/payments.route.js";
+import uploadsRouter from "./presentation_layer/routes/uploads.route.js";
 
 const app = express();
 app.use(
@@ -38,6 +39,7 @@ app.use("/instructor", instructorRouter);
 app.use("/admin", adminRouter);
 app.use("/media", mediaRouter);
 app.use("/payments", paymentsRouter);
+app.use("/uploads", uploadsRouter);
 app.use("/assignments", assignmentsRouter);
 
 app.get("/", (req, res) => {

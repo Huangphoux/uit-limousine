@@ -205,7 +205,8 @@ const EditCourseView = () => {
             id: l.id,
             title: l.title,
             type: lessonType,
-            description: l.content || l.description || "",
+            // Start with sensible defaults; for Reading we will parse content into description + readingContent
+            description: "",
             duration: duration,
             isCompleted: l.isCompleted || false,
           };
@@ -215,9 +216,19 @@ const EditCourseView = () => {
             lesson.videoUrl = l.mediaUrl;
           }
 
-          // Handle READING type
-          if (lessonType === "Reading" && l.content) {
-            lesson.readingContent = l.content;
+          // Handle READING type - split persisted content into short description (first paragraph) and body
+          if (lessonType === "Reading") {
+            if (l.content) {
+              // split on double newlines (paragraph break)
+              const parts = String(l.content).split(/\n{2,}/);
+              lesson.description = l.description || parts[0] || "";
+              lesson.readingContent =
+                parts.length > 1 ? parts.slice(1).join("\n\n") : parts[0] || "";
+            } else {
+              // fallback to explicit description field if present
+              lesson.description = l.description || "";
+              lesson.readingContent = "";
+            }
           }
 
           // Handle ASSIGNMENT type - use nested assignment data if available
@@ -239,6 +250,14 @@ const EditCourseView = () => {
               }
             }
           }
+
+          // Include persisted lesson resources returned by /courses/:id/materials
+          lesson.lessonResources = (l.lessonResources || []).map((r) => ({
+            id: r.id,
+            lessonId: r.lessonId,
+            filename: r.filename,
+            mimeType: r.mimeType,
+          }));
 
           return lesson;
         }),
@@ -688,11 +707,22 @@ const EditCourseView = () => {
       body: formData,
     });
 
+    const json = await response.json().catch(() => ({}));
+
+    console.log("[uploadLessonFiles] server response:", json);
+
     if (!response.ok) {
-      throw new Error("Failed to upload files");
+      const msg = json.data || json.message || json.error || "Failed to upload files";
+      throw new Error(msg);
     }
 
-    return response.json(); // returns uploaded file info (id, url, etc.)
+    // JSend success wrapper: { status: 'success', data: [resources...] }
+    // Normalize to return the array of created resources
+    const resources = json?.data || json || [];
+    console.log(
+      `[uploadLessonFiles] uploaded ${resources.length} resources for lesson ${lessonId}`
+    );
+    return resources; // ensure an array
   };
 
   // Get current module and lesson info for navigation
@@ -785,6 +815,94 @@ const EditCourseView = () => {
       // Deep snapshot for logging
       const course = JSON.parse(JSON.stringify(courseData));
 
+      // Upload any pending lesson files to temporary storage and attach fileIds to lessonResources
+      // This ensures lessonResources are present in the course payload so server can link files to real lesson IDs
+      for (const module of course.modules || []) {
+        for (const lesson of module.lessons || []) {
+          const realFiles = lessonFilesRef.current[lesson.id] || [];
+          if (realFiles.length > 0) {
+            try {
+              const fd = new FormData();
+              realFiles.forEach((f) => fd.append("files", f, f.name));
+
+              const uploadResp = await fetch(`${API_URL}/uploads/files`, {
+                method: "POST",
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                },
+                body: fd,
+              });
+
+              const uploadJson = await uploadResp.json().catch(() => ({}));
+              if (!uploadResp.ok) {
+                throw new Error(
+                  uploadJson.data || uploadJson.message || "Failed to upload temp files"
+                );
+              }
+
+              const uploadedFiles = uploadJson.data || uploadJson;
+              console.log(
+                "[handleSaveCourse] temp uploaded files for lesson",
+                lesson.id,
+                uploadedFiles
+              );
+
+              // Merge uploaded file metadata into lesson.lessonResources so PUT includes them
+              lesson.lessonResources = [
+                ...(lesson.lessonResources || []),
+                ...(uploadedFiles || []).map((u) => ({
+                  // No DB id yet — staged upload referenced by fileId
+                  id: null,
+                  lessonId: lesson.id,
+                  filename: u.filename,
+                  mimeType: u.mimeType,
+                  fileId: u.fileId,
+                })),
+              ];
+
+              // Update UI immediately so staged uploads show in the editor
+              setCourseData((prev) => ({
+                ...prev,
+                modules: prev.modules.map((m) =>
+                  m.id === module.id
+                    ? {
+                        ...m,
+                        lessons: m.lessons.map((l) =>
+                          l.id === lesson.id
+                            ? {
+                                ...l,
+                                lessonResources: [
+                                  ...(l.lessonResources || []),
+                                  ...(uploadedFiles || []).map((u) => ({
+                                    id: null,
+                                    lessonId: lesson.id,
+                                    filename: u.filename,
+                                    mimeType: u.mimeType,
+                                    fileId: u.fileId,
+                                  })),
+                                ],
+                              }
+                            : l
+                        ),
+                      }
+                    : m
+                ),
+              }));
+
+              // clear local staging for that lesson
+              lessonFilesRef.current[lesson.id] = [];
+              // Clear lesson form files if currently editing that lesson
+              if (selectedLesson && selectedLesson.lessonId === lesson.id) {
+                setLessonForm((prev) => ({ ...prev, files: [] }));
+              }
+            } catch (err) {
+              console.error("Failed to upload temp files for lesson", lesson.id, err);
+              toast.error("Failed to upload lesson files: " + (err.message || err));
+            }
+          }
+        }
+      }
+
       // Create Assignment resources for NEW assignment lessons only
       // Existing assignments will be updated via the course update endpoint
       for (const module of course.modules || []) {
@@ -867,11 +985,17 @@ const EditCourseView = () => {
             console.log("- Setting mediaUrl for Video:", mediaUrl);
           }
 
-          // For reading lessons, use readingContent in content field
+          // For reading lessons, combine short description and reading body into content so both persist
           let content = lesson.description || lesson.content || "";
-          if (lesson.type === "Reading" && lesson.readingContent) {
-            content = lesson.readingContent;
-            console.log("- Setting content for Reading:", content.substring(0, 50));
+          if (lesson.type === "Reading") {
+            const desc = lesson.description ? String(lesson.description).trim() : "";
+            const body = lesson.readingContent ? String(lesson.readingContent).trim() : "";
+            if (desc && body) content = `${desc}\n\n${body}`;
+            else content = body || desc || "";
+            console.log(
+              "- Setting content for Reading (combined):",
+              (content || "").substring(0, 50)
+            );
           }
 
           const lessonData = {
@@ -883,6 +1007,13 @@ const EditCourseView = () => {
             assignmentId: lesson.assignmentId ? lesson.assignmentId : undefined,
             durationSec: lesson.duration ? parseDurationToSeconds(lesson.duration) : null,
             position: lessonIndex,
+            // Include lessonResources so server can persist uploaded files referenced by fileId
+            lessonResources: (lesson.lessonResources || []).map((r) => ({
+              id: r.id || null,
+              filename: r.filename,
+              mimeType: r.mimeType,
+              fileId: r.fileId || null,
+            })),
           };
 
           // ✅ THÊM: Luôn gửi assignment fields cho lesson type Assignment
@@ -895,6 +1026,11 @@ const EditCourseView = () => {
 
             // MaxPoints
             lessonData.maxPoints = lesson.maxScore || lesson.maxPoints || 100;
+
+            // Include assignment description (so UpdateAssignmentUsecase receives it)
+            if (lesson.description) {
+              lessonData.description = lesson.description;
+            }
           }
 
           console.log("- Final lesson data:", lessonData);
@@ -940,7 +1076,50 @@ const EditCourseView = () => {
         for (const lesson of module.lessons || []) {
           const realFiles = lessonFilesRef.current[lesson.id] || [];
           if (realFiles.length > 0) {
-            await uploadLessonFiles(lesson.id, realFiles);
+            try {
+              const uploaded = await uploadLessonFiles(lesson.id, realFiles);
+              console.log("[handleSaveCourse] uploaded resources:", uploaded);
+
+              // Merge uploaded resources into local courseData so UI reflects newly uploaded files
+              if (uploaded && uploaded.length) {
+                setCourseData((prev) => ({
+                  ...prev,
+                  modules: prev.modules.map((m) =>
+                    m.id === module.id
+                      ? {
+                          ...m,
+                          lessons: m.lessons.map((l) =>
+                            l.id === lesson.id
+                              ? {
+                                  ...l,
+                                  lessonResources: [...(l.lessonResources || []), ...uploaded],
+                                }
+                              : l
+                          ),
+                        }
+                      : m
+                  ),
+                }));
+
+                if (selectedLesson && selectedLesson.lessonId === lesson.id) {
+                  setLessonForm((prev) => ({
+                    ...prev,
+                    lessonResources: [...(prev.lessonResources || []), ...uploaded],
+                    files: [],
+                  }));
+                }
+
+                toast.success(
+                  `Uploaded ${uploaded.length} resource(s) to lesson: ${lesson.title || lesson.id}`
+                );
+              }
+
+              // Clear stored files in ref
+              lessonFilesRef.current[lesson.id] = [];
+            } catch (err) {
+              console.error("Failed to upload lesson files for lesson", lesson.id, err);
+              toast.error("Failed to upload lesson files: " + (err.message || err));
+            }
           }
         }
       }

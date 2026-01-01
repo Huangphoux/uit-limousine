@@ -230,6 +230,38 @@ const AssignmentGradingDetail = ({ lessonForm, courseData }) => {
     performGrade();
   };
 
+  const triggerFileDownload = async (fileUrl) => {
+    if (!fileUrl) return;
+    try {
+      const token = localStorage.getItem("accessToken");
+      const resp = await fetch(fileUrl, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!resp.ok) {
+        const text = await resp.text().catch(() => null);
+        throw new Error(`Failed to download file: ${resp.status} ${resp.statusText} ${text || ""}`);
+      }
+      const blob = await resp.blob();
+      let filename = fileUrl.split("/").pop() || "download";
+      const cd = resp.headers.get("content-disposition");
+      if (cd) {
+        const m = /filename\*?=(?:UTF-8'')?"?([^";]+)"?/i.exec(cd);
+        if (m && m[1]) filename = decodeURIComponent(m[1]);
+      }
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Download error", err);
+      toast.error("Không thể tải tập tin: " + (err.message || "Lỗi"));
+    }
+  };
+
   // Filter submissions based on search term and status
   const sourceSubmissions = submissions.length > 0 ? submissions : [];
 
@@ -318,13 +350,28 @@ const AssignmentGradingDetail = ({ lessonForm, courseData }) => {
                     {submission.submittedAt ? formatDate(submission.submittedAt) : "-"}
                   </td>
                   <td className="detail-p-3">
-                    <div className="detail-d-flex detail-align-items-center detail-gap-2">
-                      <span className="detail-text-primary detail-fs-5">📄</span>
-                      <div>
-                        <div className="detail-small detail-text-black">{submission.fileUrl}</div>
-                        <div className="detail-small detail-text-black">{submission.fileSize}</div>
+                    {submission.fileUrl ? (
+                      <div className="detail-d-flex detail-align-items-center detail-gap-2">
+                        <span className="detail-text-primary detail-fs-5">📄</span>
+                        <div>
+                          <a
+                            href={submission.fileUrl}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              triggerFileDownload(submission.fileUrl);
+                            }}
+                            style={{ color: "#0369a1", textDecoration: "none", cursor: "pointer" }}
+                          >
+                            {submission.fileUrl.split("/").pop()}
+                          </a>
+                          <div className="detail-small detail-text-black">
+                            {submission.fileSize}
+                          </div>
+                        </div>
                       </div>
-                    </div>
+                    ) : (
+                      <span className="text-muted">-</span>
+                    )}
                   </td>
                   <td className="detail-p-3">
                     <Badge
