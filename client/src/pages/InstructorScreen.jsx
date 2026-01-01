@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Container, Row, Col, Card } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
 import { FaBook, FaChartLine, FaFileAlt, FaUsers, FaRegClock } from "react-icons/fa";
+import { toast } from "sonner";
 import CreateCourseModal from "../components/CreateCourseModal";
 import EditCourseModal from "../components/instructor-screen/course-management/EditCourseModal";
 import CourseManagementView from "../components/instructor-screen/course-management/CourseManagementView";
@@ -32,7 +33,14 @@ const InstructorScreen = () => {
   } = useCourses([]);
 
   useEffect(() => {
-    fetchCourses({ onlyMyCourses: true });
+    const maybeUser = JSON.parse(localStorage.getItem("user") || "{}");
+    if (!maybeUser?.id) {
+      console.warn(
+        "InstructorScreen: no user id found in localStorage; skipping instructor-only fetch"
+      );
+      return;
+    }
+    fetchCourses({ onlyMyCourses: true, instructorId: maybeUser.id });
   }, []);
 
   // Refresh courses when returning from edit page
@@ -40,8 +48,13 @@ const InstructorScreen = () => {
     const checkAndRefresh = () => {
       try {
         const flag = localStorage.getItem("courses_needs_refresh");
+        const maybeUser = JSON.parse(localStorage.getItem("user") || "{}");
         if (flag === "1") {
-          fetchCourses();
+          if (!maybeUser?.id) {
+            console.warn("checkAndRefresh: no user id found; skipping instructor-only fetch");
+          } else {
+            fetchCourses({ onlyMyCourses: true, instructorId: maybeUser.id });
+          }
           localStorage.removeItem("courses_needs_refresh");
         }
       } catch (e) {
@@ -68,12 +81,52 @@ const InstructorScreen = () => {
     setShowCreateModal(false);
   };
 
-  const handleSaveCourse = (courseData) => {
+  const handleSaveCourse = async (courseData) => {
     // Handle save course logic here
-    console.log("New course data:", courseData);
-    // You can add API call to save the course data
-    // For now, just close the modal
-    setShowCreateModal(false);
+    console.log(
+      "New course data:",
+      courseData,
+      "avatar:",
+      courseData.avatar,
+      courseData.avatar?.name
+    );
+
+    try {
+      // Optimistically add the course to instructor's local list so UI updates immediately
+      const tempId = courseData.id || `temp-${Date.now()}`;
+      const optimistic = {
+        id: tempId,
+        title: courseData.courseName || courseData.title || "Untitled Course",
+        description: courseData.description || "",
+        coverImage: courseData.coverImage || courseData.thumbnail || null,
+        price: Number(courseData.price) || 0,
+        level: courseData.level || null,
+        language: courseData.language || null,
+        category: courseData.category || null,
+        instructor: JSON.parse(localStorage.getItem("user") || "{}")?.name || "You",
+        status: "draft",
+      };
+
+      // Close modal and refresh instructor's courses from server
+      setShowCreateModal(false);
+
+      // Signal other pages to refresh (NewPage will listen)
+      try {
+        localStorage.setItem("courses_needs_refresh", "1");
+      } catch (e) {
+        console.log(e);
+      }
+      window.dispatchEvent(new Event("courses_updated"));
+
+      const maybeUser = JSON.parse(localStorage.getItem("user") || "{}");
+      if (!maybeUser?.id) {
+        console.warn("handleSaveCourse: no user id found; skipping fetch");
+        return;
+      }
+      await fetchCourses({ onlyMyCourses: true, instructorId: maybeUser.id });
+    } catch (err) {
+      console.error("Error handling saved course:", err);
+    }
   };
 
   const handleEditCourse = (courseData) => {
@@ -148,11 +201,43 @@ const InstructorScreen = () => {
           });
 
           if (publishResponse.ok) {
-            await fetchCourses({ onlyMyCourses: true });
+            // After successful publish, refresh the instructor's courses from server
+            try {
+              localStorage.setItem("courses_needs_refresh", "1");
+            } catch (e) {
+              console.log(e);
+            }
+            window.dispatchEvent(new Event("courses_updated"));
+
+            const maybeUser = JSON.parse(localStorage.getItem("user") || "{}");
+            if (!maybeUser?.id) {
+              console.warn("publish: no user id found; skipping fetch");
+            } else {
+              await fetchCourses({ onlyMyCourses: true, instructorId: maybeUser.id });
+            }
+
+            // Broadcast specific publish event so public listing pages can upsert it fast
+            try {
+              window.dispatchEvent(
+                new CustomEvent("course_published", { detail: { id: courseData.id } })
+              );
+            } catch (e) {
+              // fallback
+              console.log(e);
+              window.dispatchEvent(new Event("courses_updated"));
+            }
+
             console.log("Course published successfully");
           } else {
             const errorData = await publishResponse.json();
             console.error("Failed to publish course:", errorData);
+            // show user-friendly message
+            toast &&
+              toast.error &&
+              toast.error(
+                "Failed to publish course: " +
+                  (errorData?.data || errorData?.message || JSON.stringify(errorData))
+              );
           }
           break;
         }
@@ -172,11 +257,40 @@ const InstructorScreen = () => {
           });
 
           if (hideResponse.ok) {
-            await fetchCourses({ onlyMyCourses: true });
+            // After successful unpublish, refresh the instructor's courses from server
+            try {
+              localStorage.setItem("courses_needs_refresh", "1");
+            } catch (e) {
+              console.log(e);
+            }
+            window.dispatchEvent(new Event("courses_updated"));
+
+            const maybeUser = JSON.parse(localStorage.getItem("user") || "{}");
+            if (!maybeUser?.id) {
+              console.warn("hide: no user id found; skipping fetch");
+            } else {
+              await fetchCourses({ onlyMyCourses: true, instructorId: maybeUser.id });
+            }
+
+            // Notify public listing that a course was unpublished
+            try {
+              window.dispatchEvent(
+                new CustomEvent("course_unpublished", { detail: { id: courseData.id } })
+              );
+            } catch (e) {
+              window.dispatchEvent(new Event("courses_updated"));
+            }
+
             console.log("Course unpublished successfully");
           } else {
             const errorData = await hideResponse.json();
             console.error("Failed to unpublish course:", errorData);
+            toast &&
+              toast.error &&
+              toast.error(
+                "Failed to unpublish course: " +
+                  (errorData?.data || errorData?.message || JSON.stringify(errorData))
+              );
           }
           break;
         }
@@ -220,11 +334,21 @@ const InstructorScreen = () => {
   // Debounced search effect - triggers 1 second after user stops typing
   // Thay thế useEffect dòng 120-139
   useEffect(() => {
-    const debounceTimer = setTimeout(() => {
+    const debounceTimer = setTimeout(async () => {
+      const maybeUser = JSON.parse(localStorage.getItem("user") || "{}");
+      if (!maybeUser?.id) {
+        console.warn("InstructorScreen: no user id found for search; skipping fetch");
+        return;
+      }
+
       if (searchQuery.trim() === "") {
-        fetchCourses({ onlyMyCourses: true }); // Lấy tất cả do instructor
+        await fetchCourses({ onlyMyCourses: true, instructorId: maybeUser.id }); // Lấy tất cả do instructor
       } else {
-        fetchCourses({ search: searchQuery, onlyMyCourses: true }); // Gọi API search limited to instructor
+        await fetchCourses({
+          search: searchQuery,
+          onlyMyCourses: true,
+          instructorId: maybeUser.id,
+        }); // Gọi API search limited to instructor
       }
     }, 1000);
 

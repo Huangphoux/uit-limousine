@@ -20,6 +20,84 @@ const EditCourseView = () => {
   const [assignmentActiveTab, setAssignmentActiveTab] = useState("edit");
   const [showCourseSettingsModal, setShowCourseSettingsModal] = useState(false);
 
+  // Local form state for Course Settings modal
+  const [settingsForm, setSettingsForm] = useState({
+    title: "",
+    description: "",
+    category: "",
+    level: "",
+    durationWeeks: "",
+    durationDays: "",
+    durationHours: "",
+    organization: "",
+    language: "",
+    requirement: "",
+    avatar: null, // File object
+    thumbnail: "",
+    price: 0,
+  });
+  const [settingsPreviewUrl, setSettingsPreviewUrl] = useState(null);
+  const [settingsErrors, setSettingsErrors] = useState({});
+
+  // Helper lists (same as CreateCourseModal)
+  const categories = [
+    "Programming",
+    "Web Development",
+    "Mobile Development",
+    "Data Science",
+    "Machine Learning",
+    "Design",
+    "Business",
+    "Marketing",
+    "Language Learning",
+    "Photography",
+    "Music",
+    "Health & Fitness",
+  ];
+
+  const levels = ["Beginner", "Intermediate", "Advanced", "All Levels"];
+
+  const organizations = [
+    "Stanford University",
+    "MIT",
+    "Harvard University",
+    "University of California",
+    "Google",
+    "Microsoft",
+    "Amazon",
+    "Meta",
+    "IBM",
+    "Coursera",
+    "Udacity",
+    "edX",
+  ];
+
+  const languages = [
+    "Tiếng Việt",
+    "English",
+    "Spanish",
+    "French",
+    "German",
+    "Chinese",
+    "Japanese",
+    "Korean",
+  ];
+
+  // Helper to normalize media URLs from server (relative '/uploads/..' => absolute)
+  const normalizeMediaUrl = (url) => {
+    if (!url) return null;
+    try {
+      if (typeof url === "string" && url.startsWith("/")) {
+        const API_BASE_URL = import.meta.env.VITE_API_URL || "";
+        return `${API_BASE_URL}${url}`;
+      }
+      return url;
+    } catch (e) {
+      console.warn("normalizeMediaUrl failed", e);
+      return url;
+    }
+  };
+
   const [courseData, setCourseData] = useState({
     title: "Demo Course",
     instructor: "Instructor Name",
@@ -27,12 +105,55 @@ const EditCourseView = () => {
   });
   const [loading, setLoading] = useState(false);
 
+  const handleCloseSettings = () => {
+    if (settingsPreviewUrl && settingsPreviewUrl.startsWith("blob:")) {
+      URL.revokeObjectURL(settingsPreviewUrl);
+    }
+    setSettingsPreviewUrl(null);
+    setSettingsErrors({});
+    setShowCourseSettingsModal(false);
+  };
+
   const fetchCourseDetails = async (courseId) => {
     setLoading(true);
     try {
       const token = localStorage.getItem("accessToken");
       const userStr = localStorage.getItem("user");
       const user = JSON.parse(userStr);
+
+      // Initialize settings form when we have course data (when called from fetch)
+      const initSettingsFromCourse = (course) => {
+        // Prepare a snapshot to set and log for debugging
+        const snapshot = {
+          title: course.title || "",
+          description: course.description || "",
+          category: course.category || "",
+          level: course.level || "",
+          durationWeeks: course.durationWeeks || course.duration?.weeks || "",
+          durationDays: course.durationDays || course.duration?.days || "",
+          durationHours: course.durationHours || course.duration?.hours || "",
+          organization: course.organization || "",
+          language: course.language || "",
+          requirement: course.requirement || "",
+          thumbnail: course.thumbnail || course.image || course.coverImage || "",
+          price: course.price || 0,
+        };
+
+        console.log("[EditCourseView] initSettingsFromCourse - course: ", course);
+        console.log("[EditCourseView] initSettingsFromCourse - snapshot: ", snapshot);
+
+        setSettingsForm(snapshot);
+
+        // set preview if thumbnail available (normalize remote path)
+        const thumb = snapshot.thumbnail || null;
+        if (thumb) {
+          const norm = normalizeMediaUrl(thumb);
+          console.log("[EditCourseView] initSettingsFromCourse - preview url:", norm);
+          setSettingsPreviewUrl(norm);
+        } else {
+          setSettingsPreviewUrl(null);
+        }
+      };
 
       // Fetch course materials
       const materialsResponse = await fetch(`${API_URL}/courses/${courseId}/materials`, {
@@ -129,14 +250,25 @@ const EditCourseView = () => {
         description: course.description || course.shortDesc || "",
         instructor: course.instructor?.name || course.instructor?.fullName || "Instructor Name",
         image: course.coverImage || course.thumbnail || course.image || "",
+        coverImage: course.coverImage || course.thumbnail || course.image || "",
+        thumbnail: course.thumbnail || course.image || course.coverImage || "",
         status: course.published ? "published" : "draft",
         modules: normalizedModules,
         level: course.level || "",
         language: course.language,
         price: course.price,
         rating: course.rating,
+        category: course.category || null,
+        organization: course.organization || null,
+        requirement: course.requirement || null,
+        durationWeeks: course.durationWeeks ?? course.duration?.weeks ?? null,
+        durationDays: course.durationDays ?? course.duration?.days ?? null,
+        durationHours: course.durationHours ?? course.duration?.hours ?? null,
         enrollmentCount: course.enrolledStudents || course.enrollmentCount || course.students || 0,
       });
+
+      // initialize settings form from fetched course so modal shows full info
+      initSettingsFromCourse(course);
     } catch (error) {
       console.error("Error fetching course:", error);
       toast.error("Failed to load course details: " + error.message);
@@ -900,7 +1032,38 @@ const EditCourseView = () => {
                 >
                   <button
                     className="btn btn-outline-primary"
-                    onClick={() => setShowCourseSettingsModal(true)}
+                    onClick={() => {
+                      // initialize settings with latest course data
+                      const snapshot = {
+                        title: courseData.title || "",
+                        description: courseData.description || "",
+                        category: courseData.category || "",
+                        level: courseData.level || "",
+                        durationWeeks: courseData.durationWeeks || courseData.duration?.weeks || "",
+                        durationDays: courseData.durationDays || courseData.duration?.days || "",
+                        durationHours: courseData.durationHours || courseData.duration?.hours || "",
+                        organization: courseData.organization || "",
+                        language: courseData.language || "",
+                        requirement: courseData.requirement || "",
+                        thumbnail:
+                          courseData.thumbnail || courseData.image || courseData.coverImage || "",
+                        price: courseData.price || 0,
+                      };
+
+                      console.log(
+                        "[EditCourseView] Opening Course Settings - courseData:",
+                        courseData
+                      );
+                      console.log("[EditCourseView] Opening Course Settings - snapshot:", snapshot);
+
+                      setSettingsForm(snapshot);
+
+                      const preview = normalizeMediaUrl(snapshot.thumbnail || null);
+                      console.log("[EditCourseView] Opening Course Settings - preview:", preview);
+                      setSettingsPreviewUrl(preview || null);
+
+                      setShowCourseSettingsModal(true);
+                    }}
                     style={{
                       padding: "0.5rem 1rem",
                       borderRadius: "0.375rem",
@@ -1371,26 +1534,95 @@ const EditCourseView = () => {
       </div>
 
       {/* Course Settings Modal */}
-      <Modal
-        show={showCourseSettingsModal}
-        onHide={() => setShowCourseSettingsModal(false)}
-        size="lg"
-        centered
-      >
+      <Modal show={showCourseSettingsModal} onHide={handleCloseSettings} size="lg" centered>
         <Modal.Header closeButton>
           <Modal.Title>Course Settings</Modal.Title>
         </Modal.Header>
         <Modal.Body>
           <Form>
+            {/* Top cover preview and edit controls */}
+            <div className="mb-4 text-center">
+              <div
+                className="position-relative"
+                style={{
+                  height: 180,
+                  borderRadius: 8,
+                  overflow: "hidden",
+                  backgroundColor: "#f6f8fa",
+                }}
+              >
+                {settingsPreviewUrl ? (
+                  <img
+                    src={settingsPreviewUrl}
+                    alt="cover preview"
+                    style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+                  />
+                ) : (
+                  <div
+                    className="d-flex flex-column align-items-center justify-content-center text-muted"
+                    style={{ height: "100%" }}
+                    onClick={() => document.getElementById("settings-avatar-upload").click()}
+                  >
+                    <div style={{ marginTop: 8 }}>Course cover image</div>
+                  </div>
+                )}
+
+                <div style={{ position: "absolute", top: 10, right: 10, display: "flex", gap: 8 }}>
+                  {settingsPreviewUrl && (
+                    <Button
+                      variant="light"
+                      size="sm"
+                      onClick={() => {
+                        if (settingsPreviewUrl && settingsPreviewUrl.startsWith("blob:")) {
+                          URL.revokeObjectURL(settingsPreviewUrl);
+                        }
+                        setSettingsPreviewUrl(null);
+                        setSettingsForm((prev) => ({ ...prev, avatar: null, thumbnail: "" }));
+                      }}
+                    >
+                      Remove
+                    </Button>
+                  )}
+                  <Button
+                    variant="light"
+                    size="sm"
+                    onClick={() => document.getElementById("settings-avatar-upload").click()}
+                  >
+                    Edit
+                  </Button>
+                </div>
+
+                <input
+                  id="settings-avatar-upload"
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                      if (settingsPreviewUrl && settingsPreviewUrl.startsWith("blob:")) {
+                        URL.revokeObjectURL(settingsPreviewUrl);
+                      }
+                      const u = URL.createObjectURL(file);
+                      setSettingsPreviewUrl(u);
+                      setSettingsForm((prev) => ({ ...prev, avatar: file, thumbnail: "" }));
+                    }
+                  }}
+                  style={{ display: "none" }}
+                />
+              </div>
+            </div>
+
             <Form.Group className="mb-3">
               <Form.Label>Course Title *</Form.Label>
               <Form.Control
                 className="edit-course-modal-form-control"
                 type="text"
                 placeholder="Enter course title"
-                value={courseData.title || ""}
-                onChange={(e) => setCourseData({ ...courseData, title: e.target.value })}
+                value={settingsForm.title || ""}
+                onChange={(e) => setSettingsForm({ ...settingsForm, title: e.target.value })}
+                isInvalid={!!settingsErrors.title}
               />
+              <Form.Control.Feedback type="invalid">{settingsErrors.title}</Form.Control.Feedback>
             </Form.Group>
 
             <Form.Group className="mb-3">
@@ -1400,12 +1632,72 @@ const EditCourseView = () => {
                 as="textarea"
                 rows={4}
                 placeholder="Enter course description"
-                value={courseData.description || ""}
-                onChange={(e) => setCourseData({ ...courseData, description: e.target.value })}
+                value={settingsForm.description || ""}
+                onChange={(e) => setSettingsForm({ ...settingsForm, description: e.target.value })}
               />
             </Form.Group>
 
             <Row>
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Category</Form.Label>
+                  <Form.Select
+                    value={settingsForm.category || ""}
+                    onChange={(e) => setSettingsForm({ ...settingsForm, category: e.target.value })}
+                    className="edit-course-modal-form-control"
+                  >
+                    <option value="">Choose category</option>
+                    {categories.map((c) => (
+                      <option key={c} value={c}>
+                        {c}
+                      </option>
+                    ))}
+                  </Form.Select>
+                </Form.Group>
+
+                <Form.Group className="mb-3">
+                  <Form.Label>Duration</Form.Label>
+                  <Row>
+                    <Col xs={4}>
+                      <Form.Control
+                        className="edit-course-modal-form-control"
+                        type="number"
+                        placeholder="weeks"
+                        min="0"
+                        value={settingsForm.durationWeeks || ""}
+                        onChange={(e) =>
+                          setSettingsForm({ ...settingsForm, durationWeeks: e.target.value })
+                        }
+                      />
+                    </Col>
+                    <Col xs={4}>
+                      <Form.Control
+                        className="edit-course-modal-form-control"
+                        type="number"
+                        placeholder="days"
+                        min="0"
+                        value={settingsForm.durationDays || ""}
+                        onChange={(e) =>
+                          setSettingsForm({ ...settingsForm, durationDays: e.target.value })
+                        }
+                      />
+                    </Col>
+                    <Col xs={4}>
+                      <Form.Control
+                        className="edit-course-modal-form-control"
+                        type="number"
+                        placeholder="hours"
+                        min="0"
+                        value={settingsForm.durationHours || ""}
+                        onChange={(e) =>
+                          setSettingsForm({ ...settingsForm, durationHours: e.target.value })
+                        }
+                      />
+                    </Col>
+                  </Row>
+                </Form.Group>
+              </Col>
+
               <Col md={6}>
                 <Form.Group className="mb-3">
                   <Form.Label>Price ($)</Form.Label>
@@ -1415,25 +1707,34 @@ const EditCourseView = () => {
                     placeholder="0"
                     min="0"
                     step="0.01"
-                    value={courseData.price || 0}
+                    value={settingsForm.price || 0}
                     onChange={(e) =>
-                      setCourseData({ ...courseData, price: parseFloat(e.target.value) || 0 })
+                      setSettingsForm({ ...settingsForm, price: parseFloat(e.target.value) || 0 })
                     }
+                    disabled={courseData.status === "published"}
                   />
-                  <Form.Text className="text-muted">Set to 0 for free course</Form.Text>
+                  {courseData.status === "published" ? (
+                    <Form.Text className="text-warning">
+                      Price cannot be changed while the course is published. Unpublish the course to
+                      change the price.
+                    </Form.Text>
+                  ) : (
+                    <Form.Text className="text-muted">Set to 0 for free course</Form.Text>
+                  )}
                 </Form.Group>
-              </Col>
-              <Col md={6}>
+
                 <Form.Group className="mb-3">
                   <Form.Label>Level</Form.Label>
                   <Form.Select
                     className="edit-course-modal-form-control"
-                    value={courseData.level || "Beginner"}
-                    onChange={(e) => setCourseData({ ...courseData, level: e.target.value })}
+                    value={settingsForm.level || "Beginner"}
+                    onChange={(e) => setSettingsForm({ ...settingsForm, level: e.target.value })}
                   >
-                    <option value="Beginner">Beginner</option>
-                    <option value="Intermediate">Intermediate</option>
-                    <option value="Advanced">Advanced</option>
+                    {levels.map((lvl) => (
+                      <option key={lvl} value={lvl}>
+                        {lvl}
+                      </option>
+                    ))}
                   </Form.Select>
                 </Form.Group>
               </Col>
@@ -1442,53 +1743,122 @@ const EditCourseView = () => {
             <Row>
               <Col md={6}>
                 <Form.Group className="mb-3">
-                  <Form.Label>Language</Form.Label>
-                  <Form.Control
+                  <Form.Label>Organization</Form.Label>
+                  <Form.Select
+                    value={settingsForm.organization || ""}
+                    onChange={(e) =>
+                      setSettingsForm({ ...settingsForm, organization: e.target.value })
+                    }
                     className="edit-course-modal-form-control"
-                    type="text"
-                    placeholder="e.g., English, Vietnamese"
-                    value={courseData.language || ""}
-                    onChange={(e) => setCourseData({ ...courseData, language: e.target.value })}
-                  />
+                  >
+                    <option value="">Ex: Stanford University</option>
+                    {organizations.map((org) => (
+                      <option key={org} value={org}>
+                        {org}
+                      </option>
+                    ))}
+                  </Form.Select>
+                </Form.Group>
+
+                <Form.Group className="mb-3">
+                  <Form.Label>Language</Form.Label>
+                  <Form.Select
+                    value={settingsForm.language || "Tiếng Việt"}
+                    onChange={(e) => setSettingsForm({ ...settingsForm, language: e.target.value })}
+                    className="edit-course-modal-form-control"
+                  >
+                    {languages.map((lang) => (
+                      <option key={lang} value={lang}>
+                        {lang}
+                      </option>
+                    ))}
+                  </Form.Select>
                 </Form.Group>
               </Col>
+
               <Col md={6}>
                 <Form.Group className="mb-3">
-                  <Form.Label>Thumbnail URL</Form.Label>
+                  <Form.Label>Requirement</Form.Label>
                   <Form.Control
-                    type="text"
                     className="edit-course-modal-form-control"
-                    placeholder="https://example.com/image.jpg"
-                    value={courseData.thumbnail || courseData.image || ""}
+                    as="textarea"
+                    rows={3}
+                    placeholder="Ex: Have learned Python before"
+                    value={settingsForm.requirement || ""}
                     onChange={(e) =>
-                      setCourseData({
-                        ...courseData,
-                        thumbnail: e.target.value,
-                        image: e.target.value,
-                      })
+                      setSettingsForm({ ...settingsForm, requirement: e.target.value })
                     }
                   />
                 </Form.Group>
+
+                {/* <Form.Group className="mb-3">
+                  <Form.Label>Cover Image</Form.Label>
+                  <div
+                    className="mb-2 position-relative"
+                    style={{
+                      height: 160,
+                      borderRadius: 8,
+                      overflow: "hidden",
+                      backgroundColor: "#f6f8fa",
+                    }}
+                  >
+                    <div
+                      className="d-flex flex-column align-items-center justify-content-center text-muted"
+                      style={{ height: "100%" }}
+                      onClick={() => document.getElementById("settings-avatar-upload").click()}
+                    >
+                      <div style={{ marginTop: 8 }}>Add / Replace course cover image</div>
+                    </div>
+
+                    <div
+                      style={{ position: "absolute", top: 10, right: 10, display: "flex", gap: 8 }}
+                    >
+                      {settingsPreviewUrl && (
+                        <Button
+                          variant="light"
+                          size="sm"
+                          onClick={() => {
+                            // remove avatar
+                            if (settingsPreviewUrl && settingsPreviewUrl.startsWith("blob:")) {
+                              URL.revokeObjectURL(settingsPreviewUrl);
+                            }
+                            setSettingsPreviewUrl(null);
+                            setSettingsForm((prev) => ({ ...prev, avatar: null, thumbnail: "" }));
+                          }}
+                        >
+                          Remove
+                        </Button>
+                      )}
+                      <Button
+                        variant="light"
+                        size="sm"
+                        onClick={() => document.getElementById("settings-avatar-upload").click()}
+                      >
+                        {settingsPreviewUrl ? "Replace" : "Add"}
+                      </Button>
+                    </div>
+
+                    <input
+                      id="settings-avatar-upload"
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files[0];
+                        if (file) {
+                          if (settingsPreviewUrl && settingsPreviewUrl.startsWith("blob:")) {
+                            URL.revokeObjectURL(settingsPreviewUrl);
+                          }
+                          const u = URL.createObjectURL(file);
+                          setSettingsPreviewUrl(u);
+                          setSettingsForm((prev) => ({ ...prev, avatar: file, thumbnail: "" }));
+                        }
+                      }}
+                      style={{ display: "none" }}
+                    />
+                  </div>
+                </Form.Group> */}
               </Col>
             </Row>
-
-            {(courseData.thumbnail || courseData.image) && (
-              <div className="mb-3 text-center">
-                <img
-                  src={courseData.thumbnail || courseData.image}
-                  alt="Course thumbnail preview"
-                  style={{
-                    maxWidth: "100%",
-                    maxHeight: "200px",
-                    borderRadius: "0.375rem",
-                    objectFit: "cover",
-                  }}
-                  onError={(e) => {
-                    e.target.style.display = "none";
-                  }}
-                />
-              </div>
-            )}
           </Form>
         </Modal.Body>
         <Modal.Footer>
@@ -1497,9 +1867,133 @@ const EditCourseView = () => {
           </Button>
           <Button
             variant="primary"
-            onClick={() => {
-              setShowCourseSettingsModal(false);
-              toast.success("Course settings updated! Don't forget to save.");
+            onClick={async () => {
+              try {
+                // Basic validation
+                if (!settingsForm.title || !settingsForm.title.trim()) {
+                  setSettingsErrors({ title: "Course title is required" });
+                  return;
+                }
+
+                const token = localStorage.getItem("accessToken");
+                const userStr = localStorage.getItem("user");
+                const user = userStr ? JSON.parse(userStr) : {};
+
+                // Upload avatar if provided as File
+                let coverImageUrl = settingsForm.thumbnail || null;
+                if (settingsForm.avatar && settingsForm.avatar instanceof File) {
+                  const uploadFd = new FormData();
+                  uploadFd.append("file", settingsForm.avatar);
+                  const uploadRes = await fetch(`${API_URL}/media/upload`, {
+                    method: "POST",
+                    body: uploadFd,
+                  });
+
+                  if (!uploadRes.ok) {
+                    const u = await uploadRes.json().catch(() => ({}));
+                    throw new Error(u.data || u.message || "Image upload failed");
+                  }
+
+                  const uploadJson = await uploadRes.json();
+                  coverImageUrl = uploadJson?.data?.fileUrl || uploadJson?.fileUrl || coverImageUrl;
+                }
+
+                // Ensure numeric duration fields are numbers (or null) to satisfy backend validation
+                const parseNumberOrNull = (v) => {
+                  if (v === null || v === undefined || v === "") return null;
+                  const n = Number(v);
+                  return Number.isFinite(n) ? n : null;
+                };
+
+                // Basic validation for negative values
+                const dw = parseNumberOrNull(
+                  settingsForm.durationWeeks ?? courseData.durationWeeks
+                );
+                const dd = parseNumberOrNull(settingsForm.durationDays ?? courseData.durationDays);
+                const dh = parseNumberOrNull(
+                  settingsForm.durationHours ?? courseData.durationHours
+                );
+
+                if ((dw !== null && dw < 0) || (dd !== null && dd < 0) || (dh !== null && dh < 0)) {
+                  setSettingsErrors({ duration: "Duration values must be 0 or greater" });
+                  return;
+                }
+
+                const includePrice = courseData.status !== "published";
+
+                const payload = {
+                  authId: user.id,
+                  id: courseData.id,
+                  title: settingsForm.title || courseData.title,
+                  description: settingsForm.description || courseData.description || "",
+                  // Always send a number for price; when published, keep existing price
+                  price: includePrice
+                    ? Number(settingsForm.price) || 0
+                    : Number(courseData.price) || 0,
+                  level: settingsForm.level || courseData.level || null,
+                  language: settingsForm.language || courseData.language || null,
+                  coverImage: coverImageUrl,
+                  category: settingsForm.category || courseData.category || null,
+                  durationWeeks: dw,
+                  durationDays: dd,
+                  durationHours: dh,
+                  organization: settingsForm.organization || courseData.organization || null,
+                  requirement: settingsForm.requirement || courseData.requirement || null,
+                };
+
+                console.log("[EditCourseView] Applying Course Settings - payload:", payload);
+
+                const res = await fetch(`${API_URL}/courses/${courseData.id}`, {
+                  method: "PUT",
+                  headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                  },
+                  body: JSON.stringify(payload),
+                });
+
+                const resJson = await res.json();
+                console.log("[EditCourseView] PUT /courses/:id response:", res.status, resJson);
+
+                if (!res.ok) {
+                  const msg =
+                    resJson.data || resJson.error?.message || resJson.message || "Update failed";
+                  throw new Error(msg);
+                }
+
+                const updated = resJson.data || resJson;
+                setCourseData((prev) => ({ ...prev, ...updated }));
+
+                // cleanup object URL preview
+                if (settingsPreviewUrl && settingsPreviewUrl.startsWith("blob:")) {
+                  URL.revokeObjectURL(settingsPreviewUrl);
+                }
+
+                const normCover = normalizeMediaUrl(coverImageUrl || null);
+                console.log(
+                  "[EditCourseView] Uploaded coverImageUrl:",
+                  coverImageUrl,
+                  "normalized:",
+                  normCover
+                );
+                setSettingsPreviewUrl(normCover || null);
+                setSettingsForm((prev) => ({
+                  ...prev,
+                  avatar: null,
+                  thumbnail: coverImageUrl || "",
+                }));
+
+                setShowCourseSettingsModal(false);
+                toast.success("Course settings updated!");
+                try {
+                  localStorage.setItem("courses_needs_refresh", "1");
+                } catch (e) {
+                  console.log(e);
+                }
+              } catch (error) {
+                console.error("Failed to update course settings:", error);
+                toast.error("Failed to update course settings: " + (error.message || ""));
+              }
             }}
           >
             Apply Changes

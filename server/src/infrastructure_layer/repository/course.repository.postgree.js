@@ -106,14 +106,14 @@ export class CourseRepository {
         // --- THÊM LOGIC CHECK ENROLL Ở ĐÂY ---
         enrollments: currentUserId
           ? {
-            where: {
-              userId: currentUserId,
-              status: "ENROLLED",
-            },
-            select: {
-              id: true, // Chỉ cần lấy id để biết có tồn tại hay không
-            },
-          }
+              where: {
+                userId: currentUserId,
+                status: "ENROLLED",
+              },
+              select: {
+                id: true, // Chỉ cần lấy id để biết có tồn tại hay không
+              },
+            }
           : false,
       },
       orderBy: {
@@ -123,16 +123,16 @@ export class CourseRepository {
 
     // Lấy tất cả enrollment count cho tất cả courses trong một query
     const enrollmentCounts = await this.prisma.enrollment.groupBy({
-      by: ['courseId'],
+      by: ["courseId"],
       where: {
-        courseId: { in: result.map(c => c.id) },
+        courseId: { in: result.map((c) => c.id) },
         status: "ENROLLED",
       },
       _count: true,
     });
 
     // Tạo map từ courseId -> enrollment count
-    const countMap = new Map(enrollmentCounts.map(item => [item.courseId, item._count]));
+    const countMap = new Map(enrollmentCounts.map((item) => [item.courseId, item._count]));
 
     // Trả về dữ liệu đã được map thêm field isEnrolled
     // Luôn lấy tổng số enrolled students cho tất cả views
@@ -385,12 +385,12 @@ export class CourseRepository {
       select: { id: true },
     });
 
-    const existingModuleIds = existingModules.map(m => m.id);
-    const currentModuleIds = new Set(course.modules.map(m => m.id).filter(Boolean));
+    const existingModuleIds = existingModules.map((m) => m.id);
+    const currentModuleIds = new Set(course.modules.map((m) => m.id).filter(Boolean));
 
-    const deleteModuleIds = existingModuleIds.filter(id => !currentModuleIds.has(id));
-    const newModules = course.modules.filter(m => !m.id);
-    const updatedModules = course.modules.filter(m => m.id);
+    const deleteModuleIds = existingModuleIds.filter((id) => !currentModuleIds.has(id));
+    const newModules = course.modules.filter((m) => !m.id);
+    const updatedModules = course.modules.filter((m) => m.id);
 
     await this.prisma.$transaction([
       this.prisma.course.update({
@@ -398,16 +398,18 @@ export class CourseRepository {
         data: CourseMapper.toPersistence(course),
       }),
       this.prisma.module.deleteMany({
-        where: { id: { in: deleteModuleIds } }
+        where: { id: { in: deleteModuleIds } },
       }),
       this.prisma.module.createMany({
         data: newModules.map(ModuleMapper.toPersistence),
       }),
-      ...updatedModules.map(m => this.prisma.module.update({
-        where: { id: m.id },
-        data: ModuleMapper.toPersistence(m),
-      }))
-    ])
+      ...updatedModules.map((m) =>
+        this.prisma.module.update({
+          where: { id: m.id },
+          data: ModuleMapper.toPersistence(m),
+        })
+      ),
+    ]);
   }
 
   async atomicSave(entity) {
@@ -431,6 +433,12 @@ export class CourseRepository {
     published: true,
     publishDate: true,
     coverImage: true,
+    category: true,
+    durationWeeks: true,
+    durationDays: true,
+    durationHours: true,
+    organization: true,
+    requirement: true,
     createdAt: true,
     updatedAt: true,
     instructorId: true,
@@ -440,7 +448,7 @@ export class CourseRepository {
         courseId: true,
         title: true,
         position: true,
-      }
-    }
+      },
+    },
   };
 }

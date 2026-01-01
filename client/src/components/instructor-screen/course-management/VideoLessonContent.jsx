@@ -68,19 +68,6 @@ const VideoLessonContent = ({ lessonForm, onFormChange, onFileUpload, onRemoveFi
           </div>
         )}
       </div>
-
-      {/* Duration */}
-      <div className="edit-duration-section">
-        <h3 className="edit-content-section-title">⏱️ Video Duration</h3>
-        <Form.Control
-          type="text"
-          className="edit-duration-input"
-          value={lessonForm.duration || ""}
-          onChange={(e) => onFormChange("duration", e.target.value)}
-          placeholder="e.g., 10:30 (mm:ss)"
-        />
-        <small className="text-muted">Format: minutes:seconds (e.g., 10:30)</small>
-      </div>
     </>
   );
 };

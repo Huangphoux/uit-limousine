@@ -51,10 +51,17 @@ export default class ReviewInstructorUseCase {
         description: application.requestedCourseSummary,
         instructorId: application.applicantId,
         published: false, // Course starts as draft
-        category: "General",
-        level: "BEGINNER",
-        language: "vi",
-        price: 0,
+        category: application.category || "General",
+        level: application.level || "BEGINNER",
+        language: application.language || "vi",
+        price: application.price || 0,
+        coverImage: application.coverImage || null,
+        // map durations if provided
+        durationWeeks: application.durationWeeks || null,
+        durationDays: application.durationDays || null,
+        durationHours: application.durationHours || null,
+        organization: application.organization || null,
+        requirement: application.requirement || null,
       };
 
       const courseEntity = CourseEntity.create(courseData);

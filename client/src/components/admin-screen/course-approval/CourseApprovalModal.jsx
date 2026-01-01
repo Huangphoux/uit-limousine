@@ -101,7 +101,18 @@ const CourseApprovalModal = ({ show, onClose, onApprove, onDeny, courseData }) =
     durationWeeks,
     durationDays,
     durationHours,
+    price,
+    portfolioUrl,
   } = courseData;
+
+  // Prefer `image`, then `coverImage` (some payloads store it under that key)
+  const imageSrc = image || courseData.coverImage || null;
+
+  useEffect(() => {
+    if (show && courseData) {
+      console.log("[CourseApprovalModal] courseData:", courseData);
+    }
+  }, [show, courseData]);
 
   const handleApprove = () => {
     onApprove(courseData);
@@ -153,6 +164,20 @@ const CourseApprovalModal = ({ show, onClose, onApprove, onDeny, courseData }) =
         <p className="mb-4" style={{ color: "#666666" }}>
           Review course details and lesson content for approval.
         </p>
+
+        {/* Cover Image */}
+        {imageSrc ? (
+          <div className="mb-3" style={{ borderRadius: 8, overflow: "hidden" }}>
+            <img
+              src={imageSrc}
+              alt={title || "course cover"}
+              onError={(e) => {
+                e.currentTarget.src = "/images/course-placeholder.svg";
+              }}
+              style={{ width: "100%", height: 220, objectFit: "cover", display: "block" }}
+            />
+          </div>
+        ) : null}
 
         {/* Tab Navigation */}
         <div className="mb-4 d-flex justify-content-center edit-modal-tab-section">
@@ -421,6 +446,50 @@ const CourseApprovalModal = ({ show, onClose, onApprove, onDeny, courseData }) =
                         color: "black",
                       }}
                     />
+                  </Form.Group>
+                </Col>
+              </Row>
+
+              {/* Price & Portfolio */}
+              <Row>
+                <Col md={6}>
+                  <Form.Group className="mb-3">
+                    <Form.Label className="fw-semibold" style={{ color: "black" }}>
+                      Price
+                    </Form.Label>
+                    <Form.Control
+                      type="text"
+                      value={price != null ? String(price) : "Not specified"}
+                      readOnly
+                      style={{
+                        backgroundColor: "#f8f9fa",
+                        border: "1px solid #e9ecef",
+                        borderRadius: "8px",
+                        padding: "12px 16px",
+                        color: "black",
+                      }}
+                    />
+                  </Form.Group>
+                </Col>
+                <Col md={6}>
+                  <Form.Group className="mb-3">
+                    <Form.Label className="fw-semibold" style={{ color: "black" }}>
+                      Portfolio URL
+                    </Form.Label>
+                    {portfolioUrl ? (
+                      <div className="d-flex align-items-center">
+                        <a
+                          href={portfolioUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          style={{ color: "#1976d2" }}
+                        >
+                          {portfolioUrl}
+                        </a>
+                      </div>
+                    ) : (
+                      <div style={{ color: "#6c757d" }}>Not provided</div>
+                    )}
                   </Form.Group>
                 </Col>
               </Row>

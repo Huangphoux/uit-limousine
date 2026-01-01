@@ -71,6 +71,8 @@ const ApprovalCourseCard = ({ courseData, onApprove, onDeny }) => {
     durationWeeks,
     durationDays,
     durationHours,
+    coverImage,
+    price,
   } = courseData;
 
   // Helper function to get the longest duration unit
@@ -160,7 +162,10 @@ const ApprovalCourseCard = ({ courseData, onApprove, onDeny }) => {
             {getStatusBadge()}
             <Card.Img
               variant="top"
-              src={image || "public/images/course-placeholder.svg"}
+              src={image || coverImage || "/images/course-placeholder.svg"}
+              onError={(e) => {
+                e.currentTarget.src = "/images/course-placeholder.svg";
+              }}
               style={{
                 height: "140px",
                 objectFit: "cover",
@@ -228,6 +233,14 @@ const ApprovalCourseCard = ({ courseData, onApprove, onDeny }) => {
                     >
                       {category}
                     </span>
+                  </div>
+                )}
+
+                {price != null && (
+                  <div className="mt-1">
+                    <small style={{ color: "#495057", fontSize: "12px", fontWeight: "500" }}>
+                      Price: {price}
+                    </small>
                   </div>
                 )}
               </div>

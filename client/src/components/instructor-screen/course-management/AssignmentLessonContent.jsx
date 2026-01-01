@@ -1,6 +1,35 @@
 import { Form } from "react-bootstrap";
 
 const AssignmentLessonContent = ({ lessonForm, onFormChange, onFileUpload, onRemoveFile }) => {
+  // Helper: choose a simple emoji icon based on file extension
+  const getFileIcon = (name) => {
+    const ext = (name || "").split(".").pop().toLowerCase();
+    switch (ext) {
+      case "pdf":
+        return "📄";
+      case "doc":
+      case "docx":
+        return "📝";
+      case "zip":
+        return "🗜️";
+      case "ppt":
+      case "pptx":
+        return "📊";
+      case "mp4":
+      case "mov":
+      case "avi":
+      case "mkv":
+        return "🎥";
+      case "png":
+      case "jpg":
+      case "jpeg":
+      case "gif":
+        return "🖼️";
+      default:
+        return "📎";
+    }
+  };
+
   return (
     <>
       {/* Description */}
@@ -165,7 +194,9 @@ const AssignmentLessonContent = ({ lessonForm, onFormChange, onFileUpload, onRem
           <div className="edit-files-list">
             {lessonForm.files.map((file, index) => (
               <div key={index} className="edit-file-item">
-                <span className="edit-file-icon">📎</span>
+                <span className="edit-file-icon" aria-hidden="true">
+                  {getFileIcon(file.name)}
+                </span>
                 <span className="edit-file-name">{file.name}</span>
                 <button
                   className="edit-file-remove"

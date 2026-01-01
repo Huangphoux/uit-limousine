@@ -71,6 +71,12 @@ model Course {
   published    Boolean   @default(false)
   publishDate  DateTime?
   coverImage   String?
+  category     String?
+  durationWeeks Int?
+  durationDays  Int?
+  durationHours Int?
+  organization  String?
+  requirement   String?
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
   denialReason String?
@@ -78,7 +84,6 @@ model Course {
   // relations
   instructor   User?         @relation("InstructorCourses", fields: [instructorId], references: [id], onDelete: SetNull)
   instructorId String?
-  category     String?
   assignments  Assignment[]
   certificates Certificate[]
   enrollments  Enrollment[]
@@ -275,6 +280,16 @@ model InstructorApplication {
   requestedCourseTitle   String?
   requestedCourseSummary String?
   portfolioUrl           String?
+  coverImage             String?
+  category               String?
+  level                  String?
+  durationWeeks          Int?
+  durationDays           Int?
+  durationHours          Int?
+  organization           String?
+  language               String?
+  requirement            String?
+  price                  Float?
   status                 InstructorApplicationStatus @default(PENDING)
   note                   String?
   appliedAt              DateTime                    @default(now())

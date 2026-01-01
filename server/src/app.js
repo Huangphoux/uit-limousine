@@ -9,8 +9,10 @@ import notificationRouter from "./presentation_layer/routes/notification.route.j
 import gradeRouter from "./presentation_layer/routes/grade.route.js";
 import instructorRouter from "./presentation_layer/routes/instructor.route.js";
 import adminRouter from "./presentation_layer/routes/admin.route.js";
+import mediaRouter from "./presentation_layer/routes/media.route.js";
 import { config } from "./config.js";
 import assignmentsRouter from "./presentation_layer/routes/assignments.route.js";
+import paymentsRouter from "./presentation_layer/routes/payments.route.js";
 
 const app = express();
 app.use(
@@ -34,6 +36,8 @@ app.use("/notifications", notificationRouter);
 app.use("/grade", gradeRouter);
 app.use("/instructor", instructorRouter);
 app.use("/admin", adminRouter);
+app.use("/media", mediaRouter);
+app.use("/payments", paymentsRouter);
 app.use("/assignments", assignmentsRouter);
 
 app.get("/", (req, res) => {

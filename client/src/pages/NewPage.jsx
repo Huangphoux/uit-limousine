@@ -71,6 +71,72 @@ const NewPage = () => {
     return () => clearTimeout(debounceTimer);
   }, [searchTerm]);
 
+  // Listen for course updates signaled by other pages and refresh list
+  useEffect(() => {
+    const onCoursesUpdated = () => {
+      console.log("NewPage: received courses_updated event, refreshing courses...");
+      fetchCourses();
+      try {
+        localStorage.removeItem("courses_needs_refresh");
+      } catch (e) {
+        console.log(e);
+      }
+    };
+
+    const onCoursePublished = async (ev) => {
+      const id = ev?.detail?.id;
+      if (!id) return;
+      try {
+        const res = await fetch(`${API_URL}/courses/${id}`);
+        if (!res.ok) return;
+        const course = await res.json();
+        // If course is published, refresh the public listing to ensure consistent mapping
+        if (course && course.published) {
+          await fetchCourses();
+          toast &&
+            toast.success &&
+            toast.success("A course was published and is now visible in the catalog.");
+        }
+      } catch (e) {
+        console.log(e);
+      }
+    };
+
+    const onCourseUnpublished = async (ev) => {
+      const id = ev?.detail?.id;
+      if (!id) return;
+      // refresh listing to remove unpublished course and keep mapping consistent
+      await fetchCourses();
+    };
+
+    const checkAndRefresh = () => {
+      try {
+        const flag = localStorage.getItem("courses_needs_refresh");
+        if (flag === "1") {
+          fetchCourses();
+          localStorage.removeItem("courses_needs_refresh");
+        }
+      } catch (e) {
+        console.log(e);
+      }
+    };
+
+    window.addEventListener("courses_updated", onCoursesUpdated);
+    window.addEventListener("course_published", onCoursePublished);
+    window.addEventListener("course_unpublished", onCourseUnpublished);
+    window.addEventListener("focus", checkAndRefresh);
+
+    // run once to pick up any pending changes
+    checkAndRefresh();
+
+    return () => {
+      window.removeEventListener("courses_updated", onCoursesUpdated);
+      window.removeEventListener("course_published", onCoursePublished);
+      window.removeEventListener("course_unpublished", onCourseUnpublished);
+      window.removeEventListener("focus", checkAndRefresh);
+    };
+  }, [fetchCourses]);
+
   const handleEnroll = async (courseId, course, type) => {
     if (type === "success") {
       if (course.enrolled) {
@@ -110,7 +176,30 @@ const NewPage = () => {
       setFilteredCourses((prevFiltered) =>
         prevFiltered.map((c) => (c.id === courseId ? { ...c, isPaid: true } : c))
       );
+      // Update modal's selected course so its local state reflects payment immediately
+      setSelectedCourse((prev) => (prev ? { ...prev, isPaid: true } : prev));
+
       addNotification("success", `Payment confirmed for "${course.title}"!`);
+
+      // Attempt to enroll automatically after successful payment
+      try {
+        const enrollResult = await enrollInCourse(courseId);
+        if (enrollResult.success) {
+          addNotification("success", `Automatically enrolled in "${course.title}"`);
+          setCourses((prev) =>
+            prev.map((c) => (c.id === courseId ? { ...c, enrolled: true, isPaid: true } : c))
+          );
+          setSelectedCourse((prev) => (prev ? { ...prev, enrolled: true, isPaid: true } : prev));
+        } else {
+          addNotification("error", `Auto-enroll failed: ${enrollResult.error}`);
+          // Keep isPaid true even if enrollment failed so user can try enrolling manually
+          setSelectedCourse((prev) => (prev ? { ...prev, isPaid: true } : prev));
+        }
+      } catch (e) {
+        console.error("Auto-enroll error after payment:", e);
+        addNotification("error", `Auto-enroll error`);
+        setSelectedCourse((prev) => (prev ? { ...prev, isPaid: true } : prev));
+      }
     } else {
       // Handle other types of notifications
       addNotification(type, course.title);
@@ -161,10 +250,12 @@ const NewPage = () => {
           level: result.level || "BEGINNER",
           duration: course.duration || "N/A",
           image: result.coverImage || course.image,
-          enrolled: course.enrolled || false,
+          // Prefer server-provided enrollment/payment flags when available
+          enrolled:
+            typeof result.isEnrolled !== "undefined" ? result.isEnrolled : course.enrolled || false,
           instructor: result.instructor?.name || "Unknown Instructor",
           price: result.price || 0,
-          isPaid: course.isPaid || false,
+          isPaid: typeof result.isPaid !== "undefined" ? result.isPaid : course.isPaid || false,
           // Additional details from API
           slug: result.slug,
           shortDesc: result.shortDesc,
