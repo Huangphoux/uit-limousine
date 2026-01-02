@@ -48,6 +48,8 @@ export default class CourseUseCase {
       studentId,
       content: fileInfo.content || null,
       fileUrl: fileInfo.fileUrl || null,
+      fileName: fileInfo.fileName || null,
+      fileSize: fileInfo.fileSize || null,
       status,
       submittedAt: new Date(),
     };

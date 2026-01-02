@@ -47,7 +47,8 @@ export class CourseReadAccessor {
                       lessonId: true,
                       filename: true,
                       mimeType: true,
-                    }
+                      fileId: true,
+                    },
                   },
                 },
               },
@@ -90,7 +91,8 @@ export class CourseReadAccessor {
                       lessonId: true,
                       filename: true,
                       mimeType: true,
-                    }
+                      fileId: true,
+                    },
                   },
                 },
               },
@@ -112,12 +114,12 @@ export class CourseReadAccessor {
           assignmentId: l.assignmentId || null,
           assignment: l.assignment
             ? {
-              id: l.assignment.id,
-              title: l.assignment.title,
-              description: l.assignment.description,
-              dueDate: l.assignment.dueDate,
-              maxPoints: l.assignment.maxPoints,
-            }
+                id: l.assignment.id,
+                title: l.assignment.title,
+                description: l.assignment.description,
+                dueDate: l.assignment.dueDate,
+                maxPoints: l.assignment.maxPoints,
+              }
             : null,
           content: l.content,
           mediaUrl: l.mediaUrl,

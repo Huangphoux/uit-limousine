@@ -118,6 +118,7 @@ const CourseContent = () => {
   console.log("CurrentData contentType:", currentLessonData?.contentType);
   console.log("CurrentData type:", currentLessonData?.type);
   console.log("CurrentData mediaUrl:", currentLessonData?.mediaUrl);
+  console.log("CurrentData description:", currentLessonData?.description);
   console.log("CurrentData content:", currentLessonData?.content);
 
   // Helper function to find current lesson index
@@ -235,6 +236,11 @@ const CourseContent = () => {
       });
 
       if (!response.ok) {
+        // Get detailed error message
+        const errorData = await response.json().catch(() => ({}));
+        console.error("API Error Response:", errorData);
+        console.error("Status:", response.status, response.statusText);
+
         // Revert on error
         setCompletedLessons((prev) => {
           const newSet = new Set(prev);
@@ -245,15 +251,24 @@ const CourseContent = () => {
           }
           return newSet;
         });
-        throw new Error("Failed to update progress");
+
+        const errorMessage =
+          errorData.message || errorData.error || `Failed to update progress (${response.status})`;
+        alert(`Error: ${errorMessage}`);
+        throw new Error(errorMessage);
       }
 
+      const result = await response.json().catch(() => ({}));
+      console.log("Mark as finished response:", result);
       console.log(
         isCurrentlyCompleted ? "Lesson unmarked:" : "Lesson marked as finished:",
         currentLesson
       );
     } catch (err) {
       console.error("Error updating lesson progress:", err);
+      if (err.message && !err.message.includes("Failed to update progress")) {
+        alert(`Error: ${err.message}`);
+      }
     }
   };
 
@@ -304,6 +319,42 @@ const CourseContent = () => {
     }
   };
 
+  const handleDownloadResource = async (e, lessonId, resourceId, filename) => {
+    e.preventDefault();
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/lessons/${lessonId}/resources/${resourceId}`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        if (response.status === 404) {
+          throw new Error("File not found. It may have been deleted.");
+        }
+        throw new Error(errorData.message || "Failed to download file");
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Download error:", error);
+      alert(`Failed to download file: ${error.message}`);
+    }
+  };
+
   if (loading) {
     return (
       <div
@@ -344,6 +395,7 @@ const CourseContent = () => {
     return null;
   }
 
+  // Updated JSX structure for English translation and layout separation
   return (
     <div style={{ minHeight: "100vh", background: "#f8f9fa" }}>
       {/* Header */}
@@ -461,6 +513,35 @@ const CourseContent = () => {
                 onMarkAsFinished={handleMarkAsFinished}
                 isCompleted={completedLessons.has(currentLesson)}
               />
+            ) : currentLessonData?.type === "article" ? (
+              // Article rendering outside of .content-container to avoid layout overlap
+              (() => {
+                // Split content into description and reading content
+                const fullContent = currentLessonData.content || "";
+                const parts = fullContent.split(/\n\n+/); // Split by 2+ newlines
+                const description = currentLessonData.description || parts[0] || "";
+                const readingContent = currentLessonData.description
+                  ? fullContent
+                  : parts.slice(1).join("\n\n") || parts[0] || "";
+
+                return (
+                  <div className="article-content-container">
+                    {description && (
+                      <div className="reading-description">
+                        <h3 className="reading-title">📖 Description</h3>
+                        <div className="reading-box">{description}</div>
+                      </div>
+                    )}
+
+                    {readingContent && (
+                      <div className="reading-content">
+                        <h3 className="reading-title">📝 Reading Content</h3>
+                        <div className="reading-box">{readingContent}</div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()
             ) : (
               <div className="content-container">
                 {currentLessonData?.type === "video" &&
@@ -475,22 +556,6 @@ const CourseContent = () => {
                     allowFullScreen
                     className="video-iframe"
                   />
-                ) : currentLessonData?.type === "article" && currentLessonData?.content ? (
-                  <div
-                    className="article-content-container"
-                    style={{
-                      padding: "2rem",
-                      backgroundColor: "#ffffff",
-                      borderRadius: "0.5rem",
-                      boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-                      lineHeight: "1.8",
-                      fontSize: "1rem",
-                      color: "#1f2937",
-                      whiteSpace: "pre-wrap",
-                    }}
-                  >
-                    {currentLessonData.content}
-                  </div>
                 ) : (
                   <div className="content-placeholder">
                     {currentLessonData?.type === "video" && (
@@ -509,6 +574,31 @@ const CourseContent = () => {
                 )}
               </div>
             )}
+
+            {/* Lesson Resources */}
+            {currentLessonData?.type !== "assignment" &&
+              currentLessonData?.lessonResources &&
+              currentLessonData.lessonResources.length > 0 && (
+                <div className="lesson-resources mt-3">
+                  <h5>Resources</h5>
+                  <div className="resource-list">
+                    {currentLessonData.lessonResources.map((res) => (
+                      <div key={res.id} className="resource-item">
+                        <div className="resource-icon">📎</div>
+                        <a
+                          className="resource-link"
+                          href="#"
+                          onClick={(e) =>
+                            handleDownloadResource(e, res.lessonId, res.id, res.filename)
+                          }
+                        >
+                          {res.filename}
+                        </a>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
             {/* Lesson Actions */}
             {currentLessonData?.type !== "assignment" && (

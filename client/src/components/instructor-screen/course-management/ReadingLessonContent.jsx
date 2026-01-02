@@ -1,6 +1,16 @@
 import { Form } from "react-bootstrap";
+import { useResourceDownload } from "./useResourceDownload";
 
 const ReadingLessonContent = ({ lessonForm, onFormChange, onFileUpload, onRemoveFile }) => {
+  const handleResourceDeleted = (resourceId) => {
+    // Remove the resource from lessonForm.lessonResources
+    const updatedResources = lessonForm.lessonResources.filter((r) => r.id !== resourceId);
+    onFormChange("lessonResources", updatedResources);
+  };
+
+  const { handleDownloadResource, handleDeleteResource } =
+    useResourceDownload(handleResourceDeleted);
+
   return (
     <>
       {/* Description */}
@@ -98,12 +108,18 @@ const ReadingLessonContent = ({ lessonForm, onFormChange, onFileUpload, onRemove
                   <span className="edit-file-icon">📄</span>
                   <a
                     className="edit-file-name"
-                    href={`${import.meta.env.VITE_API_URL}/lessons/${res.lessonId}/resources/${res.id}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                    href="#"
+                    onClick={(e) => handleDownloadResource(e, res.lessonId, res.id, res.filename)}
                   >
                     {res.filename}
                   </a>
+                  <button
+                    className="edit-file-remove"
+                    onClick={() => handleDeleteResource(res.id, res.filename)}
+                    title="Delete file"
+                  >
+                    ✕
+                  </button>
                 </div>
               ))}
             </div>

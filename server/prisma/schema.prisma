@@ -185,6 +185,8 @@ model Submission {
   studentId    String
   content      String? // comments or text
   fileUrl      String?
+  fileName     String? // original filename
+  fileSize     Int? // file size in bytes
   status       SubmissionStatus @default(SUBMITTED)
   grade        Float?
   feedback     String?

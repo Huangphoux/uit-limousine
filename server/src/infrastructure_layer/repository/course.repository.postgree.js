@@ -166,11 +166,14 @@ export class CourseRepository {
       let calculatedDurationHours = null;
       if (!course.durationWeeks && !course.durationDays && !course.durationHours) {
         const totalSec = (course.modules || []).reduce((sum, module) => {
-          return sum + (module.lessons || []).reduce((lessonSum, lesson) => {
-            return lessonSum + (lesson.durationSec || 0);
-          }, 0);
+          return (
+            sum +
+            (module.lessons || []).reduce((lessonSum, lesson) => {
+              return lessonSum + (lesson.durationSec || 0);
+            }, 0)
+          );
         }, 0);
-        
+
         if (totalSec > 0) {
           calculatedDurationHours = Math.round((totalSec / 3600) * 10) / 10; // Round to 1 decimal
         }
@@ -337,79 +340,61 @@ export class CourseRepository {
   }
 
   async findByLessonId(lessonId) {
-    try {
-      const raw = await this.prisma.course.findFirst({
-        where: {
-          modules: {
-            some: {
-              lessons: {
-                some: {
-                  id: lessonId,
-                },
+    // Always use safe select to ensure modules are included
+    const raw = await this.prisma.course.findFirst({
+      where: {
+        modules: {
+          some: {
+            lessons: {
+              some: {
+                id: lessonId,
               },
             },
           },
         },
-        select: CourseRepository.baseQuery,
-      });
+      },
+      select: {
+        id: true,
+        title: true,
+        shortDesc: true,
+        description: true,
+        language: true,
+        level: true,
+        price: true,
+        published: true,
+        publishDate: true,
+        coverImage: true,
+        createdAt: true,
+        updatedAt: true,
+        instructorId: true,
+        modules: {
+          select: {
+            id: true,
+            title: true,
+            position: true,
+            createdAt: true,
+            lessons: {
+              select: {
+                id: true,
+                title: true,
+                content: true,
+                mediaUrl: true,
+                contentType: true,
+                durationSec: true,
+                position: true,
+                createdAt: true,
+              },
+            },
+          },
+        },
+      },
+    });
 
-      return CourseEntity.rehydrate(raw);
-    } catch (err) {
-      console.warn(
-        "CourseRepository.findByLessonId: baseQuery select failed, retrying with safe select",
-        err.message
-      );
-      const raw = await this.prisma.course.findFirst({
-        where: {
-          modules: {
-            some: {
-              lessons: {
-                some: {
-                  id: lessonId,
-                },
-              },
-            },
-          },
-        },
-        select: {
-          id: true,
-          title: true,
-          shortDesc: true,
-          description: true,
-          language: true,
-          level: true,
-          price: true,
-          published: true,
-          publishDate: true,
-          coverImage: true,
-          createdAt: true,
-          updatedAt: true,
-          instructorId: true,
-          modules: {
-            select: {
-              id: true,
-              title: true,
-              position: true,
-              createdAt: true,
-              lessons: {
-                select: {
-                  id: true,
-                  title: true,
-                  content: true,
-                  mediaUrl: true,
-                  contentType: true,
-                  durationSec: true,
-                  position: true,
-                  createdAt: true,
-                },
-              },
-            },
-          },
-        },
-      });
-
-      return CourseEntity.rehydrate(raw);
+    if (!raw) {
+      return null;
     }
+
+    return CourseEntity.rehydrate(raw);
   }
 
   // CourseRepository.js

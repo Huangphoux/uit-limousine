@@ -114,6 +114,7 @@ const AssignmentGradingDetail = ({ lessonForm, courseData }) => {
                 studentEmail: s.studentEmail || s.student?.email || s.user?.email || "",
                 content: s.content || s.text || "",
                 fileUrl: s.fileUrl || s.file || s.url || "",
+                fileName: s.fileName || s.filename || (s.fileUrl ? s.fileUrl.split("/").pop() : ""),
                 fileSize: s.fileSize || s.size || "",
                 status: s.status || s.state || "SUBMITTED",
                 grade: s.grade ?? s.score ?? null,
@@ -230,21 +231,34 @@ const AssignmentGradingDetail = ({ lessonForm, courseData }) => {
     performGrade();
   };
 
-  const triggerFileDownload = async (fileUrl) => {
+  const triggerFileDownload = async (fileUrl, originalFileName = null) => {
     if (!fileUrl) return;
     try {
       const token = localStorage.getItem("accessToken");
-      const resp = await fetch(fileUrl, {
+      // Ensure fileUrl has full API URL
+      const fullUrl = fileUrl.startsWith("http") ? fileUrl : `${API_URL}${fileUrl}`;
+
+      console.log("Downloading file from:", fullUrl);
+
+      const resp = await fetch(fullUrl, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
+
       if (!resp.ok) {
+        const contentType = resp.headers.get("content-type");
+        // If response is HTML, it means the route doesn't exist
+        if (contentType && contentType.includes("text/html")) {
+          throw new Error("File not found on server. The URL may be incorrect.");
+        }
         const text = await resp.text().catch(() => null);
         throw new Error(`Failed to download file: ${resp.status} ${resp.statusText} ${text || ""}`);
       }
+
       const blob = await resp.blob();
-      let filename = fileUrl.split("/").pop() || "download";
+      // Use original filename if provided, otherwise try to get from URL or headers
+      let filename = originalFileName || fileUrl.split("/").pop() || "download";
       const cd = resp.headers.get("content-disposition");
-      if (cd) {
+      if (!originalFileName && cd) {
         const m = /filename\*?=(?:UTF-8'')?"?([^";]+)"?/i.exec(cd);
         if (m && m[1]) filename = decodeURIComponent(m[1]);
       }
@@ -256,6 +270,8 @@ const AssignmentGradingDetail = ({ lessonForm, courseData }) => {
       a.click();
       a.remove();
       URL.revokeObjectURL(url);
+
+      console.log("File downloaded successfully:", filename);
     } catch (err) {
       console.error("Download error", err);
       toast.error("Không thể tải tập tin: " + (err.message || "Lỗi"));
@@ -358,11 +374,11 @@ const AssignmentGradingDetail = ({ lessonForm, courseData }) => {
                             href={submission.fileUrl}
                             onClick={(e) => {
                               e.preventDefault();
-                              triggerFileDownload(submission.fileUrl);
+                              triggerFileDownload(submission.fileUrl, submission.fileName);
                             }}
                             style={{ color: "#0369a1", textDecoration: "none", cursor: "pointer" }}
                           >
-                            {submission.fileUrl.split("/").pop()}
+                            {submission.fileName || submission.fileUrl.split("/").pop()}
                           </a>
                           <div className="detail-small detail-text-black">
                             {submission.fileSize}

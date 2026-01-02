@@ -998,6 +998,12 @@ const EditCourseView = () => {
 
           // ✅ THÊM: Luôn gửi assignment fields cho lesson type Assignment
           if (lesson.type === "Assignment") {
+            // ✅ CRITICAL: Send assignmentId so backend updates existing assignment instead of creating new
+            // This prevents loss of student submissions and instructor grades
+            if (lesson.assignmentId) {
+              lessonData.assignmentId = lesson.assignmentId;
+            }
+
             // DueDate
             if (lesson.dueDate) {
               const dueTimeStr = lesson.dueTime || "23:59";
