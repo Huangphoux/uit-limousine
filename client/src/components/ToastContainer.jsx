@@ -113,13 +113,24 @@ const ToastContainer = ({ notifications }) => {
             align-items: center;
             justify-content: center;
           }
-          .toast-body { flex-grow: 1; }
+          .toast-body { 
+            flex-grow: 1; 
+            min-width: 0; /* Allow flex item to shrink below content size */
+            overflow: hidden; /* Prevent overflow */
+          }
           .toast-title {
             font-weight: 600;
             font-size: 0.95rem;
             margin-bottom: 2px;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
           }
-          .toast-message { font-size: 0.85rem; }
+          .toast-message { 
+            font-size: 0.85rem;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            line-height: 1.4;
+          }
           .toast-close-btn {
             background: none;
             border: none;
