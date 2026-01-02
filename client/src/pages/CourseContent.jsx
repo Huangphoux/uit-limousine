@@ -349,7 +349,6 @@ const CourseContent = () => {
     );
     console.log("=============================================");
 
-    alert(`Downloading: ${filename}\nLessonId: ${lessonId}\nResourceId: ${resourceId}`);
     console.log("[Download] Starting download:", { lessonId, resourceId, filename });
 
     const downloadUrl = `${import.meta.env.VITE_API_URL}/lessons/${lessonId}/resources/${resourceId}`;

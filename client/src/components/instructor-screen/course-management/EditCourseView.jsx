@@ -773,7 +773,7 @@ const EditCourseView = () => {
   const hasPreviousLesson = () => {
     if (!selectedLesson) return false;
     const info = getCurrentModuleLesson();
-    if (!info) return false;
+    if (!info || !info.module) return false;
     const { lessonIndex } = info;
     const moduleIndex = courseData.modules.findIndex((m) => m.id === selectedLesson.moduleId);
     return lessonIndex > 0 || moduleIndex > 0;
@@ -782,7 +782,7 @@ const EditCourseView = () => {
   const hasNextLesson = () => {
     if (!selectedLesson) return false;
     const info = getCurrentModuleLesson();
-    if (!info) return false;
+    if (!info || !info.module || !info.module.lessons) return false;
     const { module, lessonIndex } = info;
     const moduleIndex = courseData.modules.findIndex((m) => m.id === selectedLesson.moduleId);
     return lessonIndex < module.lessons.length - 1 || moduleIndex < courseData.modules.length - 1;
