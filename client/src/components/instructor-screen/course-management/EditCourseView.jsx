@@ -1037,6 +1037,12 @@ const EditCourseView = () => {
         level: course.level || null,
         language: course.language || null,
         coverImage: course.thumbnail || course.image || course.coverImage || null,
+        category: course.category || null,
+        organization: course.organization || null,
+        requirement: course.requirement || null,
+        durationWeeks: course.durationWeeks || course.duration?.weeks || null,
+        durationDays: course.durationDays || course.duration?.days || null,
+        durationHours: course.durationHours || course.duration?.hours || null,
         modules: modulesData,
       };
 
@@ -2130,12 +2136,33 @@ const EditCourseView = () => {
                 }
 
                 const updated = resJson.data || resJson;
-                // ✅ FIX: Ensure thumbnail field is synced from coverImage
+
+                console.log("[EditCourseView] Server response data:", updated);
+                console.log(
+                  "[EditCourseView] Updating courseData with settingsForm:",
+                  settingsForm
+                );
+
+                // ✅ FIX: Update courseData with values from settingsForm (local state)
+                // Don't rely on server response which might not include all fields
                 setCourseData((prev) => ({
                   ...prev,
-                  ...updated,
+                  ...updated, // Server response (might have computed fields)
+                  // Override with local settingsForm values to ensure they persist
+                  title: settingsForm.title || prev.title,
+                  description: settingsForm.description || prev.description,
+                  category: settingsForm.category || prev.category,
+                  level: settingsForm.level || prev.level,
+                  language: settingsForm.language || prev.language,
+                  organization: settingsForm.organization || prev.organization,
+                  requirement: settingsForm.requirement || prev.requirement,
+                  durationWeeks: dw,
+                  durationDays: dd,
+                  durationHours: dh,
+                  price: includePrice ? Number(settingsForm.price) || 0 : prev.price,
                   thumbnail: updated.coverImage || coverImageUrl || prev.thumbnail || null,
                   image: updated.coverImage || coverImageUrl || prev.image || null,
+                  coverImage: updated.coverImage || coverImageUrl || prev.coverImage || null,
                 }));
 
                 // cleanup object URL preview
