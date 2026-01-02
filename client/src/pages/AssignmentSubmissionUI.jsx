@@ -136,8 +136,14 @@ const AssignmentSubmissionUI = ({ lesson, onMarkAsFinished, isCompleted }) => {
 
     console.log("[Download Submission] Starting download:", { fileUrl, fileName });
 
+    // Construct the full API URL for the file
+    // If fileUrl starts with /, it's a relative path that needs the API base URL
+    const downloadUrl = fileUrl.startsWith("/") ? `${API_URL}${fileUrl}` : fileUrl;
+
+    console.log("[Download Submission] Full download URL:", downloadUrl);
+
     try {
-      const response = await fetch(fileUrl, {
+      const response = await fetch(downloadUrl, {
         method: "GET",
         headers: {
           Authorization: `Bearer ${token}`,
