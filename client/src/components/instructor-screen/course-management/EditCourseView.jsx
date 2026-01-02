@@ -873,12 +873,26 @@ const EditCourseView = () => {
                 ),
               }));
 
-              // clear local staging for that lesson
-              lessonFilesRef.current[lesson.id] = [];
-              // Clear lesson form files if currently editing that lesson
+              // ✅ Update lessonForm to show staged uploads immediately
               if (selectedLesson && selectedLesson.lessonId === lesson.id) {
-                setLessonForm((prev) => ({ ...prev, files: [] }));
+                setLessonForm((prev) => ({
+                  ...prev,
+                  lessonResources: [
+                    ...(prev.lessonResources || []),
+                    ...(uploadedFiles || []).map((u) => ({
+                      id: null,
+                      lessonId: lesson.id,
+                      filename: u.filename,
+                      mimeType: u.mimeType,
+                      fileId: u.fileId,
+                    })),
+                  ],
+                  files: [], // Clear pending files since they're now staged
+                }));
               }
+
+              // ✅ KHÔNG clear lessonFilesRef ở đây - đợi đến khi PUT thành công
+              // lessonFilesRef.current[lesson.id] = [];
             } catch (err) {
               console.error("Failed to upload temp files for lesson", lesson.id, err);
               toast.error("Failed to upload lesson files: " + (err.message || err));
@@ -897,12 +911,17 @@ const EditCourseView = () => {
               courseId: course.id,
               title: lesson.title || "Assignment",
               description: lesson.description || lesson.content || "",
-              dueDate:
-                lesson.dueDate && lesson.dueTime
-                  ? new Date(lesson.dueDate + "T" + lesson.dueTime).toISOString()
-                  : undefined,
               maxPoints: lesson.maxScore || lesson.maxPoints || 100,
             };
+
+            // ✅ Only add dueDate if it exists (avoid sending undefined)
+            if (lesson.dueDate && lesson.dueTime) {
+              assignmentPayload.dueDate = new Date(
+                lesson.dueDate + "T" + lesson.dueTime
+              ).toISOString();
+            } else if (lesson.dueDate) {
+              assignmentPayload.dueDate = new Date(lesson.dueDate + "T23:59:59").toISOString();
+            }
 
             // Create new assignment
             console.log(
@@ -991,16 +1010,29 @@ const EditCourseView = () => {
             assignmentId: lesson.assignmentId ? lesson.assignmentId : undefined,
             durationSec: lesson.duration ? parseDurationToSeconds(lesson.duration) : null,
             position: lessonIndex,
-            // ✅ OPTIMIZATION: Only send NEW resources (fileId without id)
-            // Existing resources already in DB don't need to be re-sent
-            lessonResources: (lesson.lessonResources || [])
-              .filter((r) => !r.id && r.fileId) // Only new staged uploads
-              .map((r) => ({
-                id: null,
-                filename: r.filename,
-                mimeType: r.mimeType,
-                fileId: r.fileId,
-              })),
+            // ✅ CRITICAL FIX: Send ALL resources (existing + new) to prevent data loss
+            // Backend will merge/update accordingly
+            lessonResources: (lesson.lessonResources || []).map((r) => {
+              // Existing resource (already in DB)
+              if (r.id) {
+                return {
+                  id: r.id,
+                  filename: r.filename,
+                  mimeType: r.mimeType,
+                };
+              }
+              // New staged upload (has fileId but no id yet)
+              else if (r.fileId) {
+                return {
+                  id: null,
+                  filename: r.filename,
+                  mimeType: r.mimeType,
+                  fileId: r.fileId,
+                };
+              }
+              // Fallback
+              return r;
+            }),
           };
 
           // ✅ THÊM: Luôn gửi assignment fields cho lesson type Assignment
@@ -1011,7 +1043,7 @@ const EditCourseView = () => {
               lessonData.assignmentId = lesson.assignmentId;
             }
 
-            // DueDate
+            // DueDate - only add if exists
             if (lesson.dueDate) {
               const dueTimeStr = lesson.dueTime || "23:59";
               lessonData.dueDate = new Date(lesson.dueDate + "T" + dueTimeStr).toISOString();
@@ -1070,60 +1102,24 @@ const EditCourseView = () => {
         throw new Error(errorMessage);
       }
 
+      // ✅ Files already uploaded via temp upload and linked in PUT request
+      // No need to upload again - just clear the refs
       for (const module of course.modules || []) {
-        console.log(module);
         for (const lesson of module.lessons || []) {
-          const realFiles = lessonFilesRef.current[lesson.id] || [];
-          if (realFiles.length > 0) {
-            try {
-              const uploaded = await uploadLessonFiles(lesson.id, realFiles);
-              console.log("[handleSaveCourse] uploaded resources:", uploaded);
-
-              // Merge uploaded resources into local courseData so UI reflects newly uploaded files
-              if (uploaded && uploaded.length) {
-                setCourseData((prev) => ({
-                  ...prev,
-                  modules: prev.modules.map((m) =>
-                    m.id === module.id
-                      ? {
-                          ...m,
-                          lessons: m.lessons.map((l) =>
-                            l.id === lesson.id
-                              ? {
-                                  ...l,
-                                  lessonResources: [...(l.lessonResources || []), ...uploaded],
-                                }
-                              : l
-                          ),
-                        }
-                      : m
-                  ),
-                }));
-
-                if (selectedLesson && selectedLesson.lessonId === lesson.id) {
-                  setLessonForm((prev) => ({
-                    ...prev,
-                    lessonResources: [...(prev.lessonResources || []), ...uploaded],
-                    files: [],
-                  }));
-                }
-
-                toast.success(
-                  `Uploaded ${uploaded.length} resource(s) to lesson: ${lesson.title || lesson.id}`
-                );
-              }
-
-              // Clear stored files in ref
-              lessonFilesRef.current[lesson.id] = [];
-            } catch (err) {
-              console.error("Failed to upload lesson files for lesson", lesson.id, err);
-              toast.error("Failed to upload lesson files: " + (err.message || err));
-            }
-          }
+          lessonFilesRef.current[lesson.id] = [];
         }
       }
 
+      // ✅ Clear lessonForm files if any lesson is selected
+      if (selectedLesson) {
+        setLessonForm((prev) => ({ ...prev, files: [] }));
+      }
+
       toast.success("Course updated successfully!");
+
+      // ✅ Fetch lại course data để cập nhật UI với resources mới được persist
+      await fetchCourseDetails(course.id);
+
       // signal parent page to refresh course list
       try {
         localStorage.setItem("courses_needs_refresh", "1");
@@ -1131,7 +1127,9 @@ const EditCourseView = () => {
         /* ignore */
         console.log(e);
       }
-      navigate(-1);
+      // ✅ KHÔNG navigate(-1) ngay - để user thấy files đã được lưu
+      // Nếu muốn tự động quay lại, có thể bật dòng dưới:
+      // navigate(-1);
     } catch (error) {
       console.error("Error saving course:", error);
       toast.error("Failed to update course: " + error.message);
