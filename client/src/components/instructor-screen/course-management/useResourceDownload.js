@@ -76,10 +76,6 @@ export const useResourceDownload = (onResourceDeleted) => {
   };
 
   const handleDeleteResource = async (resourceId, filename) => {
-    if (!confirm(`Are you sure you want to delete "${filename}"?`)) {
-      return;
-    }
-
     setDeleting(true);
     try {
       // Since there's no direct DELETE endpoint, we need to remove it from the lesson

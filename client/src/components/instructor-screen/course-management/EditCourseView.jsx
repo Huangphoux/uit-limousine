@@ -559,14 +559,42 @@ const EditCourseView = () => {
   const handleDeleteModule = (moduleId) => {
     // Find the module to check if it contains any assignments
     const module = courseData.modules.find((m) => m.id === moduleId);
-    const hasAssignment = module?.lessons?.some((lesson) => lesson.type === "Assignment");
+    const hasAssignment = module?.lessons?.some(
+      (lesson) => lesson.type === "Assignment" || lesson.assignmentId
+    );
 
     // Prevent deletion of modules containing assignment lessons
     if (hasAssignment) {
       toast.error(
-        "Cannot delete module containing assignment lessons. Assignment lessons are protected."
+        "Cannot delete module containing assignment lessons. Assignment lessons are protected and may have student submissions."
       );
       return;
+    }
+
+    // Check if this is a persisted module (has a real UUID from DB, not temp ID)
+    const isPersistedModule = moduleId && !moduleId.startsWith("module-");
+
+    if (isPersistedModule) {
+      // Prevent deletion of any persisted module to avoid foreign key constraints
+      toast.error(
+        "Cannot delete saved modules. Saved modules may have student enrollments or progress tracking and cannot be deleted."
+      );
+      return;
+    }
+
+    // Check if module has any persisted lessons
+    const hasPersistedLessons = module?.lessons?.some(
+      (lesson) => lesson.id && !lesson.id.startsWith("lesson-")
+    );
+
+    if (hasPersistedLessons) {
+      if (
+        !confirm(
+          `Are you sure you want to delete module "${module.title}" and all its lessons? This action cannot be undone.`
+        )
+      ) {
+        return;
+      }
     }
 
     setCourseData((prev) => {
@@ -597,9 +625,23 @@ const EditCourseView = () => {
     const module = courseData.modules.find((m) => m.id === moduleId);
     const lesson = module?.lessons.find((l) => l.id === lessonId);
 
-    // Prevent deletion of assignment lessons
-    if (lesson?.type === "Assignment") {
-      toast.error("Cannot delete assignment lessons. Assignment lessons are protected.");
+    // Prevent deletion of assignment lessons or lessons with assignmentId
+    if (lesson?.type === "Assignment" || lesson?.assignmentId) {
+      toast.error(
+        "Cannot delete assignment lessons. Assignment lessons are protected and may have student submissions."
+      );
+      return;
+    }
+
+    // Check if this is a persisted lesson (has a real UUID from DB)
+    // New lessons have temp IDs like "lesson-1234567890"
+    const isPersistedLesson = lesson?.id && !lesson.id.startsWith("lesson-");
+
+    if (isPersistedLesson) {
+      // Prevent deletion of any persisted lesson to avoid foreign key constraints
+      toast.error(
+        "Cannot delete saved lessons. Saved lessons may have student progress tracking and cannot be deleted."
+      );
       return;
     }
 
@@ -826,6 +868,157 @@ const EditCourseView = () => {
 
       // Deep snapshot for logging
       const course = JSON.parse(JSON.stringify(courseData));
+
+      // ✅ Validate assignment lessons have required deadline
+      const assignmentLessonsWithoutDeadline = [];
+      course.modules.forEach((module) => {
+        (module.lessons || []).forEach((lesson) => {
+          if (
+            (lesson.type === "Assignment" || lesson.contentType === "assignment") &&
+            (!lesson.dueDate || !lesson.dueTime)
+          ) {
+            assignmentLessonsWithoutDeadline.push({
+              moduleTitle: module.title,
+              lessonTitle: lesson.title,
+            });
+          }
+        });
+      });
+
+      if (assignmentLessonsWithoutDeadline.length > 0) {
+        const errorMessages = assignmentLessonsWithoutDeadline
+          .map((item) => `"${item.lessonTitle}" in module "${item.moduleTitle}"`)
+          .join(", ");
+        toast.error(`Assignment lessons must have a deadline: ${errorMessages}`);
+        return;
+      }
+
+      // ✅ CRITICAL FIX: Fetch current course materials from server to ensure we don't accidentally delete assignment lessons
+      // This prevents foreign key constraint errors when backend tries to delete lessons with assignments
+      try {
+        console.log("[PROTECTION] Fetching current course materials from server...");
+        console.log("[PROTECTION] Course ID:", courseData.id);
+        console.log("[PROTECTION] API URL:", `${API_URL}/courses/${courseData.id}/materials`);
+
+        const serverCourseResp = await fetch(`${API_URL}/courses/${courseData.id}/materials`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        console.log(
+          "[PROTECTION] Fetch response status:",
+          serverCourseResp.status,
+          serverCourseResp.ok
+        );
+
+        if (serverCourseResp.ok) {
+          const serverResult = await serverCourseResp.json();
+          console.log("[PROTECTION] Server result:", serverResult);
+
+          const serverModules = serverResult.data?.modules || serverResult.modules || [];
+
+          console.log("[PROTECTION] Server modules count:", serverModules.length);
+          console.log("[PROTECTION] Current course modules count:", course.modules.length);
+
+          // Find all assignment lessons in server data
+          const assignmentLessonsInServer = [];
+          serverModules.forEach((sModule) => {
+            (sModule.lessons || []).forEach((sLesson) => {
+              if (
+                sLesson.assignmentId ||
+                sLesson.type === "Assignment" ||
+                sLesson.contentType === "assignment"
+              ) {
+                assignmentLessonsInServer.push({
+                  moduleId: sModule.id,
+                  moduleTitle: sModule.title,
+                  lesson: sLesson,
+                });
+              }
+            });
+          });
+
+          console.log(
+            "[PROTECTION] Found assignment lessons in server:",
+            assignmentLessonsInServer.length
+          );
+          assignmentLessonsInServer.forEach((item) => {
+            console.log(
+              `  - ${item.lesson.title} (ID: ${item.lesson.id}) in module ${item.moduleTitle}`
+            );
+          });
+
+          // Count assignment lessons in current course
+          let assignmentLessonsInCurrent = 0;
+          course.modules.forEach((m) => {
+            (m.lessons || []).forEach((l) => {
+              if (l.assignmentId || l.type === "Assignment" || l.contentType === "assignment") {
+                assignmentLessonsInCurrent++;
+              }
+            });
+          });
+          console.log(
+            "[PROTECTION] Assignment lessons in current course:",
+            assignmentLessonsInCurrent
+          );
+
+          // Merge missing assignment lessons back into course payload
+          let restoredModules = 0;
+          let restoredLessons = 0;
+
+          assignmentLessonsInServer.forEach(({ moduleId, moduleTitle, lesson: serverLesson }) => {
+            // Find if this assignment lesson exists in current course data
+            const moduleInCourse = course.modules.find((m) => m.id === moduleId);
+            if (!moduleInCourse) {
+              // Module was deleted - restore it with the assignment lesson
+              console.warn(
+                `[PROTECTION] ⚠️ Restoring deleted module "${moduleTitle}" (${moduleId}) because it contains assignment lesson "${serverLesson.title}"`
+              );
+              const serverModule = serverModules.find((m) => m.id === moduleId);
+              if (serverModule) {
+                course.modules.push(JSON.parse(JSON.stringify(serverModule)));
+                restoredModules++;
+                toast.warning(
+                  `Module "${moduleTitle}" contains assignment and cannot be deleted. It has been restored.`
+                );
+              }
+            } else {
+              // Module exists - check if lesson exists
+              const lessonInModule = moduleInCourse.lessons.find((l) => l.id === serverLesson.id);
+              if (!lessonInModule) {
+                // Assignment lesson was deleted - restore it
+                console.warn(
+                  `[PROTECTION] ⚠️ Restoring deleted assignment lesson "${serverLesson.title}" (${serverLesson.id}) in module "${moduleTitle}"`
+                );
+                moduleInCourse.lessons.push(JSON.parse(JSON.stringify(serverLesson)));
+                restoredLessons++;
+                toast.warning(
+                  `Assignment lesson "${serverLesson.title}" cannot be deleted. It has been restored.`
+                );
+              }
+            }
+          });
+
+          console.log(
+            `[PROTECTION] ✅ Restored ${restoredModules} modules and ${restoredLessons} lessons`
+          );
+          console.log("[PROTECTION] ✅ Course payload validated and assignment lessons preserved");
+        } else {
+          const errorText = await serverCourseResp.text().catch(() => "");
+          console.warn(
+            "[PROTECTION] ⚠️ Failed to fetch server course materials:",
+            serverCourseResp.status,
+            errorText
+          );
+        }
+      } catch (err) {
+        console.error("[PROTECTION] ❌ Failed to validate course data:", err);
+        console.error("[PROTECTION] Error stack:", err.stack);
+        // Continue anyway - better to try save than to fail completely
+      }
 
       // Upload any pending lesson files to temporary storage and attach fileIds to lessonResources
       // This ensures lessonResources are present in the course payload so server can link files to real lesson IDs
@@ -1349,16 +1542,29 @@ const EditCourseView = () => {
                         className="edit-delete-icon"
                         onClick={() => handleDeleteModule(module.id)}
                         title={
-                          module.lessons?.some((l) => l.type === "Assignment")
+                          module.lessons?.some((l) => l.type === "Assignment" || l.assignmentId)
                             ? "Cannot delete module containing assignments"
-                            : "Delete module"
+                            : !module.id.startsWith("module-")
+                              ? "Cannot delete saved modules"
+                              : "Delete module"
                         }
-                        disabled={module.lessons?.some((l) => l.type === "Assignment")}
+                        disabled={
+                          module.lessons?.some((l) => l.type === "Assignment" || l.assignmentId) ||
+                          !module.id.startsWith("module-")
+                        }
                         style={{
-                          opacity: module.lessons?.some((l) => l.type === "Assignment") ? 0.5 : 1,
-                          cursor: module.lessons?.some((l) => l.type === "Assignment")
-                            ? "not-allowed"
-                            : "pointer",
+                          opacity:
+                            module.lessons?.some(
+                              (l) => l.type === "Assignment" || l.assignmentId
+                            ) || !module.id.startsWith("module-")
+                              ? 0.5
+                              : 1,
+                          cursor:
+                            module.lessons?.some(
+                              (l) => l.type === "Assignment" || l.assignmentId
+                            ) || !module.id.startsWith("module-")
+                              ? "not-allowed"
+                              : "pointer",
                         }}
                       >
                         <MdDeleteOutline />
@@ -1432,14 +1638,30 @@ const EditCourseView = () => {
                             handleDeleteLesson(module.id, lesson.id);
                           }}
                           title={
-                            lesson.type === "Assignment"
+                            lesson.type === "Assignment" || lesson.assignmentId
                               ? "Cannot delete assignment lessons"
-                              : "Delete lesson"
+                              : !lesson.id.startsWith("lesson-")
+                                ? "Cannot delete saved lessons"
+                                : "Delete lesson"
                           }
-                          disabled={lesson.type === "Assignment"}
+                          disabled={
+                            lesson.type === "Assignment" ||
+                            lesson.assignmentId ||
+                            !lesson.id.startsWith("lesson-")
+                          }
                           style={{
-                            opacity: lesson.type === "Assignment" ? 0.5 : 1,
-                            cursor: lesson.type === "Assignment" ? "not-allowed" : "pointer",
+                            opacity:
+                              lesson.type === "Assignment" ||
+                              lesson.assignmentId ||
+                              !lesson.id.startsWith("lesson-")
+                                ? 0.5
+                                : 1,
+                            cursor:
+                              lesson.type === "Assignment" ||
+                              lesson.assignmentId ||
+                              !lesson.id.startsWith("lesson-")
+                                ? "not-allowed"
+                                : "pointer",
                           }}
                         >
                           <MdDeleteOutline />
