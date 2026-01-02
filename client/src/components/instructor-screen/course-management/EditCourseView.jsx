@@ -548,18 +548,8 @@ const EditCourseView = () => {
   // Delete module
   const handleDeleteModule = (moduleId) => {
     setCourseData((prev) => {
-      const updatedModules = prev.modules
-        .filter((m) => m.id !== moduleId)
-        .map((module, index) => {
-          // Reorder only if not custom named
-          if (!module.isCustomName) {
-            return {
-              ...module,
-              title: `New Module ${index + 1}`,
-            };
-          }
-          return module;
-        });
+      // Simply filter out the deleted module without renaming others
+      const updatedModules = prev.modules.filter((m) => m.id !== moduleId);
 
       return {
         ...prev,
@@ -587,18 +577,8 @@ const EditCourseView = () => {
         module.id === moduleId
           ? {
               ...module,
-              lessons: module.lessons
-                .filter((l) => l.id !== lessonId)
-                .map((lesson, index) => {
-                  // Reorder only if not custom named
-                  if (!lesson.isCustomName) {
-                    return {
-                      ...lesson,
-                      title: `New Lesson ${index + 1}`,
-                    };
-                  }
-                  return lesson;
-                }),
+              // Simply filter out the deleted lesson without renaming others
+              lessons: module.lessons.filter((l) => l.id !== lessonId),
             }
           : module
       ),

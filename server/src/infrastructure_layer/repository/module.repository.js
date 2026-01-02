@@ -36,6 +36,14 @@ export class ModuleRepository {
     }
 
     async deleteByIds(ids) {
+        if (!ids || ids.length === 0) return;
+        
+        // First, delete all lessons in these modules to avoid foreign key constraint
+        await this.prisma.lesson.deleteMany({
+            where: { moduleId: { in: ids } }
+        });
+        
+        // Then delete the modules
         await this.prisma.module.deleteMany({
             where: { id: { in: ids } }
         });

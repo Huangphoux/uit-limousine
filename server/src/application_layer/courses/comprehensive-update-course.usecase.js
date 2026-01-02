@@ -48,6 +48,12 @@ export class ComprehensiveUpdateCourseUsecase {
 
     const course = await this.updateCourseUsecase.execute(parsedInput);
 
+    // Skip module/lesson/resource operations if no modules provided
+    // (e.g., when only updating course metadata like published status)
+    if (!parsedInput.modules || parsedInput.modules.length === 0) {
+      return {};
+    }
+
     let keptModuleIds = [];
     for (const module of parsedInput.modules) {
       keptModuleIds.push(module.id);

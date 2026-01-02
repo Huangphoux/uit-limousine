@@ -4,8 +4,6 @@ import { useParams, useNavigate } from "react-router-dom";
 import "./CourseContent.css";
 import AssignmentSubmissionUI from "../pages/AssignmentSubmissionUI";
 
-const API_URL = import.meta.env.VITE_API_URL;
-
 const CourseContent = () => {
   const { courseId } = useParams();
   const navigate = useNavigate();
@@ -292,18 +290,6 @@ const CourseContent = () => {
     return `${minutes}:${seconds.toString().padStart(2, "0")}`;
   };
 
-  const formatDateShort = (iso) => {
-    if (!iso) return null;
-    const d = new Date(iso);
-    return d.toLocaleString(undefined, {
-      year: "numeric",
-      month: "short",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
-
   const getContentTypeIcon = (contentType) => {
     console.log("getContentTypeIcon called with:", contentType);
     switch (contentType) {
@@ -316,18 +302,6 @@ const CourseContent = () => {
       default:
         return "📄";
     }
-  };
-
-  // Simple file icon chooser based on extension or mimeType
-  const getFileIcon = (filename, mimeType) => {
-    const ext = (filename || "").split(".").pop()?.toLowerCase();
-    if (mimeType?.startsWith("image") || ["png", "jpg", "jpeg", "gif"].includes(ext)) return "🖼️";
-    if (mimeType?.startsWith("video") || ["mp4", "mov", "avi", "mkv"].includes(ext)) return "🎥";
-    if (ext === "pdf" || mimeType === "application/pdf") return "📄";
-    if (["doc", "docx", "txt"].includes(ext)) return "📝";
-    if (["zip", "rar"].includes(ext)) return "🗜️";
-    if (["ppt", "pptx"].includes(ext)) return "📊";
-    return "📎";
   };
 
   if (loading) {
@@ -451,15 +425,7 @@ const CourseContent = () => {
                     <div className="lesson-type-icon">{getContentTypeIcon(lesson.type)}</div>
                     <div className="lesson-details">
                       <div className="lesson-title">{lesson.title}</div>
-                      <div className="lesson-duration">
-                        {lesson.type === "assignment" && lesson.assignment?.dueDate ? (
-                          <span className="sidebar-deadline">
-                            Due: {formatDateShort(lesson.assignment.dueDate)}
-                          </span>
-                        ) : (
-                          formatDuration(lesson.duration)
-                        )}
-                      </div>
+                      <div className="lesson-duration">{formatDuration(lesson.duration)}</div>
                     </div>
                   </div>
                 ))}
@@ -483,28 +449,7 @@ const CourseContent = () => {
                       ? "Article"
                       : "Assignment"}
                 </span>
-                {currentLessonData?.type === "assignment" ? (
-                  currentLessonData?.assignment?.dueDate && (
-                    <span className="deadline-badge" style={{ marginLeft: 8 }}>
-                      Due:{" "}
-                      <strong
-                        style={{
-                          color:
-                            new Date(currentLessonData.assignment.dueDate) < new Date()
-                              ? "#dc2626"
-                              : "#0369a1",
-                        }}
-                      >
-                        {formatDateShort(currentLessonData.assignment.dueDate)}
-                      </strong>
-                      {new Date(currentLessonData.assignment.dueDate) < new Date()
-                        ? " • Closed"
-                        : ""}
-                    </span>
-                  )
-                ) : (
-                  <span>• {formatDuration(currentLessonData?.duration)}</span>
-                )}
+                <span>• {formatDuration(currentLessonData?.duration)}</span>
               </div>
             </div>
 
@@ -520,57 +465,31 @@ const CourseContent = () => {
               <div className="content-container">
                 {currentLessonData?.type === "video" &&
                 (currentLessonData?.videoUrl || currentLessonData?.mediaUrl) ? (
-                  <div>
-                    <h3 className="h6 mb-3" style={{ color: "#111827", fontWeight: 600 }}>
-                      🔊 Video
-                    </h3>
-
-                    {currentLessonData.description && (
-                      <div style={{ marginBottom: "1rem", color: "#111827" }}>
-                        {currentLessonData.description}
-                      </div>
+                  <iframe
+                    src={getYouTubeEmbedUrl(
+                      currentLessonData.videoUrl || currentLessonData.mediaUrl
                     )}
-
-                    <iframe
-                      src={getYouTubeEmbedUrl(
-                        currentLessonData.videoUrl || currentLessonData.mediaUrl
-                      )}
-                      title={currentLessonData.title}
-                      frameBorder="0"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                      allowFullScreen
-                      className="video-iframe"
-                    />
-                  </div>
-                ) : (currentLessonData?.type === "article" ||
-                    currentLessonData?.type === "reading") &&
-                  (currentLessonData?.readingContent || currentLessonData?.content) ? (
-                  <div>
-                    <h3 className="h6 mb-3" style={{ color: "#111827", fontWeight: 600 }}>
-                      📖 Reading Content
-                    </h3>
-
-                    {currentLessonData.description && (
-                      <div style={{ marginBottom: "1rem", color: "#111827", fontWeight: 600 }}>
-                        {currentLessonData.description}
-                      </div>
-                    )}
-
-                    <div
-                      className="article-content-container"
-                      style={{
-                        padding: "2rem",
-                        backgroundColor: "#ffffff",
-                        borderRadius: "0.5rem",
-                        boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-                        lineHeight: "1.8",
-                        fontSize: "1rem",
-                        color: "#0f172a",
-                        whiteSpace: "pre-wrap",
-                      }}
-                    >
-                      {currentLessonData.readingContent || currentLessonData.content}
-                    </div>
+                    title={currentLessonData.title}
+                    frameBorder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allowFullScreen
+                    className="video-iframe"
+                  />
+                ) : currentLessonData?.type === "article" && currentLessonData?.content ? (
+                  <div
+                    className="article-content-container"
+                    style={{
+                      padding: "2rem",
+                      backgroundColor: "#ffffff",
+                      borderRadius: "0.5rem",
+                      boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+                      lineHeight: "1.8",
+                      fontSize: "1rem",
+                      color: "#1f2937",
+                      whiteSpace: "pre-wrap",
+                    }}
+                  >
+                    {currentLessonData.content}
                   </div>
                 ) : (
                   <div className="content-placeholder">
@@ -580,65 +499,14 @@ const CourseContent = () => {
                         <div className="api-ready-note">No video URL provided</div>
                       </>
                     )}
-                    {(currentLessonData?.type === "article" ||
-                      currentLessonData?.type === "reading") && (
+                    {currentLessonData?.type === "article" && (
                       <>
                         📄 Article Content - {currentLessonData?.title}
-                        <div className="api-ready-note">No content provided</div>
-                      </>
-                    )}
-                    {!["video", "article", "reading"].includes(currentLessonData?.type) && (
-                      <>
-                        <div style={{ fontSize: "1.1rem", fontWeight: 600 }}>
-                          {getContentTypeIcon(currentLessonData?.type)} {currentLessonData?.title}
-                        </div>
-                        <div className="api-ready-note">No content type UI for this lesson</div>
+                        <div className="api-ready-note">No article content provided</div>
                       </>
                     )}
                   </div>
                 )}
-              </div>
-            )}
-
-            {/* Lesson description (if any, separate from content) */}
-            {currentLessonData?.description && (
-              <div className="lesson-description" style={{ marginTop: "1rem" }}>
-                <h5>Description</h5>
-                <p style={{ whiteSpace: "pre-wrap" }}>{currentLessonData.description}</p>
-              </div>
-            )}
-
-            {/* Lesson resources / files */}
-            {currentLessonData?.lessonResources && currentLessonData.lessonResources.length > 0 && (
-              <div className="lesson-resources" style={{ marginTop: "1rem" }}>
-                <h5>Resources</h5>
-                <div className="resource-list">
-                  {currentLessonData.lessonResources.map((res) => (
-                    <div
-                      key={res.id || res.fileId}
-                      className={`resource-item ${!res.id ? "processing" : ""}`}
-                    >
-                      <span className="resource-icon" aria-hidden="true">
-                        {getFileIcon(res.filename, res.mimeType)}
-                      </span>
-                      {res.id ? (
-                        <a
-                          className="resource-link"
-                          href={`${API_URL}/lessons/${res.lessonId}/resources/${res.id}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          <strong>{res.filename}</strong>
-                        </a>
-                      ) : (
-                        <div className="resource-processing">
-                          <strong>{res.filename}</strong>
-                          <span className="processing-badge">processing</span>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
               </div>
             )}
 

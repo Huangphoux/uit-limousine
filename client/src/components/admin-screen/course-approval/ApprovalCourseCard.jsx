@@ -86,7 +86,27 @@ const ApprovalCourseCard = ({ courseData, onApprove, onDeny }) => {
     if (hours > 0) return `${hours} hour${hours !== 1 ? "s" : ""}`;
 
     // Fallback to original estimatedDuration if individual fields are not available
-    return estimatedDuration || "Duration not specified";
+    if (estimatedDuration) return estimatedDuration;
+
+    // Calculate from lessons if modules are available
+    if (courseData.modules && Array.isArray(courseData.modules)) {
+      const totalSec = courseData.modules.reduce((sum, module) => {
+        if (!module.lessons) return sum;
+        return sum + module.lessons.reduce((lessonSum, lesson) => {
+          return lessonSum + (lesson.durationSec || 0);
+        }, 0);
+      }, 0);
+      
+      if (totalSec > 0) {
+        const totalHours = Math.floor(totalSec / 3600);
+        const totalMinutes = Math.floor((totalSec % 3600) / 60);
+        if (totalHours > 0 && totalMinutes > 0) return `${totalHours} hour${totalHours !== 1 ? "s" : ""} ${totalMinutes} min`;
+        if (totalHours > 0) return `${totalHours} hour${totalHours !== 1 ? "s" : ""}`;
+        if (totalMinutes > 0) return `${totalMinutes} min`;
+      }
+    }
+
+    return "Duration not specified";
   };
 
   const handleViewAndApprove = () => {

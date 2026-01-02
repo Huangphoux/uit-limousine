@@ -68,6 +68,10 @@ export class SearchCoursesUseCase {
         enrolled: courseEntity.isEnrolledByCurrentUser || false,
         published: courseEntity.published || false,
         status: courseEntity.published ? "Published" : "Draft",
+        // Include duration fields
+        durationWeeks: courseEntity.durationWeeks || null,
+        durationDays: courseEntity.durationDays || null,
+        durationHours: courseEntity.durationHours || courseEntity.calculatedDurationHours || null,
       })),
       total: total,
       page: currentPage,

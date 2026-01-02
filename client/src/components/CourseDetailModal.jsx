@@ -89,11 +89,33 @@ const CourseDetailModal = ({ course, show, onHide, onEnroll, loading, error }) =
   const formatDuration = (c) => {
     if (!c) return "N/A";
     if (c.duration) return c.duration;
+    
+    // Try to use explicit duration fields
     const parts = [];
     if (c.durationWeeks) parts.push(`${c.durationWeeks}w`);
     if (c.durationDays) parts.push(`${c.durationDays}d`);
     if (c.durationHours) parts.push(`${c.durationHours}h`);
-    return parts.length ? parts.join(" ") : "N/A";
+    if (parts.length) return parts.join(" ");
+    
+    // Calculate from lessons if modules are available
+    if (c.modules && Array.isArray(c.modules)) {
+      const totalSec = c.modules.reduce((sum, module) => {
+        if (!module.lessons) return sum;
+        return sum + module.lessons.reduce((lessonSum, lesson) => {
+          return lessonSum + (lesson.durationSec || 0);
+        }, 0);
+      }, 0);
+      
+      if (totalSec > 0) {
+        const hours = Math.floor(totalSec / 3600);
+        const minutes = Math.floor((totalSec % 3600) / 60);
+        if (hours > 0 && minutes > 0) return `${hours}h ${minutes}m`;
+        if (hours > 0) return `${hours}h`;
+        if (minutes > 0) return `${minutes}m`;
+      }
+    }
+    
+    return "N/A";
   };
 
   const displayedDuration = formatDuration(course);
@@ -427,7 +449,13 @@ const CourseDetailModal = ({ course, show, onHide, onEnroll, loading, error }) =
                         color: course.price === 0 ? "#28a745" : "#007bff",
                       }}
                     >
-                      {course.price === 0 ? "FREE" : `${course.price.toLocaleString()}VNĐ`}
+                      {course.price === 0
+                        ? "FREE"
+                        : new Intl.NumberFormat(undefined, {
+                            style: "currency",
+                            currency: "USD",
+                            maximumFractionDigits: 2,
+                          }).format(course.price)}
                     </span>
                     {course.isPaid ? (
                       <span

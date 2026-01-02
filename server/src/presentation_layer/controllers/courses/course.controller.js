@@ -95,6 +95,20 @@ export const getCourseById = async (req, res) => {
       isPaidByCurrentUser
     );
 
+    // Calculate total duration from lessons if explicit duration fields are not set
+    let calculatedDurationHours = null;
+    if (!course.durationWeeks && !course.durationDays && !course.durationHours) {
+      const totalSec = (course.modules || []).reduce((sum, module) => {
+        return sum + (module.lessons || []).reduce((lessonSum, lesson) => {
+          return lessonSum + (lesson.durationSec || 0);
+        }, 0);
+      }, 0);
+      
+      if (totalSec > 0) {
+        calculatedDurationHours = Math.round((totalSec / 3600) * 10) / 10; // Round to 1 decimal
+      }
+    }
+
     res.json({
       id: course.id,
       title: course.title,
@@ -109,7 +123,7 @@ export const getCourseById = async (req, res) => {
       category: course.category || null,
       durationWeeks: course.durationWeeks || null,
       durationDays: course.durationDays || null,
-      durationHours: course.durationHours || null,
+      durationHours: course.durationHours || calculatedDurationHours || null,
       organization: course.organization || null,
       requirement: course.requirement || null,
       instructor: course.instructor,
@@ -192,6 +206,20 @@ export const getAllCoursesForAdmin = async (req, res) => {
             )
           : 0;
 
+      // Calculate total duration from lessons if explicit duration fields are not set
+      let calculatedDurationHours = null;
+      if (!course.durationWeeks && !course.durationDays && !course.durationHours) {
+        const totalSec = (course.modules || []).reduce((sum, module) => {
+          return sum + (module.lessons || []).reduce((lessonSum, lesson) => {
+            return lessonSum + (lesson.durationSec || 0);
+          }, 0);
+        }, 0);
+        
+        if (totalSec > 0) {
+          calculatedDurationHours = Math.round((totalSec / 3600) * 10) / 10; // Round to 1 decimal
+        }
+      }
+
       return {
         id: course.id,
         title: course.title,
@@ -201,6 +229,9 @@ export const getAllCoursesForAdmin = async (req, res) => {
         coverImage: course.coverImage,
         instructor: course.instructor,
         createdAt: course.createdAt,
+        durationWeeks: course.durationWeeks || null,
+        durationDays: course.durationDays || null,
+        durationHours: course.durationHours || calculatedDurationHours || null,
 
         // Thống kê tổng quan
         stats: {
