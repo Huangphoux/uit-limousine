@@ -216,8 +216,14 @@ const EditCourseView = () => {
           };
 
           // Handle VIDEO type
-          if (lessonType === "Video" && l.mediaUrl) {
-            lesson.videoUrl = l.mediaUrl;
+          if (lessonType === "Video") {
+            if (l.mediaUrl) {
+              lesson.videoUrl = l.mediaUrl;
+            }
+            // ✅ FIX: Load description from content field for video lessons
+            if (l.content) {
+              lesson.description = l.content;
+            }
           }
 
           // Handle READING type - split persisted content into short description (first paragraph) and body
@@ -979,18 +985,22 @@ const EditCourseView = () => {
         lessons: (module.lessons || []).map((lesson, lessonIndex) => {
           console.log("Processing lesson for save:", lesson.title, "Type:", lesson.type);
           console.log("- videoUrl:", lesson.videoUrl);
+          console.log("- description:", lesson.description);
           console.log("- readingContent:", lesson.readingContent);
 
           // Determine mediaUrl based on lesson type
           let mediaUrl = null;
-          if (lesson.type === "Video" && lesson.videoUrl) {
-            mediaUrl = lesson.videoUrl;
+          if (lesson.type === "Video") {
+            // ✅ FIX: Always set mediaUrl for Video lessons (null to clear, URL to set)
+            mediaUrl = lesson.videoUrl || null;
             console.log("- Setting mediaUrl for Video:", mediaUrl);
           }
 
-          // For reading lessons, combine short description and reading body into content so both persist
-          let content = lesson.description || lesson.content || "";
+          // ✅ FIX: Handle content for different lesson types
+          let content = "";
+
           if (lesson.type === "Reading") {
+            // For reading lessons, combine short description and reading body into content so both persist
             const desc = lesson.description ? String(lesson.description).trim() : "";
             const body = lesson.readingContent ? String(lesson.readingContent).trim() : "";
             if (desc && body) content = `${desc}\n\n${body}`;
@@ -999,13 +1009,20 @@ const EditCourseView = () => {
               "- Setting content for Reading (combined):",
               (content || "").substring(0, 50)
             );
+          } else if (lesson.type === "Video") {
+            // For video lessons, content is the description
+            content = lesson.description ? String(lesson.description).trim() : "";
+            console.log("- Setting content for Video:", (content || "").substring(0, 50));
+          } else {
+            // For other lesson types (Assignment, etc.)
+            content = lesson.description || lesson.content || "";
           }
 
           const lessonData = {
             id: lesson.id,
             title: lesson.title,
             content: content,
-            mediaUrl: mediaUrl || undefined,
+            mediaUrl: mediaUrl !== undefined ? mediaUrl : null, // ✅ Always send mediaUrl (null to clear)
             contentType: mapUIToContentType(lesson.type) || "video",
             assignmentId: lesson.assignmentId ? lesson.assignmentId : undefined,
             durationSec: lesson.duration ? parseDurationToSeconds(lesson.duration) : null,
