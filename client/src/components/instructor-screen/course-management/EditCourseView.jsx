@@ -987,13 +987,16 @@ const EditCourseView = () => {
             assignmentId: lesson.assignmentId ? lesson.assignmentId : undefined,
             durationSec: lesson.duration ? parseDurationToSeconds(lesson.duration) : null,
             position: lessonIndex,
-            // Include lessonResources so server can persist uploaded files referenced by fileId
-            lessonResources: (lesson.lessonResources || []).map((r) => ({
-              id: r.id || null,
-              filename: r.filename,
-              mimeType: r.mimeType,
-              fileId: r.fileId || null,
-            })),
+            // ✅ OPTIMIZATION: Only send NEW resources (fileId without id)
+            // Existing resources already in DB don't need to be re-sent
+            lessonResources: (lesson.lessonResources || [])
+              .filter((r) => !r.id && r.fileId) // Only new staged uploads
+              .map((r) => ({
+                id: null,
+                filename: r.filename,
+                mimeType: r.mimeType,
+                fileId: r.fileId,
+              })),
           };
 
           // ✅ THÊM: Luôn gửi assignment fields cho lesson type Assignment

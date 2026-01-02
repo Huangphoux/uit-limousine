@@ -8,27 +8,46 @@ export const useResourceDownload = (onResourceDeleted) => {
   const handleDownloadResource = async (e, lessonId, resourceId, filename) => {
     if (e) e.preventDefault();
 
+    alert(`Downloading: ${filename}\nLessonId: ${lessonId}\nResourceId: ${resourceId}`);
+
+    console.log("[Download] Starting download:", {
+      lessonId,
+      resourceId,
+      filename,
+      timestamp: new Date().toISOString(),
+    });
+
     setDownloading(true);
     try {
-      const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/lessons/${lessonId}/resources/${resourceId}`,
-        {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const downloadUrl = `${import.meta.env.VITE_API_URL}/lessons/${lessonId}/resources/${resourceId}`;
+      console.log("[Download] Fetching from URL:", downloadUrl);
+
+      const response = await fetch(downloadUrl, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      console.log("[Download] Response status:", response.status);
+      console.log("[Download] Response headers:", Object.fromEntries(response.headers.entries()));
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
+        console.error("[Download] Error response:", errorData);
+
         if (response.status === 404) {
           throw new Error("File not found. It may have been deleted.");
         }
-        throw new Error(errorData.message || "Failed to download file");
+        throw new Error(errorData.message || errorData.data || "Failed to download file");
       }
 
       const blob = await response.blob();
+      console.log("[Download] Blob received:", {
+        size: blob.size,
+        type: blob.type,
+      });
+
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
@@ -37,11 +56,15 @@ export const useResourceDownload = (onResourceDeleted) => {
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
+
+      console.log("[Download] Success! File downloaded:", filename);
     } catch (error) {
-      console.error("Download error:", error);
+      console.error("[Download] Download error:", error);
+      console.error("[Download] Error stack:", error.stack);
       alert(`Failed to download file: ${error.message}`);
     } finally {
       setDownloading(false);
+      console.log("[Download] Download completed/failed");
     }
   };
 

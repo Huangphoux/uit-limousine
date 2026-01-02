@@ -321,19 +321,30 @@ const CourseContent = () => {
 
   const handleDownloadResource = async (e, lessonId, resourceId, filename) => {
     e.preventDefault();
+
+    alert(`Downloading: ${filename}\nLessonId: ${lessonId}\nResourceId: ${resourceId}`);
+    console.log("[Download] Starting download:", { lessonId, resourceId, filename });
+
+    const downloadUrl = `${import.meta.env.VITE_API_URL}/lessons/${lessonId}/resources/${resourceId}`;
+    console.log("[Download] URL:", downloadUrl);
+
     try {
-      const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/lessons/${lessonId}/resources/${resourceId}`,
-        {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const response = await fetch(downloadUrl, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      console.log("[Download] Response status:", response.status);
+      console.log("[Download] Response headers:", Object.fromEntries(response.headers.entries()));
+
+      console.log("[Download] Response status:", response.status);
+      console.log("[Download] Response headers:", Object.fromEntries(response.headers.entries()));
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
+        console.log("[Download] Error data:", errorData);
         if (response.status === 404) {
           throw new Error("File not found. It may have been deleted.");
         }
@@ -341,15 +352,24 @@ const CourseContent = () => {
       }
 
       const blob = await response.blob();
+      console.log("[Download] Blob created:", { size: blob.size, type: blob.type });
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
       link.download = filename;
       document.body.appendChild(link);
       link.click();
+      console.log("[Download] Download initiated for:", filename);
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
     } catch (error) {
+      console.error("[Download] Error:", error);
+      console.error("[Download] Error details:", {
+        message: error.message,
+        lessonId,
+        resourceId,
+        filename,
+      });
       console.error("Download error:", error);
       alert(`Failed to download file: ${error.message}`);
     }
