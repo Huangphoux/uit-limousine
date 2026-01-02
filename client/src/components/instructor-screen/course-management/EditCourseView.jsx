@@ -557,6 +557,18 @@ const EditCourseView = () => {
 
   // Delete module
   const handleDeleteModule = (moduleId) => {
+    // Find the module to check if it contains any assignments
+    const module = courseData.modules.find((m) => m.id === moduleId);
+    const hasAssignment = module?.lessons?.some((lesson) => lesson.type === "Assignment");
+
+    // Prevent deletion of modules containing assignment lessons
+    if (hasAssignment) {
+      toast.error(
+        "Cannot delete module containing assignment lessons. Assignment lessons are protected."
+      );
+      return;
+    }
+
     setCourseData((prev) => {
       // Simply filter out the deleted module without renaming others
       const updatedModules = prev.modules.filter((m) => m.id !== moduleId);
@@ -581,6 +593,16 @@ const EditCourseView = () => {
 
   // Delete lesson
   const handleDeleteLesson = (moduleId, lessonId) => {
+    // Find the lesson to check if it's an assignment
+    const module = courseData.modules.find((m) => m.id === moduleId);
+    const lesson = module?.lessons.find((l) => l.id === lessonId);
+
+    // Prevent deletion of assignment lessons
+    if (lesson?.type === "Assignment") {
+      toast.error("Cannot delete assignment lessons. Assignment lessons are protected.");
+      return;
+    }
+
     setCourseData((prev) => ({
       ...prev,
       modules: prev.modules.map((module) =>
@@ -1326,7 +1348,18 @@ const EditCourseView = () => {
                       <button
                         className="edit-delete-icon"
                         onClick={() => handleDeleteModule(module.id)}
-                        title="Delete module"
+                        title={
+                          module.lessons?.some((l) => l.type === "Assignment")
+                            ? "Cannot delete module containing assignments"
+                            : "Delete module"
+                        }
+                        disabled={module.lessons?.some((l) => l.type === "Assignment")}
+                        style={{
+                          opacity: module.lessons?.some((l) => l.type === "Assignment") ? 0.5 : 1,
+                          cursor: module.lessons?.some((l) => l.type === "Assignment")
+                            ? "not-allowed"
+                            : "pointer",
+                        }}
                       >
                         <MdDeleteOutline />
                       </button>
@@ -1398,7 +1431,16 @@ const EditCourseView = () => {
                             e.stopPropagation();
                             handleDeleteLesson(module.id, lesson.id);
                           }}
-                          title="Delete lesson"
+                          title={
+                            lesson.type === "Assignment"
+                              ? "Cannot delete assignment lessons"
+                              : "Delete lesson"
+                          }
+                          disabled={lesson.type === "Assignment"}
+                          style={{
+                            opacity: lesson.type === "Assignment" ? 0.5 : 1,
+                            cursor: lesson.type === "Assignment" ? "not-allowed" : "pointer",
+                          }}
                         >
                           <MdDeleteOutline />
                         </button>
