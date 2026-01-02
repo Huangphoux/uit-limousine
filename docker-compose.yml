@@ -27,7 +27,6 @@ services:
       - CHOKIDAR_USEPOLLING=true
       - CHOKIDAR_INTERVAL=1000
       - VITE_FORCE_HMR=true
-    command: npm run dev -- --host 0.0.0.0 --force
     depends_on:
       - lms_server
 
