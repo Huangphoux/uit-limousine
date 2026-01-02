@@ -166,6 +166,10 @@ const EditCourseView = () => {
 
       const materialsResult = await materialsResponse.json();
 
+      console.log("========== RAW MATERIALS RESPONSE (EditCourseView) ==========");
+      console.log("Full response:", JSON.stringify(materialsResult, null, 2));
+      console.log("=============================================================");
+
       if (!materialsResponse.ok) {
         throw new Error(materialsResult.message || "Failed to load course materials");
       }

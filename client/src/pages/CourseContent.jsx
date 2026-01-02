@@ -35,6 +35,11 @@ const CourseContent = () => {
         if (!materialsResponse.ok) throw new Error("Failed to fetch course materials");
 
         const materialsResult = await materialsResponse.json();
+
+        console.log("========== RAW MATERIALS RESPONSE FROM SERVER ==========");
+        console.log("Full response:", JSON.stringify(materialsResult, null, 2));
+        console.log("========================================================");
+
         console.log("Materials API response:", materialsResult);
         console.log("Modules from API:", materialsResult.data?.modules || materialsResult.modules);
 
@@ -50,6 +55,18 @@ const CourseContent = () => {
             console.log(
               `    - assignment: ${lesson.assignment ? JSON.stringify(lesson.assignment) : "null"}`
             );
+            console.log(`    - lessonResources (FILES):`, lesson.lessonResources);
+            if (lesson.lessonResources && lesson.lessonResources.length > 0) {
+              lesson.lessonResources.forEach((res, resIdx) => {
+                console.log(`      [${resIdx}] File:`, {
+                  id: res.id,
+                  filename: res.filename,
+                  fileId: res.fileId,
+                  mimeType: res.mimeType,
+                  lessonId: res.lessonId,
+                });
+              });
+            }
           });
         });
 
@@ -321,6 +338,16 @@ const CourseContent = () => {
 
   const handleDownloadResource = async (e, lessonId, resourceId, filename) => {
     e.preventDefault();
+
+    // Log toàn bộ resource object
+    const currentResource = currentLessonData?.lessonResources?.find((r) => r.id === resourceId);
+    console.log("========== CLICKED RESOURCE (FILE) ==========");
+    console.log("Full resource object:", JSON.stringify(currentResource, null, 2));
+    console.log(
+      "All resources in current lesson:",
+      JSON.stringify(currentLessonData?.lessonResources, null, 2)
+    );
+    console.log("=============================================");
 
     alert(`Downloading: ${filename}\nLessonId: ${lessonId}\nResourceId: ${resourceId}`);
     console.log("[Download] Starting download:", { lessonId, resourceId, filename });
