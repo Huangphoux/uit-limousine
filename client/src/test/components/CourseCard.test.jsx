@@ -1,7 +1,13 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { BrowserRouter } from "react-router-dom";
 import CourseCard from "../../components/CourseCard";
+
+// Mock environment variables
+beforeEach(() => {
+  // Mock import.meta.env.VITE_API_URL for tests
+  vi.stubEnv("VITE_API_URL", "http://localhost:3000");
+});
 
 // Helper function để wrap component với Router
 const renderWithRouter = (component) => {
@@ -85,7 +91,8 @@ describe("CourseCard Component", () => {
       renderWithRouter(<CourseCard course={mockCourse} />);
 
       const image = screen.getByRole("img");
-      expect(image).toHaveAttribute("src", "/images/react.jpg");
+      // Image should be prefixed with VITE_API_URL since it starts with /
+      expect(image).toHaveAttribute("src", "http://localhost:3000/images/react.jpg");
     });
 
     it("falls back to placeholder image on error", () => {
