@@ -8,6 +8,14 @@ const CourseCard = ({ course, onCardClick }) => {
   const [isEnrolled, setIsEnrolled] = useState(course.enrolled || false);
   const navigate = useNavigate();
 
+  // Normalize relative media URLs to absolute API URL
+  const normalizeMediaUrl = (u) => {
+    if (!u) return null;
+    if (typeof u !== "string") return u;
+    if (u.startsWith("/")) return `${import.meta.env.VITE_API_URL}${u}`;
+    return u;
+  };
+
   // Sync local state with course prop when course changes
   useEffect(() => {
     setIsEnrolled(course.enrolled || false);
@@ -15,6 +23,48 @@ const CourseCard = ({ course, onCardClick }) => {
 
   // Default image placeholder - optimized size for 200px height
   const defaultImage = "/images/course-placeholder.svg";
+
+  // Prefer coverImage, else image
+  const rawImage = course.coverImage || course.image || null;
+  const imageSrc = normalizeMediaUrl(rawImage) || defaultImage;
+
+  // Helpers: format duration from numeric fields when `duration` string not provided
+  const formatDuration = (c) => {
+    if (!c) return "N/A";
+    if (c.duration) return c.duration;
+    
+    // Try to use explicit duration fields
+    const parts = [];
+    if (c.durationWeeks) parts.push(`${c.durationWeeks}w`);
+    if (c.durationDays) parts.push(`${c.durationDays}d`);
+    if (c.durationHours) parts.push(`${c.durationHours}h`);
+    if (parts.length) return parts.join(" ");
+    
+    // Calculate from lessons if modules are available
+    if (c.modules && Array.isArray(c.modules)) {
+      const totalSec = c.modules.reduce((sum, module) => {
+        if (!module.lessons) return sum;
+        return sum + module.lessons.reduce((lessonSum, lesson) => {
+          return lessonSum + (lesson.durationSec || 0);
+        }, 0);
+      }, 0);
+      
+      if (totalSec > 0) {
+        const hours = Math.floor(totalSec / 3600);
+        const minutes = Math.floor((totalSec % 3600) / 60);
+        if (hours > 0 && minutes > 0) return `${hours}h ${minutes}m`;
+        if (hours > 0) return `${hours}h`;
+        if (minutes > 0) return `${minutes}m`;
+      }
+    }
+    
+    return "N/A";
+  };
+
+  const displayedDuration = formatDuration(course);
+  const displayedStudents =
+    course.enrolledStudents || course.enrollmentCount || course.students || 0;
+
   const getLevelColor = (level) => {
     switch (level) {
       case "Beginner":
@@ -117,7 +167,7 @@ const CourseCard = ({ course, onCardClick }) => {
         <div style={{ position: "relative" }}>
           <Card.Img
             variant="top"
-            src={imageError || !course.image ? defaultImage : course.image}
+            src={imageError ? defaultImage : imageSrc}
             alt={course.title}
             style={{ height: "200px", objectFit: "cover" }}
             onError={() => setImageError(true)}
@@ -138,12 +188,37 @@ const CourseCard = ({ course, onCardClick }) => {
           >
             {course.category}
           </div>
+
+          {/* Price badge */}
+          {typeof course.price !== "undefined" && (
+            <div
+              style={{
+                position: "absolute",
+                top: "10px",
+                right: "10px",
+                color: "white",
+                padding: "6px 12px",
+                borderRadius: "6px",
+                fontSize: "12px",
+                fontWeight: "600",
+                backgroundColor: course.price === 0 ? "#28a745" : "#007bff",
+              }}
+            >
+              {Number(course.price) === 0
+                ? "FREE"
+                : new Intl.NumberFormat(undefined, {
+                    style: "currency",
+                    currency: "USD",
+                    maximumFractionDigits: 2,
+                  }).format(Number(course.price))}
+            </div>
+          )}
           {isEnrolled && (
             <div
               className="enrolled-badge"
               style={{
                 position: "absolute",
-                top: "10px",
+                top: "42px",
                 right: "10px",
                 color: "white",
                 padding: "6px 12px",
@@ -190,19 +265,41 @@ const CourseCard = ({ course, onCardClick }) => {
                   </div>
 
                   {instructorName && (
-                    <div style={{ marginLeft: "12px", textAlign: "right" }}>
-                      <div
-                        style={{
-                          fontSize: "0.95rem",
-                          fontWeight: 700,
-                          color: "#343a40",
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          whiteSpace: "nowrap",
-                          maxWidth: "220px",
-                        }}
-                      >
-                        {instructorName}
+                    <div
+                      style={{
+                        marginLeft: "12px",
+                        textAlign: "right",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 8,
+                      }}
+                    >
+                      {course.instructor?.avatar && (
+                        <img
+                          src={normalizeMediaUrl(course.instructor.avatar)}
+                          alt="instructor-avatar"
+                          style={{ width: 36, height: 36, borderRadius: "50%", objectFit: "cover" }}
+                          onError={(e) => (e.currentTarget.src = "/images/course-placeholder.svg")}
+                        />
+                      )}
+                      <div style={{ textAlign: "right", maxWidth: "220px" }}>
+                        <div
+                          style={{
+                            fontSize: "0.95rem",
+                            fontWeight: 700,
+                            color: "#343a40",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {instructorName}
+                        </div>
+                        {course.organization && (
+                          <div style={{ fontSize: "0.72rem", color: "#6c757d", marginTop: 2 }}>
+                            {course.organization}
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}
@@ -237,19 +334,25 @@ const CourseCard = ({ course, onCardClick }) => {
             {course.description}
           </Card.Text>
 
+          {course.organization && (
+            <div className="mb-2">
+              <small style={{ color: "#495057" }}>
+                <strong>Organization:</strong> {course.organization}
+              </small>
+            </div>
+          )}
+          {course.requirement && (
+            <div className="mb-2">
+              <small style={{ color: "#6c757d" }}>
+                <strong>Requirement:</strong> {course.requirement}
+              </small>
+            </div>
+          )}
+
           <div className="mb-3">
             <div className="d-flex align-items-center mb-2">
-              <span className="me-1" style={{ color: "#fbbf24", fontSize: "1.1rem" }}>
-                ★
-              </span>
-              <span
-                className="fw-bold me-2"
-                style={{ color: textColors.rating, fontSize: "0.95rem" }}
-              >
-                {course.rating}
-              </span>
               <span className="small" style={{ color: textColors.students, fontSize: "0.85rem" }}>
-                👥 {(course.enrolledStudents || course.enrollmentCount || course.students || 0).toLocaleString()}
+                👥 {String(displayedStudents).toLocaleString()}
               </span>
             </div>
 
@@ -261,7 +364,7 @@ const CourseCard = ({ course, onCardClick }) => {
                 {course.level || "N/A"}
               </span>
               <span className="small" style={{ color: textColors.duration, fontSize: "0.85rem" }}>
-                ⏱️ {course.duration || "N/A"}
+                ⏱️ {displayedDuration}
               </span>
             </div>
           </div>
@@ -338,17 +441,31 @@ const CourseCard = ({ course, onCardClick }) => {
 CourseCard.propTypes = {
   course: PropTypes.shape({
     id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
-    title: PropTypes.string.isRequired,
-    provider: PropTypes.string.isRequired,
-    category: PropTypes.string.isRequired,
-    description: PropTypes.string.isRequired,
-    rating: PropTypes.number.isRequired,
-    students: PropTypes.number.isRequired,
-    level: PropTypes.string.isRequired,
-    duration: PropTypes.string.isRequired,
-    image: PropTypes.string.isRequired,
-    enrolled: PropTypes.bool.isRequired,
-    instructor: PropTypes.oneOfType([PropTypes.string, PropTypes.object]),
+    title: PropTypes.string,
+    provider: PropTypes.string,
+    category: PropTypes.string,
+    description: PropTypes.string,
+
+    students: PropTypes.number,
+    level: PropTypes.string,
+    duration: PropTypes.string,
+    durationWeeks: PropTypes.number,
+    durationDays: PropTypes.number,
+    durationHours: PropTypes.number,
+    image: PropTypes.string,
+    coverImage: PropTypes.string,
+    price: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+    organization: PropTypes.string,
+    requirement: PropTypes.string,
+    enrolled: PropTypes.bool,
+    instructor: PropTypes.oneOfType([
+      PropTypes.string,
+      PropTypes.shape({
+        name: PropTypes.string,
+        fullName: PropTypes.string,
+        avatar: PropTypes.string,
+      }),
+    ]),
   }).isRequired,
   onEnroll: PropTypes.func,
   onCardClick: PropTypes.func,

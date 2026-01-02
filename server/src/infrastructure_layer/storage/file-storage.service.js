@@ -1,11 +1,11 @@
-import fs from 'fs';
-import path from 'path';
-import crypto from 'crypto';
+import fs from "fs";
+import path from "path";
+import crypto from "crypto";
 
 export default class FileStorageService {
-  constructor(uploadDir = 'uploads') {
+  constructor(uploadDir = "uploads") {
     this.uploadDir = path.resolve(uploadDir);
-    this.submissionsDir = path.join(this.uploadDir, 'submissions');
+    this.submissionsDir = path.join(this.uploadDir, "submissions");
     this.ensureDirectoryExists(this.submissionsDir);
   }
 
@@ -17,10 +17,11 @@ export default class FileStorageService {
 
   generateFileName(originalName) {
     const timestamp = Date.now();
-    const randomString = crypto.randomBytes(8).toString('hex');
+    const randomString = crypto.randomBytes(8).toString("hex");
     const ext = path.extname(originalName);
-    const baseName = path.basename(originalName, ext)
-      .replace(/[^a-zA-Z0-9]/g, '_')
+    const baseName = path
+      .basename(originalName, ext)
+      .replace(/[^a-zA-Z0-9]/g, "_")
       .substring(0, 50);
     return `${baseName}_${timestamp}_${randomString}${ext}`;
   }
@@ -35,23 +36,44 @@ export default class FileStorageService {
 
     fs.writeFileSync(filePath, file.buffer);
 
-    const relativePath = path.relative(this.uploadDir, filePath).replace(/\\/g, '/');
+    const relativePath = path.relative(this.uploadDir, filePath).replace(/\\/g, "/");
     const fileUrl = `/uploads/${relativePath}`;
 
     return {
       fileUrl,
       fileName: file.originalname,
       fileSize: file.size,
-      mimeType: file.mimetype
+      mimeType: file.mimetype,
+    };
+  }
+
+  async saveFile(file, folder = "files") {
+    // Generic file saver - stores under uploads/{folder}
+    const folderDir = path.join(this.uploadDir, folder);
+    this.ensureDirectoryExists(folderDir);
+
+    const fileName = this.generateFileName(file.originalname);
+    const filePath = path.join(folderDir, fileName);
+
+    fs.writeFileSync(filePath, file.buffer);
+
+    const relativePath = path.relative(this.uploadDir, filePath).replace(/\\/g, "/");
+    const fileUrl = `/uploads/${relativePath}`;
+
+    return {
+      fileUrl,
+      fileName: file.originalname,
+      fileSize: file.size,
+      mimeType: file.mimetype,
     };
   }
 
   async deleteFile(fileUrl) {
     if (!fileUrl) return false;
-    
-    const relativePath = fileUrl.replace('/uploads/', '');
+
+    const relativePath = fileUrl.replace("/uploads/", "");
     const absolutePath = path.join(this.uploadDir, relativePath);
-    
+
     if (fs.existsSync(absolutePath)) {
       fs.unlinkSync(absolutePath);
       return true;
@@ -61,7 +83,7 @@ export default class FileStorageService {
 
   getAbsolutePath(fileUrl) {
     if (!fileUrl) return null;
-    const relativePath = fileUrl.replace('/uploads/', '');
+    const relativePath = fileUrl.replace("/uploads/", "");
     return path.join(this.uploadDir, relativePath);
   }
 }

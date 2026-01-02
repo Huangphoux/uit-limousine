@@ -1,5 +1,5 @@
 import { outputSchema } from "../../../src/application_layer/courses/course-materials-query.usecase";
-import { courseMaterialsQueryUsecase, prisma } from "../../../src/composition-root"
+import { courseMaterialsQueryUsecase, prisma } from "../../composition-root.js";
 import { user, course, module, lessons, input } from "./test-data";
 
 jest.setTimeout(20000);

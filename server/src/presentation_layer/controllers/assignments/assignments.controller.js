@@ -56,6 +56,8 @@ export const getAssignmentSubmissions = async (req, res) => {
       studentEmail: s.student?.email || null,
       content: s.content,
       fileUrl: s.fileUrl,
+      fileName: s.fileName,
+      fileSize: s.fileSize,
       status: s.status,
       grade: s.grade,
       feedback: s.feedback,

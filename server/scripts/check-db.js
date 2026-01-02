@@ -1,3 +1,4 @@
 import { prisma } from "../src/composition-root.js";
 
-console.log(await prisma.user.findMany())
+console.log(await prisma.lessonResource.findMany()
+)

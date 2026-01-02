@@ -23,5 +23,10 @@ export const config = {
     upload: {
         maxFileSize: 20 * 1024 * 1024,
         uploadDir: process.env.UPLOAD_DIR || 'uploads',
+    },
+    database: {
+        mongo: {
+            url: process.env.MONGO_URL,
+        }
     }
 }

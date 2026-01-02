@@ -56,8 +56,10 @@ export class SearchCoursesUseCase {
               fullName: courseEntity.instructor.name,
             }
           : null,
-        coverImage: courseEntity.coverImg,
-        thumbnail: courseEntity.coverImg,
+        // Ensure coverImage uses the entity's `coverImage` field (not coverImg)
+        coverImage: courseEntity.coverImage || null,
+        image: courseEntity.coverImage || null,
+        thumbnail: courseEntity.coverImage || null,
         rating: courseEntity.rating || 0,
         enrollmentCount: courseEntity.enrollmentCount || 0,
         enrolledStudents: courseEntity.enrollmentCount || 0,
@@ -66,6 +68,10 @@ export class SearchCoursesUseCase {
         enrolled: courseEntity.isEnrolledByCurrentUser || false,
         published: courseEntity.published || false,
         status: courseEntity.published ? "Published" : "Draft",
+        // Include duration fields
+        durationWeeks: courseEntity.durationWeeks || null,
+        durationDays: courseEntity.durationDays || null,
+        durationHours: courseEntity.durationHours || courseEntity.calculatedDurationHours || null,
       })),
       total: total,
       page: currentPage,

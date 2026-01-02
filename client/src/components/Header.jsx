@@ -11,6 +11,42 @@ const Header = ({ unreadCount, onBellClick }) => {
   const { user, logout } = useAuth();
   const userEmail = user?.email || "Guest";
 
+  // Determine user role - handle array, object, or string
+  const getUserRole = () => {
+    if (!user || !user.role) return "learner";
+
+    let role;
+    if (Array.isArray(user.role) && user.role.length > 0) {
+      // Role is array like ['INSTRUCTOR']
+      role = user.role[0].toLowerCase();
+    } else if (typeof user.role === "string") {
+      role = user.role.toLowerCase();
+    } else if (user.role?.name) {
+      role = user.role.name.toLowerCase();
+    } else if (user.role?.type) {
+      role = user.role.type.toLowerCase();
+    } else {
+      role = "learner";
+    }
+
+    return role;
+  };
+
+  // Determine home path based on user role
+  const getHomePath = () => {
+    const userRole = getUserRole();
+
+    switch (userRole) {
+      case "admin":
+        return "/admin-screen";
+      case "instructor":
+        return "/instructor-screen";
+      case "learner":
+      default:
+        return "/courses";
+    }
+  };
+
   const handleSignOut = async () => {
     try {
       const token = localStorage.getItem("accessToken");
@@ -100,7 +136,7 @@ const Header = ({ unreadCount, onBellClick }) => {
         <Container>
           <Navbar.Brand
             as={Link}
-            to="/courses"
+            to={getHomePath()}
             style={{ color: "#000", fontSize: "1.4rem", fontWeight: "bold" }}
           >
             Limousine !

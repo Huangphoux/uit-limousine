@@ -1,3 +1,5 @@
+import { id } from "zod/v4/locales";
+
 export class CourseReadAccessor {
   constructor(prisma) {
     this.prisma = prisma;
@@ -39,6 +41,15 @@ export class CourseReadAccessor {
                     where: { userId },
                     select: { progress: true },
                   },
+                  lessonResources: {
+                    select: {
+                      id: true,
+                      lessonId: true,
+                      filename: true,
+                      mimeType: true,
+                      fileId: true,
+                    },
+                  },
                 },
               },
             },
@@ -74,6 +85,15 @@ export class CourseReadAccessor {
                     where: { userId },
                     select: { progress: true },
                   },
+                  lessonResources: {
+                    select: {
+                      id: true,
+                      lessonId: true,
+                      filename: true,
+                      mimeType: true,
+                      fileId: true,
+                    },
+                  },
                 },
               },
             },
@@ -106,6 +126,7 @@ export class CourseReadAccessor {
           duration: l.durationSec,
           order: l.position,
           isCompleted: l.LessonProgress.some((p) => p.progress === 1),
+          lessonResources: l.lessonResources,
         })),
       })),
     };

@@ -15,6 +15,7 @@ const CourseManagementView = ({
   onPublishCourse,
   onDeleteCourse,
 }) => {
+  const [statusFilter, setStatusFilter] = React.useState("all"); // all, published, draft
   // Calculate dynamic stats values
   const calculateCourseStats = () => {
     const totalCourses = courses.length;
@@ -63,6 +64,31 @@ const CourseManagementView = ({
       bgColor: "rgba(232, 47, 161, 0.7)",
     },
   ];
+  // Apply status filter and sort (published courses first)
+  React.useEffect(() => {
+    let filtered = [...courses];
+
+    // Apply status filter
+    if (statusFilter === "published") {
+      filtered = filtered.filter((c) => c.status?.toLowerCase() === "published");
+    } else if (statusFilter === "draft") {
+      filtered = filtered.filter((c) => c.status?.toLowerCase() === "draft");
+    }
+
+    // Sort: published courses first (when filter is "all")
+    if (statusFilter === "all") {
+      filtered.sort((a, b) => {
+        const aPublished = a.status?.toLowerCase() === "published";
+        const bPublished = b.status?.toLowerCase() === "published";
+        if (aPublished && !bPublished) return -1;
+        if (!aPublished && bPublished) return 1;
+        return 0;
+      });
+    }
+
+    setFilteredCourses(filtered);
+  }, [courses, statusFilter]);
+
   const handleManualSearch = () => {
     // Manual search trigger
     const filtered = courses.filter(
@@ -164,6 +190,38 @@ const CourseManagementView = ({
             <FaPlus className="me-2" />
             Create New Course
           </Button>
+        </Col>
+      </Row>
+
+      {/* Status Filter */}
+      <Row className="mb-4">
+        <Col>
+          <div className="d-flex gap-2">
+            <Button
+              variant={statusFilter === "all" ? "primary" : "outline-primary"}
+              size="sm"
+              onClick={() => setStatusFilter("all")}
+              style={{ borderRadius: "20px", padding: "8px 20px" }}
+            >
+              All Courses
+            </Button>
+            <Button
+              variant={statusFilter === "published" ? "success" : "outline-success"}
+              size="sm"
+              onClick={() => setStatusFilter("published")}
+              style={{ borderRadius: "20px", padding: "8px 20px" }}
+            >
+              Published
+            </Button>
+            <Button
+              variant={statusFilter === "draft" ? "secondary" : "outline-secondary"}
+              size="sm"
+              onClick={() => setStatusFilter("draft")}
+              style={{ borderRadius: "20px", padding: "8px 20px" }}
+            >
+              Drafts
+            </Button>
+          </div>
         </Col>
       </Row>
 

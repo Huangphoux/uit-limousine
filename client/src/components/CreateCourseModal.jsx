@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Modal, Form, Button, Row, Col, InputGroup } from "react-bootstrap";
 import { FaTimes, FaUpload } from "react-icons/fa";
 import { toast } from "sonner";
@@ -17,7 +17,10 @@ const CreateCourseModal = ({ show, onClose, onSave }) => {
     language: "Tiếng Việt",
     requirement: "",
     avatar: null,
+    price: "",
   });
+
+  const [previewUrl, setPreviewUrl] = useState(null);
 
   const [errors, setErrors] = useState({});
 
@@ -112,59 +115,178 @@ const CreateCourseModal = ({ show, onClose, onSave }) => {
         const userStr = localStorage.getItem("user");
 
         if (!token || !userStr) {
-          toast.error("Please login first to create a course request.");
+          toast.error("Please login first to create a course.");
           return;
         }
 
         const user = JSON.parse(userStr);
-        const applicantId = user.id;
+        const instructorId = user.id;
 
-        const response = await fetch(`${API_URL}/instructor/apply`, {
+        // Build multipart form data to send file + fields
+        const fd = new FormData();
+        fd.append("title", formData.courseName);
+        fd.append("description", formData.description);
+        fd.append("category", formData.category);
+        fd.append("level", formData.level);
+        if (formData.durationWeeks) fd.append("durationWeeks", formData.durationWeeks);
+        if (formData.durationDays) fd.append("durationDays", formData.durationDays);
+        if (formData.durationHours) fd.append("durationHours", formData.durationHours);
+        fd.append("organization", formData.organization || "");
+        fd.append("language", formData.language || "");
+        fd.append("requirement", formData.requirement || "");
+        fd.append("price", formData.price || 0);
+        fd.append("instructorId", instructorId);
+        if (formData.avatar) fd.append("avatar", formData.avatar);
+
+        const response = await fetch(`${API_URL}/admin/courses`, {
           method: "POST",
           headers: {
-            "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({
-            applicantId: applicantId,
-            requestedCourseTitle: formData.courseName,
-            requestedCourseSummary: formData.description,
-            portfolioUrl: formData.requirement || "",
-          }),
+          body: fd,
         });
+
+        if (response.status === 403) {
+          // fallback for non-admins: upload image (if any) then call instructor apply with JSON + extra fields
+          if (formData.avatar) {
+            const uploadFd = new FormData();
+            uploadFd.append("file", formData.avatar);
+            const uploadRes = await fetch(`${API_URL}/media/upload`, {
+              method: "POST",
+              body: uploadFd,
+            });
+
+            if (!uploadRes.ok) {
+              const u = await uploadRes.json().catch(() => ({}));
+              throw new Error(u.data || u.message || "Image upload failed");
+            }
+
+            const uploadJson = await uploadRes.json();
+            const fileUrl = uploadJson?.data?.fileUrl || uploadJson?.fileUrl;
+
+            // Send instructor application with extra fields embedded
+            const applyPayload = {
+              applicantId: instructorId,
+              requestedCourseTitle: formData.courseName,
+              requestedCourseSummary: formData.description,
+              // portfolioUrl isn't collected in this form; keep empty and put requirement in meta
+              portfolioUrl: "",
+              coverImage: fileUrl,
+              meta: JSON.stringify({
+                category: formData.category,
+                level: formData.level,
+                durationWeeks: formData.durationWeeks,
+                durationDays: formData.durationDays,
+                durationHours: formData.durationHours,
+                organization: formData.organization,
+                language: formData.language,
+                price: formData.price,
+                requirement: formData.requirement,
+              }),
+            };
+
+            console.log("[CreateCourseModal] calling /instructor/apply with:", applyPayload);
+
+            const applyRes = await fetch(`${API_URL}/instructor/apply`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify(applyPayload),
+            });
+
+            const applyJson = await applyRes.json();
+            if (!applyRes.ok) {
+              throw new Error(applyJson.error || applyJson.message || "Apply failed");
+            }
+
+            toast.success("Application submitted successfully.");
+            onSave({ ...formData, coverImage: fileUrl });
+            handleClose();
+            return;
+          } else {
+            // no avatar — call apply directly
+            const applyPayload = {
+              applicantId: instructorId,
+              requestedCourseTitle: formData.courseName,
+              requestedCourseSummary: formData.description,
+              // no portfolio input in the form — leave empty
+              portfolioUrl: "",
+              meta: JSON.stringify({
+                category: formData.category,
+                level: formData.level,
+                durationWeeks: formData.durationWeeks,
+                durationDays: formData.durationDays,
+                durationHours: formData.durationHours,
+                organization: formData.organization,
+                language: formData.language,
+                price: formData.price,
+                requirement: formData.requirement,
+              }),
+            };
+
+            console.log("[CreateCourseModal] calling /instructor/apply with:", applyPayload);
+
+            const applyRes = await fetch(`${API_URL}/instructor/apply`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify(applyPayload),
+            });
+
+            const applyJson = await applyRes.json();
+            if (!applyRes.ok) {
+              throw new Error(applyJson.error || applyJson.message || "Apply failed");
+            }
+
+            toast.success("Application submitted successfully.");
+            onSave({ ...formData });
+            handleClose();
+            return;
+          }
+        }
 
         const data = await response.json();
 
         console.log(data);
 
         if (!response.ok) {
-          // Handle specific error cases
-          if (response.status === 409) {
-            throw new Error(
-              "You already have a pending application. Please wait for admin to review it before submitting a new one."
-            );
-          }
-
-          // Handle other error response formats
           const errorMessage =
-            data.data || data.error?.message || data.message || "Create course request failed";
+            data.data || data.error?.message || data.message || "Create course failed";
           throw new Error(errorMessage);
         }
 
         // Show success message
-        toast.success(
-          "Course creation request submitted successfully! Admin will review your request."
-        );
+        toast.success("Course created successfully.");
 
-        onSave(formData);
+        // Pass a shallow snapshot so parent receives a stable copy
+        const snapshot = { ...formData };
+        const course = data?.data || data;
+        snapshot.coverImage = course?.coverImage || course?.image || null;
+        console.log("Created course response:", course);
+        onSave(snapshot);
+        // Reset UI and close modal
+        if (previewUrl) {
+          URL.revokeObjectURL(previewUrl);
+          setPreviewUrl(null);
+        }
+        handleClose();
       } catch (error) {
         console.log(error);
-        toast.error("Failed to submit course creation request: " + error.message);
+        toast.error("Failed to create course: " + error.message);
       }
     }
   };
 
   const handleClose = () => {
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+      setPreviewUrl(null);
+    }
+
     setFormData({
       courseName: "",
       description: "",
@@ -177,18 +299,38 @@ const CreateCourseModal = ({ show, onClose, onSave }) => {
       language: "Tiếng Việt",
       requirement: "",
       avatar: null,
+      price: "",
     });
     setErrors({});
     onClose();
   };
 
+  useEffect(() => {
+    return () => {
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+      }
+    };
+  }, [previewUrl]);
+
   const handleFileChange = (e) => {
     const file = e.target.files[0];
+    console.log("file selected:", file, file?.name);
     if (file) {
-      setFormData((prev) => ({
-        ...prev,
-        avatar: file,
-      }));
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+      }
+      const url = URL.createObjectURL(file);
+      setPreviewUrl(url);
+
+      setFormData((prev) => {
+        const next = {
+          ...prev,
+          avatar: file,
+        };
+        console.log("formData after set:", next);
+        return next;
+      });
     }
   };
 
@@ -252,61 +394,89 @@ const CreateCourseModal = ({ show, onClose, onSave }) => {
           </p>
 
           <Form onSubmit={handleSubmit}>
-            <Row>
-              <Col md={7}>
-                <Form.Group className="mb-3">
-                  <Form.Label className="fw-semibold" style={{ color: "black" }}>
-                    Course's name <span className="text-danger">*</span>
-                  </Form.Label>
-                  <Form.Control
-                    type="text"
-                    placeholder="Ex: Machine Learning for beginner"
-                    value={formData.courseName}
-                    onChange={(e) => handleInputChange("courseName", e.target.value)}
-                    isInvalid={!!errors.courseName}
-                    style={{
-                      backgroundColor: "white",
-                      border: "1px solid #e9ecef",
-                      borderRadius: "8px",
-                      padding: "12px 16px",
-                      color: "black",
-                    }}
-                  />
-                  <Form.Control.Feedback type="invalid">{errors.courseName}</Form.Control.Feedback>
-                </Form.Group>
-              </Col>
+            {/* Cover / Avatar header (full width) */}
+            <div
+              className="mb-4 position-relative"
+              style={{
+                height: 220,
+                borderRadius: 8,
+                overflow: "hidden",
+                backgroundColor: "#f6f8fa",
+              }}
+            >
+              {previewUrl ? (
+                <img
+                  src={previewUrl}
+                  alt="cover preview"
+                  style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+                />
+              ) : (
+                <div
+                  className="d-flex flex-column align-items-center justify-content-center text-muted"
+                  style={{ height: "100%" }}
+                  onClick={() => document.getElementById("avatar-upload").click()}
+                >
+                  <FaUpload size={28} />
+                  <div style={{ marginTop: 8 }}>Add course cover image</div>
+                </div>
+              )}
 
-              <Col md={5}>
-                <Form.Group className="mb-3">
-                  <Form.Label className="fw-semibold" style={{ color: "black" }}>
-                    Course's avatar
-                  </Form.Label>
-                  <div
-                    className="d-flex align-items-center justify-content-center border rounded"
-                    style={{
-                      backgroundColor: "white",
-                      height: "56px",
-                      borderRadius: "8px",
-                      cursor: "pointer",
-                      border: "2px dashed #e9ecef",
+              {/* Overlay buttons */}
+              <div style={{ position: "absolute", top: 10, right: 10, display: "flex", gap: 8 }}>
+                {previewUrl && (
+                  <Button
+                    variant="light"
+                    size="sm"
+                    onClick={() => {
+                      // remove avatar
+                      if (previewUrl) {
+                        URL.revokeObjectURL(previewUrl);
+                        setPreviewUrl(null);
+                      }
+                      setFormData((prev) => ({ ...prev, avatar: null }));
                     }}
-                    onClick={() => document.getElementById("avatar-upload").click()}
                   >
-                    <FaUpload className="me-2" style={{ color: "#a0aec0" }} />
-                    <span style={{ color: "#a0aec0" }}>
-                      {formData.avatar ? formData.avatar.name : "Browse your computer"}
-                    </span>
-                  </div>
-                  <input
-                    id="avatar-upload"
-                    type="file"
-                    accept="image/*"
-                    onChange={handleFileChange}
-                    style={{ display: "none" }}
-                  />
-                </Form.Group>
-              </Col>
-            </Row>
+                    Remove
+                  </Button>
+                )}
+                <Button
+                  variant="light"
+                  size="sm"
+                  onClick={() => document.getElementById("avatar-upload").click()}
+                >
+                  {previewUrl ? "Replace" : "Add"}
+                </Button>
+              </div>
+
+              <input
+                id="avatar-upload"
+                type="file"
+                accept="image/*"
+                onChange={handleFileChange}
+                style={{ display: "none" }}
+              />
+            </div>
+
+            <Form.Group className="mb-3">
+              <Form.Label className="fw-semibold" style={{ color: "black" }}>
+                Course's name <span className="text-danger">*</span>
+              </Form.Label>
+              <Form.Control
+                type="text"
+                placeholder="Ex: Machine Learning for beginner"
+                value={formData.courseName}
+                onChange={(e) => handleInputChange("courseName", e.target.value)}
+                isInvalid={!!errors.courseName}
+                style={{
+                  backgroundColor: "white",
+                  border: "1px solid #e9ecef",
+                  borderRadius: "8px",
+                  padding: "12px 16px",
+                  color: "black",
+                }}
+              />
+              <Form.Control.Feedback type="invalid">{errors.courseName}</Form.Control.Feedback>
+            </Form.Group>
 
             <Form.Group className="mb-3">
               <Form.Label className="fw-semibold" style={{ color: "black" }}>
@@ -529,6 +699,27 @@ const CreateCourseModal = ({ show, onClose, onSave }) => {
                   </option>
                 ))}
               </Form.Select>
+            </Form.Group>
+
+            <Form.Group className="mb-3">
+              <Form.Label className="fw-semibold" style={{ color: "black" }}>
+                Price
+              </Form.Label>
+              <Form.Control
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="0.00"
+                value={formData.price}
+                onChange={(e) => handleInputChange("price", e.target.value)}
+                style={{
+                  backgroundColor: "white",
+                  border: "1px solid #e9ecef",
+                  borderRadius: "8px",
+                  padding: "12px 16px",
+                  color: "black",
+                }}
+              />
             </Form.Group>
 
             <Form.Group className="mb-4">

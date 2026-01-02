@@ -6,6 +6,7 @@ import {
   modifyCourseUsecase,
   searchCoursesUseCase,
   unenrollCourseUseCase,
+  comprehensiveUpdateCourseUsecase,
 } from "../../composition-root.js";
 import { getCourseById } from "../controllers/courses/course.controller.js";
 import { submitAssignment, getSubmission } from "../controllers/courses/submit-assignment.controller.js";
@@ -28,7 +29,7 @@ router.get(
 );
 router.post("/assignments/:assignmentId/submit", submissionUploadMiddleware, authenticationMiddleware, submitAssignment);
 router.get("/assignments/:assignmentId/submission", authenticationMiddleware, getSubmission);
-router.put("/:courseId", authenticationMiddleware, controller(modifyCourseUsecase));
+router.put("/:courseId", authenticationMiddleware, controller(comprehensiveUpdateCourseUsecase));
 // Router
 
 

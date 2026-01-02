@@ -1,6 +1,14 @@
 import { Form } from "react-bootstrap";
+import { useResourceDownload } from "./useResourceDownload";
 
 const VideoLessonContent = ({ lessonForm, onFormChange, onFileUpload, onRemoveFile }) => {
+  const handleResourceDeleted = (resourceId) => {
+    const updatedResources = lessonForm.lessonResources.filter((r) => r.id !== resourceId);
+    onFormChange("lessonResources", updatedResources);
+  };
+
+  const { handleDownloadResource, handleDeleteResource } =
+    useResourceDownload(handleResourceDeleted);
   return (
     <>
       {/* Description */}
@@ -49,7 +57,7 @@ const VideoLessonContent = ({ lessonForm, onFormChange, onFileUpload, onRemoveFi
           </p>
         </div>
 
-        {/* Uploaded files list */}
+        {/* Uploaded files list (pending) */}
         {lessonForm.files && lessonForm.files.length > 0 && (
           <div className="edit-files-list">
             {lessonForm.files.map((file, index) => (
@@ -67,19 +75,54 @@ const VideoLessonContent = ({ lessonForm, onFormChange, onFileUpload, onRemoveFi
             ))}
           </div>
         )}
-      </div>
 
-      {/* Duration */}
-      <div className="edit-duration-section">
-        <h3 className="edit-content-section-title">⏱️ Video Duration</h3>
-        <Form.Control
-          type="text"
-          className="edit-duration-input"
-          value={lessonForm.duration || ""}
-          onChange={(e) => onFormChange("duration", e.target.value)}
-          placeholder="e.g., 10:30 (mm:ss)"
-        />
-        <small className="text-muted">Format: minutes:seconds (e.g., 10:30)</small>
+        {/* Staged uploads (temp files uploaded to /uploads/files but not persisted yet) */}
+        {lessonForm.lessonResources &&
+          lessonForm.lessonResources.some((r) => r.fileId && !r.id) && (
+            <div className="staged-resources mt-3">
+              <h5 style={{ fontSize: "0.95rem", marginBottom: "0.5rem" }}>📤 Staged uploads</h5>
+              <div className="edit-files-list">
+                {lessonForm.lessonResources
+                  .filter((r) => r.fileId && !r.id)
+                  .map((r) => (
+                    <div key={r.fileId} className="edit-file-item staged">
+                      <span className="edit-file-icon">🎥</span>
+                      <span className="edit-file-name">
+                        <strong>{r.filename}</strong> <small className="text-muted">(staged)</small>
+                      </span>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          )}
+
+        {/* Existing lesson resources */}
+        {lessonForm.lessonResources && lessonForm.lessonResources.length > 0 && (
+          <div className="existing-resources mt-3">
+            <h5 style={{ fontSize: "0.95rem", marginBottom: "0.5rem" }}>Resources</h5>
+            <div className="edit-files-list">
+              {lessonForm.lessonResources.map((res) => (
+                <div key={res.id} className="edit-file-item">
+                  <span className="edit-file-icon">🎥</span>
+                  <a
+                    className="edit-file-name"
+                    href="#"
+                    onClick={(e) => handleDownloadResource(e, res.lessonId, res.id, res.filename)}
+                  >
+                    {res.filename}
+                  </a>
+                  <button
+                    className="edit-file-remove"
+                    onClick={() => handleDeleteResource(res.id, res.filename)}
+                    title="Delete file"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </>
   );

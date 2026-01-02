@@ -5,6 +5,14 @@ import { logger } from "../../utils/logger.js";
 import AssignmentRepository from "../../infrastructure_layer/repository/assignment.repository.js";
 
 
+export const fileSchema = z.object({
+  id: z.string().optional(),
+  fileId: z.string().optional(),
+  filename: z.string(),
+  mimeType: z.string(),
+  stream: z.any()
+})
+
 export const lessonSchema = z.object({
   id: z.string().optional(),
   title: z.string(),
@@ -14,6 +22,7 @@ export const lessonSchema = z.object({
   durationSec: z.number().nullable().optional(),
   position: z.number().optional(),
   assignmentId: z.string().nullable().optional(),
+  files: z.array(fileSchema).optional(),
 
   // ✅ CẦN THÊM 2 TRƯỜNG NÀY ĐỂ ZOD KHÔNG XÓA DỮ LIỆU
   dueDate: z.string().nullable().optional(), // Frontend gửi lên dạng ISO string
@@ -71,10 +80,11 @@ export const outputSchema = z.object({
 });
 
 export class ModifyCourseUsecase {
-  constructor(courseRepository, auditLogRepository) {
+  constructor(courseRepository, auditLogRepository, fileStorage) {
     this.courseRepository = courseRepository;
     this.auditLogRepository = auditLogRepository;
     this.assignmentRepository = new AssignmentRepository();
+    this.fileStorage = fileStorage;
   }
 
   async execute(input) {
