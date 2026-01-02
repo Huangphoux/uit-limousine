@@ -81,6 +81,12 @@ const CourseApprovalModal = ({ show, onClose, onApprove, onDeny, courseData }) =
     }
   }, [courseData]);
 
+  useEffect(() => {
+    if (show && courseData) {
+      console.log("[CourseApprovalModal] courseData:", courseData);
+    }
+  }, [show, courseData]);
+
   if (!courseData) return null;
 
   const {
@@ -107,12 +113,6 @@ const CourseApprovalModal = ({ show, onClose, onApprove, onDeny, courseData }) =
 
   // Prefer `image`, then `coverImage` (some payloads store it under that key)
   const imageSrc = image || courseData.coverImage || null;
-
-  useEffect(() => {
-    if (show && courseData) {
-      console.log("[CourseApprovalModal] courseData:", courseData);
-    }
-  }, [show, courseData]);
 
   const handleApprove = () => {
     onApprove(courseData);
@@ -178,55 +178,6 @@ const CourseApprovalModal = ({ show, onClose, onApprove, onDeny, courseData }) =
             />
           </div>
         ) : null}
-
-        {/* Tab Navigation */}
-        <div className="mb-4 d-flex justify-content-center edit-modal-tab-section">
-          <div
-            className="d-flex rounded-3 p-1 shadow-sm"
-            style={{
-              backgroundColor: "#D9D9D9",
-              border: "1px solid #e9ecef",
-              height: "45px",
-              width: "100%",
-              maxWidth: "500px",
-            }}
-          >
-            <div className="flex-fill">
-              <div
-                className={`text-center d-flex align-items-center justify-content-center h-100 rounded-3 transition-all ${
-                  activeTab === "basic-info"
-                    ? "bg-white text-dark shadow-sm"
-                    : "text-dark bg-transparent"
-                }`}
-                onClick={() => setActiveTab("basic-info")}
-                style={{
-                  cursor: "pointer",
-                  transition: "all 0.3s ease",
-                  fontWeight: activeTab === "basic-info" ? "600" : "500",
-                }}
-              >
-                <span style={{ fontSize: "16px", fontWeight: "bold" }}>Basic information</span>
-              </div>
-            </div>
-            <div className="flex-fill">
-              <div
-                className={`text-center d-flex align-items-center justify-content-center h-100 rounded-3 transition-all ${
-                  activeTab === "lesson-content"
-                    ? "bg-white text-dark shadow-sm"
-                    : "text-dark bg-transparent"
-                }`}
-                onClick={() => setActiveTab("lesson-content")}
-                style={{
-                  cursor: "pointer",
-                  transition: "all 0.3s ease",
-                  fontWeight: activeTab === "lesson-content" ? "600" : "500",
-                }}
-              >
-                <span style={{ fontSize: "16px", fontWeight: "bold" }}>Lesson content</span>
-              </div>
-            </div>
-          </div>
-        </div>
 
         <Form>
           {/* Basic Information Tab */}
@@ -631,195 +582,6 @@ const CourseApprovalModal = ({ show, onClose, onApprove, onDeny, courseData }) =
                   </Col>
                 )}
               </Row>
-            </>
-          )}
-
-          {/* Lesson Content Tab */}
-          {activeTab === "lesson-content" && (
-            <>
-              {/* Module Header */}
-              <div className="d-flex justify-content-between align-items-center mb-4">
-                <h5 className="mb-0" style={{ color: "black", fontWeight: "600" }}>
-                  Module ({modules.length})
-                </h5>
-              </div>
-
-              {/* Modules List - Read Only */}
-              {modules.length > 0 ? (
-                modules.map((module, moduleIndex) => (
-                  <Card
-                    key={module.id}
-                    className="mb-3"
-                    style={{
-                      border: "1px solid #e9ecef",
-                      borderRadius: "12px",
-                      backgroundColor: "#f8f9fa",
-                    }}
-                  >
-                    {/* Module Header */}
-                    <Card.Header
-                      className="d-flex justify-content-between align-items-center"
-                      style={{
-                        backgroundColor: "#f8f9fa",
-                        border: "none",
-                        borderRadius: "12px 12px 0 0",
-                        padding: "15px 20px",
-                      }}
-                    >
-                      <div className="d-flex align-items-center flex-grow-1">
-                        <FaBars className="me-3" style={{ color: "#6c757d" }} />
-                        <span style={{ fontWeight: "600", color: "black", marginRight: "15px" }}>
-                          Module {moduleIndex + 1}: {module.title || module.name}
-                        </span>
-                        <Badge
-                          bg="light"
-                          text="dark"
-                          className="me-3"
-                          style={{
-                            fontSize: "12px",
-                            padding: "5px 10px",
-                            borderRadius: "15px",
-                          }}
-                        >
-                          <FaFile className="me-1" />
-                          {module.lessons?.length || 0} Lesson
-                          {module.lessons?.length !== 1 ? "s" : ""}
-                        </Badge>
-                        <Button
-                          variant="link"
-                          size="sm"
-                          onClick={() => toggleModuleExpansion(module.id)}
-                          className="p-0 ms-auto me-3"
-                          style={{ color: "#6c757d" }}
-                        >
-                          {expandedModules[module.id] ? <FaChevronUp /> : <FaChevronDown />}
-                        </Button>
-                      </div>
-                    </Card.Header>
-
-                    {/* Module Content - Lessons */}
-                    {expandedModules[module.id] && (
-                      <Card.Body style={{ padding: "20px" }}>
-                        {module.lessons && module.lessons.length > 0 ? (
-                          module.lessons.map((lesson, lessonIndex) => (
-                            <Card
-                              key={lesson.id}
-                              className="mb-3"
-                              style={{
-                                border: "1px solid #e9ecef",
-                                borderRadius: "8px",
-                                backgroundColor: "white",
-                              }}
-                            >
-                              <Card.Body style={{ padding: "15px" }}>
-                                {/* Lesson Name */}
-                                <div className="mb-3">
-                                  <Form.Label className="fw-semibold" style={{ color: "black" }}>
-                                    Lesson {lessonIndex + 1}: {lesson.title || lesson.name}
-                                  </Form.Label>
-                                </div>
-
-                                {/* Lesson Type and Duration */}
-                                <Row className="mb-3">
-                                  <Col md={6}>
-                                    <Form.Group>
-                                      <Form.Label
-                                        className="fw-semibold"
-                                        style={{ color: "black", fontSize: "14px" }}
-                                      >
-                                        Type
-                                      </Form.Label>
-                                      <div className="d-flex align-items-center">
-                                        {lesson.type === "Video" && (
-                                          <FaVideo className="me-2 text-primary" />
-                                        )}
-                                        {lesson.type === "Document" && (
-                                          <FaFile className="me-2 text-info" />
-                                        )}
-                                        <Badge
-                                          bg={lesson.type === "Video" ? "primary" : "info"}
-                                          style={{ fontSize: "12px" }}
-                                        >
-                                          {lesson.type}
-                                        </Badge>
-                                      </div>
-                                    </Form.Group>
-                                  </Col>
-                                  <Col md={6}>
-                                    <Form.Group>
-                                      <Form.Label
-                                        className="fw-semibold"
-                                        style={{ color: "black", fontSize: "14px" }}
-                                      >
-                                        Duration
-                                      </Form.Label>
-                                      <div style={{ color: "#6c757d", fontSize: "14px" }}>
-                                        {lesson.duration || "Not specified"}
-                                      </div>
-                                    </Form.Group>
-                                  </Col>
-                                </Row>
-
-                                {/* Lesson Content */}
-                                {lesson.content && (
-                                  <Form.Group className="mb-3">
-                                    <Form.Label
-                                      className="fw-semibold"
-                                      style={{ color: "black", fontSize: "14px" }}
-                                    >
-                                      Content
-                                    </Form.Label>
-                                    <Form.Control
-                                      as="textarea"
-                                      rows={3}
-                                      value={lesson.content}
-                                      readOnly
-                                      style={{
-                                        backgroundColor: "#f8f9fa",
-                                        border: "1px solid #e9ecef",
-                                        borderRadius: "6px",
-                                        padding: "8px 12px",
-                                        color: "black",
-                                        resize: "none",
-                                        fontSize: "14px",
-                                      }}
-                                    />
-                                  </Form.Group>
-                                )}
-
-                                {/* Video Content - YouTube Embed */}
-                                {lesson.url && lesson.type === "Video" && (
-                                  <Form.Group>
-                                    <Form.Label
-                                      className="fw-semibold"
-                                      style={{ color: "black", fontSize: "14px" }}
-                                    >
-                                      Video Content
-                                    </Form.Label>
-                                    <YouTubeEmbed
-                                      url={lesson.url}
-                                      title={lesson.name || lesson.title}
-                                    />
-                                  </Form.Group>
-                                )}
-                              </Card.Body>
-                            </Card>
-                          ))
-                        ) : (
-                          <div className="text-center text-muted py-3">
-                            <p>No lessons found in this module</p>
-                          </div>
-                        )}
-                      </Card.Body>
-                    )}
-                  </Card>
-                ))
-              ) : (
-                <div className="text-center text-muted py-5">
-                  <FaFile size={48} className="mb-3" style={{ color: "#dee2e6" }} />
-                  <p>No modules found for this course</p>
-                </div>
-              )}
             </>
           )}
         </Form>
