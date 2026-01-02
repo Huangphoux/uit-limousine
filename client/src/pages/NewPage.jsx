@@ -20,6 +20,7 @@ const NewPage = () => {
   const [isSearching, setIsSearching] = useState(false);
   const [lastSearchTerm, setLastSearchTerm] = useState("");
   const [enrolledCourseIds, setEnrolledCourseIds] = useState([]);
+  const [enrollmentFilter, setEnrollmentFilter] = useState("all"); // all, enrolled, not-enrolled
   const token = localStorage.getItem("accessToken");
   // Use the custom hook for course management
   const {
@@ -40,10 +41,28 @@ const NewPage = () => {
     fetchCourses();
   }, []);
 
-  const handleSearch = () => {
-    const filtered = searchCourses(searchTerm, courses);
+  // Apply enrollment filter and sort (enrolled courses first)
+  useEffect(() => {
+    let filtered = [...courses];
+
+    // Apply enrollment filter
+    if (enrollmentFilter === "enrolled") {
+      filtered = filtered.filter((c) => c.enrolled);
+    } else if (enrollmentFilter === "not-enrolled") {
+      filtered = filtered.filter((c) => !c.enrolled);
+    }
+
+    // Sort: enrolled courses first (when filter is "all")
+    if (enrollmentFilter === "all") {
+      filtered.sort((a, b) => {
+        if (a.enrolled && !b.enrolled) return -1;
+        if (!a.enrolled && b.enrolled) return 1;
+        return 0;
+      });
+    }
+
     setFilteredCourses(filtered);
-  };
+  }, [courses, enrollmentFilter]);
   // ✅ THÊM: Search qua API
   useEffect(() => {
     // Nếu search term thay đổi, hiển thị loading ngay lập tức
@@ -537,7 +556,6 @@ const NewPage = () => {
 
                 <Button
                   className="search-btn"
-                  onClick={handleSearch}
                   style={{
                     borderRadius: "0 50px 50px 0",
                     paddingLeft: "2.5rem",
@@ -559,6 +577,35 @@ const NewPage = () => {
                   Search
                 </Button>
               </InputGroup>
+            </Col>
+          </Row>
+
+          {/* Enrollment Filter */}
+          <Row className="mb-4">
+            <Col>
+              <div className="d-flex gap-2">
+                <Button
+                  variant={enrollmentFilter === "all" ? "primary" : "outline-primary"}
+                  onClick={() => setEnrollmentFilter("all")}
+                  style={{ borderRadius: "20px", padding: "8px 20px" }}
+                >
+                  All Courses
+                </Button>
+                <Button
+                  variant={enrollmentFilter === "enrolled" ? "success" : "outline-success"}
+                  onClick={() => setEnrollmentFilter("enrolled")}
+                  style={{ borderRadius: "20px", padding: "8px 20px" }}
+                >
+                  Enrolled
+                </Button>
+                <Button
+                  variant={enrollmentFilter === "not-enrolled" ? "secondary" : "outline-secondary"}
+                  onClick={() => setEnrollmentFilter("not-enrolled")}
+                  style={{ borderRadius: "20px", padding: "8px 20px" }}
+                >
+                  Not Enrolled
+                </Button>
+              </div>
             </Col>
           </Row>
 
@@ -638,14 +685,14 @@ const NewPage = () => {
             style={{ transition: "opacity 0.3s" }}
           >
             {" "}
-            {loading && courses.length === 0
+            {loading && filteredCourses.length === 0
               ? Array.from({ length: 6 }).map((_, i) => (
                   <Col key={i} lg={4} md={6} className="mb-4">
                     <div className="skeleton-card" />
                   </Col>
                 ))
               : // HIỂN THỊ DANH SÁCH KHÓA HỌC
-                courses
+                filteredCourses
                   .filter((course) => course && course.id)
                   .map((course) => (
                     <Col
@@ -668,7 +715,7 @@ const NewPage = () => {
           </Row>
 
           {/* No Results */}
-          {courses.length === 0 && !loading && (
+          {filteredCourses.length === 0 && !loading && (
             <Row className="mt-5 no-results">
               <Col className="text-center py-5">
                 <div
@@ -702,7 +749,7 @@ const NewPage = () => {
               </Col>
             </Row>
           )}
-          {isSearching && courses.length > 0 && (
+          {isSearching && filteredCourses.length > 0 && (
             <div className="text-center mt-3">
               <Spinner animation="grow" size="sm" variant="primary" />
               <span className="ms-2 text-muted">Updating results...</span>
@@ -710,7 +757,7 @@ const NewPage = () => {
           )}
 
           {/* No Results - Chỉ hiện khi thực sự không còn gì và không đang loading */}
-          {courses.length === 0 && !loading && !isSearching && (
+          {filteredCourses.length === 0 && !loading && !isSearching && (
             <Row className="mt-5 no-results">...</Row>
           )}
         </Container>
