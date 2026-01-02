@@ -339,8 +339,12 @@ const CourseContent = () => {
       console.log("[Download] Response status:", response.status);
       console.log("[Download] Response headers:", Object.fromEntries(response.headers.entries()));
 
-      console.log("[Download] Response status:", response.status);
-      console.log("[Download] Response headers:", Object.fromEntries(response.headers.entries()));
+      const contentLength = response.headers.get("content-length");
+      if (contentLength) {
+        console.log(
+          `[Download] File size from server: ${(parseInt(contentLength) / 1024 / 1024).toFixed(2)} MB`
+        );
+      }
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
@@ -351,8 +355,13 @@ const CourseContent = () => {
         throw new Error(errorData.message || "Failed to download file");
       }
 
+      console.log("[Download] Loading file data from server...");
       const blob = await response.blob();
-      console.log("[Download] Blob created:", { size: blob.size, type: blob.type });
+      console.log("[Download] Blob created:", {
+        size: blob.size,
+        type: blob.type,
+        sizeMB: (blob.size / 1024 / 1024).toFixed(2) + " MB",
+      });
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
