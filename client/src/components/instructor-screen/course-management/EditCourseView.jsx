@@ -2127,7 +2127,13 @@ const EditCourseView = () => {
                 }
 
                 const updated = resJson.data || resJson;
-                setCourseData((prev) => ({ ...prev, ...updated }));
+                // ✅ FIX: Ensure thumbnail field is synced from coverImage
+                setCourseData((prev) => ({
+                  ...prev,
+                  ...updated,
+                  thumbnail: updated.coverImage || coverImageUrl || prev.thumbnail || null,
+                  image: updated.coverImage || coverImageUrl || prev.image || null,
+                }));
 
                 // cleanup object URL preview
                 if (settingsPreviewUrl && settingsPreviewUrl.startsWith("blob:")) {

@@ -278,6 +278,7 @@ const InstructorScreen = () => {
                 new CustomEvent("course_unpublished", { detail: { id: courseData.id } })
               );
             } catch (e) {
+              console.log(e);
               window.dispatchEvent(new Event("courses_updated"));
             }
 
