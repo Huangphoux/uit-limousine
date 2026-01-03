@@ -349,7 +349,6 @@ const CourseContent = () => {
     );
     console.log("=============================================");
 
-    alert(`Downloading: ${filename}\nLessonId: ${lessonId}\nResourceId: ${resourceId}`);
     console.log("[Download] Starting download:", { lessonId, resourceId, filename });
 
     const downloadUrl = `${import.meta.env.VITE_API_URL}/lessons/${lessonId}/resources/${resourceId}`;
@@ -598,36 +597,51 @@ const CourseContent = () => {
                   </div>
                 );
               })()
-            ) : (
-              <div className="content-container">
-                {currentLessonData?.type === "video" &&
-                (currentLessonData?.videoUrl || currentLessonData?.mediaUrl) ? (
-                  <iframe
-                    src={getYouTubeEmbedUrl(
-                      currentLessonData.videoUrl || currentLessonData.mediaUrl
-                    )}
-                    title={currentLessonData.title}
-                    frameBorder="0"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                    allowFullScreen
-                    className="video-iframe"
-                  />
-                ) : (
-                  <div className="content-placeholder">
-                    {currentLessonData?.type === "video" && (
-                      <>
-                        🎥 Video Player - {currentLessonData?.title}
-                        <div className="api-ready-note">No video URL provided</div>
-                      </>
-                    )}
-                    {currentLessonData?.type === "article" && (
-                      <>
-                        📄 Article Content - {currentLessonData?.title}
-                        <div className="api-ready-note">No article content provided</div>
-                      </>
-                    )}
+            ) : currentLessonData?.type === "video" ? (
+              // Video lesson with description
+              <>
+                {/* Video Description */}
+                {currentLessonData?.content && (
+                  <div className="reading-description">
+                    <h3 className="reading-title">📖 Description</h3>
+                    <div className="reading-box">{currentLessonData.content}</div>
                   </div>
                 )}
+
+                {/* Video Player */}
+                {(currentLessonData?.videoUrl || currentLessonData?.mediaUrl) && (
+                  <div className="content-container">
+                    <iframe
+                      src={getYouTubeEmbedUrl(
+                        currentLessonData.videoUrl || currentLessonData.mediaUrl
+                      )}
+                      title={currentLessonData.title}
+                      frameBorder="0"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                      allowFullScreen
+                      className="video-iframe"
+                    />
+                  </div>
+                )}
+
+                {/* Show placeholder only if no video URL and no content */}
+                {!currentLessonData?.videoUrl &&
+                  !currentLessonData?.mediaUrl &&
+                  !currentLessonData?.content && (
+                    <div className="content-container">
+                      <div className="content-placeholder">
+                        🎥 Video Player - {currentLessonData?.title}
+                        <div className="api-ready-note">No video URL or content provided</div>
+                      </div>
+                    </div>
+                  )}
+              </>
+            ) : (
+              <div className="content-container">
+                <div className="content-placeholder">
+                  📄 Content - {currentLessonData?.title}
+                  <div className="api-ready-note">No content provided</div>
+                </div>
               </div>
             )}
 

@@ -8,8 +8,6 @@ export const useResourceDownload = (onResourceDeleted) => {
   const handleDownloadResource = async (e, lessonId, resourceId, filename) => {
     if (e) e.preventDefault();
 
-    alert(`Downloading: ${filename}\nLessonId: ${lessonId}\nResourceId: ${resourceId}`);
-
     console.log("[Download] Starting download:", {
       lessonId,
       resourceId,
@@ -69,19 +67,15 @@ export const useResourceDownload = (onResourceDeleted) => {
       console.log("[Download] Success! File downloaded:", filename);
     } catch (error) {
       console.error("[Download] Download error:", error);
-      console.error("[Download] Error stack:", error.stack);
-      alert(`Failed to download file: ${error.message}`);
+      console.error("[Download] Error stack:", error);
+      console.error("[Download] Failed to download file:", error.message);
     } finally {
       setDownloading(false);
       console.log("[Download] Download completed/failed");
     }
   };
 
-  const handleDeleteResource = async (resourceId, filename) => {
-    if (!confirm(`Are you sure you want to delete "${filename}"?`)) {
-      return;
-    }
-
+  const handleDeleteResource = async (resourceId) => {
     setDeleting(true);
     try {
       // Since there's no direct DELETE endpoint, we need to remove it from the lesson
@@ -91,7 +85,7 @@ export const useResourceDownload = (onResourceDeleted) => {
       }
     } catch (error) {
       console.error("Delete error:", error);
-      alert(`Failed to delete file: ${error.message}`);
+      console.error("Failed to delete file:", error.message);
     } finally {
       setDeleting(false);
     }

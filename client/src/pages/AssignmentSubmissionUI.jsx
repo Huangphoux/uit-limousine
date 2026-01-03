@@ -129,6 +129,57 @@ const AssignmentSubmissionUI = ({ lesson, onMarkAsFinished, isCompleted }) => {
   useEffect(() => {
     fetchSubmissionStatus();
   }, [lesson?.assignment?.id, token]);
+
+  // Handle download submission file
+  const handleDownloadSubmission = async (e, fileUrl, fileName) => {
+    e.preventDefault();
+
+    console.log("[Download Submission] Starting download:", { fileUrl, fileName });
+
+    // Construct the full API URL for the file
+    // If fileUrl starts with /, it's a relative path that needs the API base URL
+    const downloadUrl = fileUrl.startsWith("/") ? `${API_URL}${fileUrl}` : fileUrl;
+
+    console.log("[Download Submission] Full download URL:", downloadUrl);
+
+    try {
+      const response = await fetch(downloadUrl, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      console.log("[Download Submission] Response status:", response.status);
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.log("[Download Submission] Error data:", errorData);
+        throw new Error(errorData.message || "Failed to download file");
+      }
+
+      const blob = await response.blob();
+      console.log("[Download Submission] Blob created:", {
+        size: blob.size,
+        type: blob.type,
+        sizeMB: (blob.size / 1024 / 1024).toFixed(2) + " MB",
+      });
+
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      console.log("[Download Submission] Download initiated for:", fileName);
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("[Download Submission] Error:", error);
+      toast.error(`Failed to download file: ${error.message}`);
+    }
+  };
+
   const handleFileSelect = (event) => {
     setSelectedFiles([...event.target.files]);
     setError(null);
@@ -542,9 +593,8 @@ const AssignmentSubmissionUI = ({ lesson, onMarkAsFinished, isCompleted }) => {
                       </div>
                     </div>
                     {file.url && (
-                      <a
-                        href={file.url}
-                        download
+                      <button
+                        onClick={(e) => handleDownloadSubmission(e, file.url, file.name)}
                         style={{
                           background: "none",
                           border: "none",
@@ -553,9 +603,10 @@ const AssignmentSubmissionUI = ({ lesson, onMarkAsFinished, isCompleted }) => {
                           cursor: "pointer",
                           textDecoration: "none",
                         }}
+                        title={`Download ${file.name}`}
                       >
                         <span style={{ fontSize: "1.5rem" }}>⬇️</span>
-                      </a>
+                      </button>
                     )}
                   </div>
                 ))}

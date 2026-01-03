@@ -104,7 +104,7 @@ const ReadingLessonContent = ({ lessonForm, onFormChange, onFileUpload, onRemove
             <h5 style={{ fontSize: "0.95rem", marginBottom: "0.5rem" }}>Resources</h5>
             <div className="edit-files-list">
               {lessonForm.lessonResources.map((res) => (
-                <div key={res.id} className="edit-file-item">
+                <div key={res.id || res.fileId || res.filename} className="edit-file-item">
                   <span className="edit-file-icon">📄</span>
                   <a
                     className="edit-file-name"

@@ -216,8 +216,14 @@ const EditCourseView = () => {
           };
 
           // Handle VIDEO type
-          if (lessonType === "Video" && l.mediaUrl) {
-            lesson.videoUrl = l.mediaUrl;
+          if (lessonType === "Video") {
+            if (l.mediaUrl) {
+              lesson.videoUrl = l.mediaUrl;
+            }
+            // ✅ FIX: Load description from content field for video lessons
+            if (l.content) {
+              lesson.description = l.content;
+            }
           }
 
           // Handle READING type - split persisted content into short description (first paragraph) and body
@@ -551,6 +557,46 @@ const EditCourseView = () => {
 
   // Delete module
   const handleDeleteModule = (moduleId) => {
+    // Find the module to check if it contains any assignments
+    const module = courseData.modules.find((m) => m.id === moduleId);
+    const hasAssignment = module?.lessons?.some(
+      (lesson) => lesson.type === "Assignment" || lesson.assignmentId
+    );
+
+    // Prevent deletion of modules containing assignment lessons
+    if (hasAssignment) {
+      toast.error(
+        "Cannot delete module containing assignment lessons. Assignment lessons are protected and may have student submissions."
+      );
+      return;
+    }
+
+    // Check if this is a persisted module (has a real UUID from DB, not temp ID)
+    const isPersistedModule = moduleId && !moduleId.startsWith("module-");
+
+    if (isPersistedModule) {
+      // Prevent deletion of any persisted module to avoid foreign key constraints
+      toast.error(
+        "Cannot delete saved modules. Saved modules may have student enrollments or progress tracking and cannot be deleted."
+      );
+      return;
+    }
+
+    // Check if module has any persisted lessons
+    const hasPersistedLessons = module?.lessons?.some(
+      (lesson) => lesson.id && !lesson.id.startsWith("lesson-")
+    );
+
+    if (hasPersistedLessons) {
+      if (
+        !confirm(
+          `Are you sure you want to delete module "${module.title}" and all its lessons? This action cannot be undone.`
+        )
+      ) {
+        return;
+      }
+    }
+
     setCourseData((prev) => {
       // Simply filter out the deleted module without renaming others
       const updatedModules = prev.modules.filter((m) => m.id !== moduleId);
@@ -575,6 +621,30 @@ const EditCourseView = () => {
 
   // Delete lesson
   const handleDeleteLesson = (moduleId, lessonId) => {
+    // Find the lesson to check if it's an assignment
+    const module = courseData.modules.find((m) => m.id === moduleId);
+    const lesson = module?.lessons.find((l) => l.id === lessonId);
+
+    // Prevent deletion of assignment lessons or lessons with assignmentId
+    if (lesson?.type === "Assignment" || lesson?.assignmentId) {
+      toast.error(
+        "Cannot delete assignment lessons. Assignment lessons are protected and may have student submissions."
+      );
+      return;
+    }
+
+    // Check if this is a persisted lesson (has a real UUID from DB)
+    // New lessons have temp IDs like "lesson-1234567890"
+    const isPersistedLesson = lesson?.id && !lesson.id.startsWith("lesson-");
+
+    if (isPersistedLesson) {
+      // Prevent deletion of any persisted lesson to avoid foreign key constraints
+      toast.error(
+        "Cannot delete saved lessons. Saved lessons may have student progress tracking and cannot be deleted."
+      );
+      return;
+    }
+
     setCourseData((prev) => ({
       ...prev,
       modules: prev.modules.map((module) =>
@@ -767,7 +837,7 @@ const EditCourseView = () => {
   const hasPreviousLesson = () => {
     if (!selectedLesson) return false;
     const info = getCurrentModuleLesson();
-    if (!info) return false;
+    if (!info || !info.module) return false;
     const { lessonIndex } = info;
     const moduleIndex = courseData.modules.findIndex((m) => m.id === selectedLesson.moduleId);
     return lessonIndex > 0 || moduleIndex > 0;
@@ -776,7 +846,7 @@ const EditCourseView = () => {
   const hasNextLesson = () => {
     if (!selectedLesson) return false;
     const info = getCurrentModuleLesson();
-    if (!info) return false;
+    if (!info || !info.module || !info.module.lessons) return false;
     const { module, lessonIndex } = info;
     const moduleIndex = courseData.modules.findIndex((m) => m.id === selectedLesson.moduleId);
     return lessonIndex < module.lessons.length - 1 || moduleIndex < courseData.modules.length - 1;
@@ -798,6 +868,157 @@ const EditCourseView = () => {
 
       // Deep snapshot for logging
       const course = JSON.parse(JSON.stringify(courseData));
+
+      // ✅ Validate assignment lessons have required deadline
+      const assignmentLessonsWithoutDeadline = [];
+      course.modules.forEach((module) => {
+        (module.lessons || []).forEach((lesson) => {
+          if (
+            (lesson.type === "Assignment" || lesson.contentType === "assignment") &&
+            (!lesson.dueDate || !lesson.dueTime)
+          ) {
+            assignmentLessonsWithoutDeadline.push({
+              moduleTitle: module.title,
+              lessonTitle: lesson.title,
+            });
+          }
+        });
+      });
+
+      if (assignmentLessonsWithoutDeadline.length > 0) {
+        const errorMessages = assignmentLessonsWithoutDeadline
+          .map((item) => `"${item.lessonTitle}" in module "${item.moduleTitle}"`)
+          .join(", ");
+        toast.error(`Assignment lessons must have a deadline: ${errorMessages}`);
+        return;
+      }
+
+      // ✅ CRITICAL FIX: Fetch current course materials from server to ensure we don't accidentally delete assignment lessons
+      // This prevents foreign key constraint errors when backend tries to delete lessons with assignments
+      try {
+        console.log("[PROTECTION] Fetching current course materials from server...");
+        console.log("[PROTECTION] Course ID:", courseData.id);
+        console.log("[PROTECTION] API URL:", `${API_URL}/courses/${courseData.id}/materials`);
+
+        const serverCourseResp = await fetch(`${API_URL}/courses/${courseData.id}/materials`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        console.log(
+          "[PROTECTION] Fetch response status:",
+          serverCourseResp.status,
+          serverCourseResp.ok
+        );
+
+        if (serverCourseResp.ok) {
+          const serverResult = await serverCourseResp.json();
+          console.log("[PROTECTION] Server result:", serverResult);
+
+          const serverModules = serverResult.data?.modules || serverResult.modules || [];
+
+          console.log("[PROTECTION] Server modules count:", serverModules.length);
+          console.log("[PROTECTION] Current course modules count:", course.modules.length);
+
+          // Find all assignment lessons in server data
+          const assignmentLessonsInServer = [];
+          serverModules.forEach((sModule) => {
+            (sModule.lessons || []).forEach((sLesson) => {
+              if (
+                sLesson.assignmentId ||
+                sLesson.type === "Assignment" ||
+                sLesson.contentType === "assignment"
+              ) {
+                assignmentLessonsInServer.push({
+                  moduleId: sModule.id,
+                  moduleTitle: sModule.title,
+                  lesson: sLesson,
+                });
+              }
+            });
+          });
+
+          console.log(
+            "[PROTECTION] Found assignment lessons in server:",
+            assignmentLessonsInServer.length
+          );
+          assignmentLessonsInServer.forEach((item) => {
+            console.log(
+              `  - ${item.lesson.title} (ID: ${item.lesson.id}) in module ${item.moduleTitle}`
+            );
+          });
+
+          // Count assignment lessons in current course
+          let assignmentLessonsInCurrent = 0;
+          course.modules.forEach((m) => {
+            (m.lessons || []).forEach((l) => {
+              if (l.assignmentId || l.type === "Assignment" || l.contentType === "assignment") {
+                assignmentLessonsInCurrent++;
+              }
+            });
+          });
+          console.log(
+            "[PROTECTION] Assignment lessons in current course:",
+            assignmentLessonsInCurrent
+          );
+
+          // Merge missing assignment lessons back into course payload
+          let restoredModules = 0;
+          let restoredLessons = 0;
+
+          assignmentLessonsInServer.forEach(({ moduleId, moduleTitle, lesson: serverLesson }) => {
+            // Find if this assignment lesson exists in current course data
+            const moduleInCourse = course.modules.find((m) => m.id === moduleId);
+            if (!moduleInCourse) {
+              // Module was deleted - restore it with the assignment lesson
+              console.warn(
+                `[PROTECTION] ⚠️ Restoring deleted module "${moduleTitle}" (${moduleId}) because it contains assignment lesson "${serverLesson.title}"`
+              );
+              const serverModule = serverModules.find((m) => m.id === moduleId);
+              if (serverModule) {
+                course.modules.push(JSON.parse(JSON.stringify(serverModule)));
+                restoredModules++;
+                toast.warning(
+                  `Module "${moduleTitle}" contains assignment and cannot be deleted. It has been restored.`
+                );
+              }
+            } else {
+              // Module exists - check if lesson exists
+              const lessonInModule = moduleInCourse.lessons.find((l) => l.id === serverLesson.id);
+              if (!lessonInModule) {
+                // Assignment lesson was deleted - restore it
+                console.warn(
+                  `[PROTECTION] ⚠️ Restoring deleted assignment lesson "${serverLesson.title}" (${serverLesson.id}) in module "${moduleTitle}"`
+                );
+                moduleInCourse.lessons.push(JSON.parse(JSON.stringify(serverLesson)));
+                restoredLessons++;
+                toast.warning(
+                  `Assignment lesson "${serverLesson.title}" cannot be deleted. It has been restored.`
+                );
+              }
+            }
+          });
+
+          console.log(
+            `[PROTECTION] ✅ Restored ${restoredModules} modules and ${restoredLessons} lessons`
+          );
+          console.log("[PROTECTION] ✅ Course payload validated and assignment lessons preserved");
+        } else {
+          const errorText = await serverCourseResp.text().catch(() => "");
+          console.warn(
+            "[PROTECTION] ⚠️ Failed to fetch server course materials:",
+            serverCourseResp.status,
+            errorText
+          );
+        }
+      } catch (err) {
+        console.error("[PROTECTION] ❌ Failed to validate course data:", err);
+        console.error("[PROTECTION] Error stack:", err.stack);
+        // Continue anyway - better to try save than to fail completely
+      }
 
       // Upload any pending lesson files to temporary storage and attach fileIds to lessonResources
       // This ensures lessonResources are present in the course payload so server can link files to real lesson IDs
@@ -873,12 +1094,26 @@ const EditCourseView = () => {
                 ),
               }));
 
-              // clear local staging for that lesson
-              lessonFilesRef.current[lesson.id] = [];
-              // Clear lesson form files if currently editing that lesson
+              // ✅ Update lessonForm to show staged uploads immediately
               if (selectedLesson && selectedLesson.lessonId === lesson.id) {
-                setLessonForm((prev) => ({ ...prev, files: [] }));
+                setLessonForm((prev) => ({
+                  ...prev,
+                  lessonResources: [
+                    ...(prev.lessonResources || []),
+                    ...(uploadedFiles || []).map((u) => ({
+                      id: null,
+                      lessonId: lesson.id,
+                      filename: u.filename,
+                      mimeType: u.mimeType,
+                      fileId: u.fileId,
+                    })),
+                  ],
+                  files: [], // Clear pending files since they're now staged
+                }));
               }
+
+              // ✅ KHÔNG clear lessonFilesRef ở đây - đợi đến khi PUT thành công
+              // lessonFilesRef.current[lesson.id] = [];
             } catch (err) {
               console.error("Failed to upload temp files for lesson", lesson.id, err);
               toast.error("Failed to upload lesson files: " + (err.message || err));
@@ -897,12 +1132,17 @@ const EditCourseView = () => {
               courseId: course.id,
               title: lesson.title || "Assignment",
               description: lesson.description || lesson.content || "",
-              dueDate:
-                lesson.dueDate && lesson.dueTime
-                  ? new Date(lesson.dueDate + "T" + lesson.dueTime).toISOString()
-                  : undefined,
               maxPoints: lesson.maxScore || lesson.maxPoints || 100,
             };
+
+            // ✅ Only add dueDate if it exists (avoid sending undefined)
+            if (lesson.dueDate && lesson.dueTime) {
+              assignmentPayload.dueDate = new Date(
+                lesson.dueDate + "T" + lesson.dueTime
+              ).toISOString();
+            } else if (lesson.dueDate) {
+              assignmentPayload.dueDate = new Date(lesson.dueDate + "T23:59:59").toISOString();
+            }
 
             // Create new assignment
             console.log(
@@ -960,18 +1200,22 @@ const EditCourseView = () => {
         lessons: (module.lessons || []).map((lesson, lessonIndex) => {
           console.log("Processing lesson for save:", lesson.title, "Type:", lesson.type);
           console.log("- videoUrl:", lesson.videoUrl);
+          console.log("- description:", lesson.description);
           console.log("- readingContent:", lesson.readingContent);
 
           // Determine mediaUrl based on lesson type
           let mediaUrl = null;
-          if (lesson.type === "Video" && lesson.videoUrl) {
-            mediaUrl = lesson.videoUrl;
+          if (lesson.type === "Video") {
+            // ✅ FIX: Always set mediaUrl for Video lessons (null to clear, URL to set)
+            mediaUrl = lesson.videoUrl || null;
             console.log("- Setting mediaUrl for Video:", mediaUrl);
           }
 
-          // For reading lessons, combine short description and reading body into content so both persist
-          let content = lesson.description || lesson.content || "";
+          // ✅ FIX: Handle content for different lesson types
+          let content = "";
+
           if (lesson.type === "Reading") {
+            // For reading lessons, combine short description and reading body into content so both persist
             const desc = lesson.description ? String(lesson.description).trim() : "";
             const body = lesson.readingContent ? String(lesson.readingContent).trim() : "";
             if (desc && body) content = `${desc}\n\n${body}`;
@@ -980,27 +1224,47 @@ const EditCourseView = () => {
               "- Setting content for Reading (combined):",
               (content || "").substring(0, 50)
             );
+          } else if (lesson.type === "Video") {
+            // For video lessons, content is the description
+            content = lesson.description ? String(lesson.description).trim() : "";
+            console.log("- Setting content for Video:", (content || "").substring(0, 50));
+          } else {
+            // For other lesson types (Assignment, etc.)
+            content = lesson.description || lesson.content || "";
           }
 
           const lessonData = {
             id: lesson.id,
             title: lesson.title,
             content: content,
-            mediaUrl: mediaUrl || undefined,
+            mediaUrl: mediaUrl !== undefined ? mediaUrl : null, // ✅ Always send mediaUrl (null to clear)
             contentType: mapUIToContentType(lesson.type) || "video",
             assignmentId: lesson.assignmentId ? lesson.assignmentId : undefined,
             durationSec: lesson.duration ? parseDurationToSeconds(lesson.duration) : null,
             position: lessonIndex,
-            // ✅ OPTIMIZATION: Only send NEW resources (fileId without id)
-            // Existing resources already in DB don't need to be re-sent
-            lessonResources: (lesson.lessonResources || [])
-              .filter((r) => !r.id && r.fileId) // Only new staged uploads
-              .map((r) => ({
-                id: null,
-                filename: r.filename,
-                mimeType: r.mimeType,
-                fileId: r.fileId,
-              })),
+            // ✅ CRITICAL FIX: Send ALL resources (existing + new) to prevent data loss
+            // Backend will merge/update accordingly
+            lessonResources: (lesson.lessonResources || []).map((r) => {
+              // Existing resource (already in DB)
+              if (r.id) {
+                return {
+                  id: r.id,
+                  filename: r.filename,
+                  mimeType: r.mimeType,
+                };
+              }
+              // New staged upload (has fileId but no id yet)
+              else if (r.fileId) {
+                return {
+                  id: null,
+                  filename: r.filename,
+                  mimeType: r.mimeType,
+                  fileId: r.fileId,
+                };
+              }
+              // Fallback
+              return r;
+            }),
           };
 
           // ✅ THÊM: Luôn gửi assignment fields cho lesson type Assignment
@@ -1011,7 +1275,7 @@ const EditCourseView = () => {
               lessonData.assignmentId = lesson.assignmentId;
             }
 
-            // DueDate
+            // DueDate - only add if exists
             if (lesson.dueDate) {
               const dueTimeStr = lesson.dueTime || "23:59";
               lessonData.dueDate = new Date(lesson.dueDate + "T" + dueTimeStr).toISOString();
@@ -1070,60 +1334,24 @@ const EditCourseView = () => {
         throw new Error(errorMessage);
       }
 
+      // ✅ Files already uploaded via temp upload and linked in PUT request
+      // No need to upload again - just clear the refs
       for (const module of course.modules || []) {
-        console.log(module);
         for (const lesson of module.lessons || []) {
-          const realFiles = lessonFilesRef.current[lesson.id] || [];
-          if (realFiles.length > 0) {
-            try {
-              const uploaded = await uploadLessonFiles(lesson.id, realFiles);
-              console.log("[handleSaveCourse] uploaded resources:", uploaded);
-
-              // Merge uploaded resources into local courseData so UI reflects newly uploaded files
-              if (uploaded && uploaded.length) {
-                setCourseData((prev) => ({
-                  ...prev,
-                  modules: prev.modules.map((m) =>
-                    m.id === module.id
-                      ? {
-                          ...m,
-                          lessons: m.lessons.map((l) =>
-                            l.id === lesson.id
-                              ? {
-                                  ...l,
-                                  lessonResources: [...(l.lessonResources || []), ...uploaded],
-                                }
-                              : l
-                          ),
-                        }
-                      : m
-                  ),
-                }));
-
-                if (selectedLesson && selectedLesson.lessonId === lesson.id) {
-                  setLessonForm((prev) => ({
-                    ...prev,
-                    lessonResources: [...(prev.lessonResources || []), ...uploaded],
-                    files: [],
-                  }));
-                }
-
-                toast.success(
-                  `Uploaded ${uploaded.length} resource(s) to lesson: ${lesson.title || lesson.id}`
-                );
-              }
-
-              // Clear stored files in ref
-              lessonFilesRef.current[lesson.id] = [];
-            } catch (err) {
-              console.error("Failed to upload lesson files for lesson", lesson.id, err);
-              toast.error("Failed to upload lesson files: " + (err.message || err));
-            }
-          }
+          lessonFilesRef.current[lesson.id] = [];
         }
       }
 
+      // ✅ Clear lessonForm files if any lesson is selected
+      if (selectedLesson) {
+        setLessonForm((prev) => ({ ...prev, files: [] }));
+      }
+
       toast.success("Course updated successfully!");
+
+      // ✅ Fetch lại course data để cập nhật UI với resources mới được persist
+      await fetchCourseDetails(course.id);
+
       // signal parent page to refresh course list
       try {
         localStorage.setItem("courses_needs_refresh", "1");
@@ -1131,7 +1359,9 @@ const EditCourseView = () => {
         /* ignore */
         console.log(e);
       }
-      navigate(-1);
+      // ✅ KHÔNG navigate(-1) ngay - để user thấy files đã được lưu
+      // Nếu muốn tự động quay lại, có thể bật dòng dưới:
+      // navigate(-1);
     } catch (error) {
       console.error("Error saving course:", error);
       toast.error("Failed to update course: " + error.message);
@@ -1311,7 +1541,31 @@ const EditCourseView = () => {
                       <button
                         className="edit-delete-icon"
                         onClick={() => handleDeleteModule(module.id)}
-                        title="Delete module"
+                        title={
+                          module.lessons?.some((l) => l.type === "Assignment" || l.assignmentId)
+                            ? "Cannot delete module containing assignments"
+                            : !module.id.startsWith("module-")
+                              ? "Cannot delete saved modules"
+                              : "Delete module"
+                        }
+                        disabled={
+                          module.lessons?.some((l) => l.type === "Assignment" || l.assignmentId) ||
+                          !module.id.startsWith("module-")
+                        }
+                        style={{
+                          opacity:
+                            module.lessons?.some(
+                              (l) => l.type === "Assignment" || l.assignmentId
+                            ) || !module.id.startsWith("module-")
+                              ? 0.5
+                              : 1,
+                          cursor:
+                            module.lessons?.some(
+                              (l) => l.type === "Assignment" || l.assignmentId
+                            ) || !module.id.startsWith("module-")
+                              ? "not-allowed"
+                              : "pointer",
+                        }}
                       >
                         <MdDeleteOutline />
                       </button>
@@ -1383,7 +1637,32 @@ const EditCourseView = () => {
                             e.stopPropagation();
                             handleDeleteLesson(module.id, lesson.id);
                           }}
-                          title="Delete lesson"
+                          title={
+                            lesson.type === "Assignment" || lesson.assignmentId
+                              ? "Cannot delete assignment lessons"
+                              : !lesson.id.startsWith("lesson-")
+                                ? "Cannot delete saved lessons"
+                                : "Delete lesson"
+                          }
+                          disabled={
+                            lesson.type === "Assignment" ||
+                            lesson.assignmentId ||
+                            !lesson.id.startsWith("lesson-")
+                          }
+                          style={{
+                            opacity:
+                              lesson.type === "Assignment" ||
+                              lesson.assignmentId ||
+                              !lesson.id.startsWith("lesson-")
+                                ? 0.5
+                                : 1,
+                            cursor:
+                              lesson.type === "Assignment" ||
+                              lesson.assignmentId ||
+                              !lesson.id.startsWith("lesson-")
+                                ? "not-allowed"
+                                : "pointer",
+                          }}
                         >
                           <MdDeleteOutline />
                         </button>
