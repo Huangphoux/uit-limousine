@@ -1,5 +1,5 @@
 - Tạo tệp `docker-compose.yml`
-#image("../minh_chung/DockerCompose.png")
+#image("../minh_chung/DockerCompose.jpg")
 
 - Sử dụng Docker Compose để deploy:
   - Ứng dụng
@@ -9,7 +9,7 @@
 - Hệ thống phải chạy được chỉ với một lệnh duy nhất: `docker-compose up -d`
 
 === Giải thích docker-compose.yml
-#image("../minh_chung/DockerCompose.png")
+#image("../minh_chung/DockerCompose.jpg")
 - services: - Khai báo danh sách các service (container) sẽ được Docker Compose
 quản lý và triển khai trong hệ thống.
 - lms_server: - Định nghĩa service backend của hệ thống.
