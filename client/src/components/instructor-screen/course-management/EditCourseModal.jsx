@@ -28,9 +28,11 @@ const EditCourseModal = ({ show, onClose, onSave, courseData }) => {
     language: "Tiếng Việt",
     requirement: "",
     avatar: null,
+    price: "",
   });
 
   const [errors, setErrors] = useState({});
+  const [previewUrl, setPreviewUrl] = useState(null);
   const [modules, setModules] = useState([
     {
       id: 1,
@@ -88,6 +90,14 @@ const EditCourseModal = ({ show, onClose, onSave, courseData }) => {
   // Initialize form data when courseData changes
   useEffect(() => {
     if (courseData && show) {
+      // Determine existing cover image URL (some objects use coverImage / image / avatar)
+      const API_URL = import.meta.env.VITE_API_URL || "";
+      const existingCover = courseData.coverImage || courseData.image || courseData.avatar || null;
+      const normalizedCover =
+        existingCover && typeof existingCover === "string" && existingCover.startsWith("/")
+          ? `${API_URL}${existingCover}`
+          : existingCover || null;
+
       setFormData({
         courseName: courseData.title || "",
         description: courseData.description || "",
@@ -99,8 +109,11 @@ const EditCourseModal = ({ show, onClose, onSave, courseData }) => {
         organization: courseData.organization || "",
         language: courseData.language || "Tiếng Việt",
         requirement: courseData.requirement || "",
-        avatar: courseData.avatar || null,
+        avatar: courseData.avatar || courseData.coverImage || null,
+        price: courseData.price != null ? String(courseData.price) : "",
       });
+
+      setPreviewUrl(normalizedCover);
 
       // Initialize modules from courseData or set default
       if (courseData.modules && courseData.modules.length > 0) {
@@ -117,6 +130,15 @@ const EditCourseModal = ({ show, onClose, onSave, courseData }) => {
       }
     }
   }, [courseData, show]);
+
+  // cleanup preview object URL when component unmounts or preview changes
+  useEffect(() => {
+    return () => {
+      if (previewUrl && previewUrl.startsWith("blob:")) {
+        URL.revokeObjectURL(previewUrl);
+      }
+    };
+  }, [previewUrl]);
 
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({
@@ -173,6 +195,7 @@ const EditCourseModal = ({ show, onClose, onSave, courseData }) => {
         organization: formData.organization,
         language: formData.language,
         requirement: formData.requirement,
+        price: formData.price != null && formData.price !== "" ? Number(formData.price) : null,
         avatar: formData.avatar,
         modules: modules,
       };
@@ -199,6 +222,13 @@ const EditCourseModal = ({ show, onClose, onSave, courseData }) => {
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
+      // revoke old blob URL if any
+      if (previewUrl && previewUrl.startsWith("blob:")) {
+        URL.revokeObjectURL(previewUrl);
+      }
+      const url = URL.createObjectURL(file);
+      setPreviewUrl(url);
+
       setFormData((prev) => ({
         ...prev,
         avatar: file,
@@ -513,33 +543,82 @@ const EditCourseModal = ({ show, onClose, onSave, courseData }) => {
                       <Form.Label className="fw-semibold" style={{ color: "black" }}>
                         Course's avatar
                       </Form.Label>
-                      <div
-                        className="d-flex align-items-center justify-content-center border rounded"
-                        style={{
-                          backgroundColor: "white",
-                          height: "56px",
-                          borderRadius: "8px",
-                          cursor: "pointer",
-                          border: "2px dashed #e9ecef",
-                        }}
-                        onClick={() => document.getElementById("avatar-upload-edit").click()}
-                      >
-                        <FaUpload className="me-2" style={{ color: "#a0aec0" }} />
-                        <span style={{ color: "#a0aec0" }}>
-                          {formData.avatar
-                            ? typeof formData.avatar === "string"
-                              ? "Browse your computer"
-                              : formData.avatar.name
-                            : "Browse your computer"}
-                        </span>
+                      <div style={{ position: "relative", minHeight: 56 }}>
+                        {previewUrl ? (
+                          <div style={{ position: "relative" }}>
+                            <img
+                              src={previewUrl}
+                              alt="cover preview"
+                              style={{
+                                width: "100%",
+                                height: 56,
+                                objectFit: "cover",
+                                borderRadius: 8,
+                              }}
+                            />
+                            <div
+                              style={{
+                                position: "absolute",
+                                top: 6,
+                                right: 6,
+                                display: "flex",
+                                gap: 8,
+                              }}
+                            >
+                              <Button
+                                variant="light"
+                                size="sm"
+                                onClick={() =>
+                                  document.getElementById("avatar-upload-edit").click()
+                                }
+                              >
+                                Replace
+                              </Button>
+                              <Button
+                                variant="light"
+                                size="sm"
+                                onClick={() => {
+                                  if (previewUrl && previewUrl.startsWith("blob:"))
+                                    URL.revokeObjectURL(previewUrl);
+                                  setPreviewUrl(null);
+                                  setFormData((prev) => ({ ...prev, avatar: null }));
+                                }}
+                              >
+                                Remove
+                              </Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div
+                            className="d-flex align-items-center justify-content-center border rounded"
+                            style={{
+                              backgroundColor: "white",
+                              height: "56px",
+                              borderRadius: "8px",
+                              cursor: "pointer",
+                              border: "2px dashed #e9ecef",
+                            }}
+                            onClick={() => document.getElementById("avatar-upload-edit").click()}
+                          >
+                            <FaUpload className="me-2" style={{ color: "#a0aec0" }} />
+                            <span style={{ color: "#a0aec0" }}>
+                              {formData.avatar
+                                ? typeof formData.avatar === "string"
+                                  ? "Browse your computer"
+                                  : formData.avatar.name
+                                : "Browse your computer"}
+                            </span>
+                          </div>
+                        )}
+
+                        <input
+                          id="avatar-upload-edit"
+                          type="file"
+                          accept="image/*"
+                          onChange={handleFileChange}
+                          style={{ display: "none" }}
+                        />
                       </div>
-                      <input
-                        id="avatar-upload-edit"
-                        type="file"
-                        accept="image/*"
-                        onChange={handleFileChange}
-                        style={{ display: "none" }}
-                      />
                     </Form.Group>
                   </Col>
                 </Row>
@@ -767,6 +846,27 @@ const EditCourseModal = ({ show, onClose, onSave, courseData }) => {
                       </option>
                     ))}
                   </Form.Select>
+                </Form.Group>
+
+                <Form.Group className="mb-3">
+                  <Form.Label className="fw-semibold" style={{ color: "black" }}>
+                    Price
+                  </Form.Label>
+                  <Form.Control
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    placeholder="0.00"
+                    value={formData.price}
+                    onChange={(e) => handleInputChange("price", e.target.value)}
+                    style={{
+                      backgroundColor: "white",
+                      border: "1px solid #e9ecef",
+                      borderRadius: "8px",
+                      padding: "12px 16px",
+                      color: "black",
+                    }}
+                  />
                 </Form.Group>
 
                 <Form.Group className="mb-4">

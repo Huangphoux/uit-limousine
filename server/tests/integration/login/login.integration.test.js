@@ -1,4 +1,4 @@
-import { loginUseCase, prisma } from "../../../src/composition-root.js";
+import { loginUseCase, prisma } from "../../composition-root.js";
 import { ERROR_CATALOG } from "../../../constants/errors.js";
 import { getUser, password, input } from "./test-data.js";
 import { SUCCESS_CATALOG } from "../../../constants/messages.js";

@@ -1,4 +1,4 @@
-import { prisma, changeRoleUsecase } from "../../../src/composition-root"
+import { prisma, changeRoleUsecase } from "../../composition-root.js";
 import { user, input } from "./test-data";
 import { outputSchema } from "../../../src/application_layer/instructor/change-role.usecase.js";
 

@@ -1,7 +1,8 @@
 import { logger } from "../../utils/logger.js";
 import { CourseEntity, courseSchema } from "../../domain_layer/course/course.entity.js";
-import { buildQuery } from "../../utils/query-builder.js";
 import { toPersistence } from "../../domain_layer/domain_service/factory.js";
+import { ModuleMapper } from "../mapper/module.mapper.js";
+import { CourseMapper } from "../mapper/course.mapper.js";
 
 export class CourseRepository {
   constructor(prisma) {
@@ -67,13 +68,11 @@ export class CourseRepository {
   async findByFilter({ title, category, level, instructorId, skip, take, currentUserId }) {
     const where = {};
 
-    if (title) {
-      where.title = {
-        contains: title,
-      };
-    }
+    // Don't filter by title at database level for case-insensitive search
+    // We'll filter after fetching
+    const searchTerm = title?.toLowerCase().trim();
 
-    if (category) {
+    if (category && !title) {
       where.category = category;
     }
 
@@ -89,10 +88,10 @@ export class CourseRepository {
     }
     console.log(currentUserId);
 
-    const result = await this.prisma.course.findMany({
+    let result = await this.prisma.course.findMany({
       where,
-      skip,
-      take,
+      skip: searchTerm ? undefined : skip, // If searching, fetch all then paginate
+      take: searchTerm ? undefined : take,
       include: {
         instructor: {
           select: {
@@ -100,6 +99,16 @@ export class CourseRepository {
             name: true,
             email: true,
             avatarUrl: true,
+          },
+        },
+        // Include modules and lessons to calculate duration
+        modules: {
+          select: {
+            lessons: {
+              select: {
+                durationSec: true,
+              },
+            },
           },
         },
         // --- THÊM LOGIC CHECK ENROLL Ở ĐÂY ---
@@ -120,29 +129,62 @@ export class CourseRepository {
       },
     });
 
+    // Case-insensitive search filter (for SQLite compatibility)
+    if (searchTerm) {
+      result = result.filter((course) => {
+        const titleMatch = course.title?.toLowerCase().includes(searchTerm);
+        const descMatch = course.description?.toLowerCase().includes(searchTerm);
+        const categoryMatch = course.category?.toLowerCase().includes(searchTerm);
+        return titleMatch || descMatch || categoryMatch;
+      });
+
+      // Apply pagination after filtering
+      if (skip !== undefined && take !== undefined) {
+        result = result.slice(skip, skip + take);
+      }
+    }
+
     // Lấy tất cả enrollment count cho tất cả courses trong một query
     const enrollmentCounts = await this.prisma.enrollment.groupBy({
-      by: ['courseId'],
+      by: ["courseId"],
       where: {
-        courseId: { in: result.map(c => c.id) },
+        courseId: { in: result.map((c) => c.id) },
         status: "ENROLLED",
       },
       _count: true,
     });
 
     // Tạo map từ courseId -> enrollment count
-    const countMap = new Map(enrollmentCounts.map(item => [item.courseId, item._count]));
+    const countMap = new Map(enrollmentCounts.map((item) => [item.courseId, item._count]));
 
     // Trả về dữ liệu đã được map thêm field isEnrolled
     // Luôn lấy tổng số enrolled students cho tất cả views
     return result.map((course) => {
       const courseEntity = CourseEntity.rehydrate(course);
 
+      // Calculate total duration from lessons if explicit duration fields are not set
+      let calculatedDurationHours = null;
+      if (!course.durationWeeks && !course.durationDays && !course.durationHours) {
+        const totalSec = (course.modules || []).reduce((sum, module) => {
+          return (
+            sum +
+            (module.lessons || []).reduce((lessonSum, lesson) => {
+              return lessonSum + (lesson.durationSec || 0);
+            }, 0)
+          );
+        }, 0);
+
+        if (totalSec > 0) {
+          calculatedDurationHours = Math.round((totalSec / 3600) * 10) / 10; // Round to 1 decimal
+        }
+      }
+
       // Gán thêm thuộc tính động để UseCase có thể dùng
       return {
         ...courseEntity,
         isEnrolledByCurrentUser: course.enrollments?.length > 0,
         enrollmentCount: countMap.get(course.id) || 0,
+        calculatedDurationHours,
       };
     });
   }
@@ -153,19 +195,11 @@ export class CourseRepository {
   async countByFilter({ title, category, level, instructorId } = {}) {
     const where = {};
 
-    // ❌ BỎ: published: true nếu muốn đếm tất cả
-    // ✅ THÊM: published: true nếu chỉ muốn đếm courses đã publish
-    // where.published = true; // Uncomment nếu cần
-
-    // Partial match cho title
-    if (title) {
-      where.title = {
-        contains: title,
-      };
-    }
+    // For search term, we need to fetch all and count in JavaScript (case-insensitive)
+    const searchTerm = title?.toLowerCase().trim();
 
     // Exact match
-    if (category) {
+    if (category && !searchTerm) {
       where.category = category;
     }
 
@@ -175,9 +209,34 @@ export class CourseRepository {
 
     if (instructorId) {
       where.instructorId = instructorId;
+    } else {
+      where.published = true;
     }
 
-    return await this.prisma.course.count({ where });
+    // If no search term, use database count
+    if (!searchTerm) {
+      return await this.prisma.course.count({ where });
+    }
+
+    // Otherwise, fetch all and filter in JavaScript for case-insensitive search
+    const allCourses = await this.prisma.course.findMany({
+      where,
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        category: true,
+      },
+    });
+
+    const filtered = allCourses.filter((course) => {
+      const titleMatch = course.title?.toLowerCase().includes(searchTerm);
+      const descMatch = course.description?.toLowerCase().includes(searchTerm);
+      const categoryMatch = course.category?.toLowerCase().includes(searchTerm);
+      return titleMatch || descMatch || categoryMatch;
+    });
+
+    return filtered.length;
   }
 
   async save(course) {
@@ -281,79 +340,61 @@ export class CourseRepository {
   }
 
   async findByLessonId(lessonId) {
-    try {
-      const raw = await this.prisma.course.findFirst({
-        where: {
-          modules: {
-            some: {
-              lessons: {
-                some: {
-                  id: lessonId,
-                },
+    // Always use safe select to ensure modules are included
+    const raw = await this.prisma.course.findFirst({
+      where: {
+        modules: {
+          some: {
+            lessons: {
+              some: {
+                id: lessonId,
               },
             },
           },
         },
-        select: CourseRepository.baseQuery,
-      });
+      },
+      select: {
+        id: true,
+        title: true,
+        shortDesc: true,
+        description: true,
+        language: true,
+        level: true,
+        price: true,
+        published: true,
+        publishDate: true,
+        coverImage: true,
+        createdAt: true,
+        updatedAt: true,
+        instructorId: true,
+        modules: {
+          select: {
+            id: true,
+            title: true,
+            position: true,
+            createdAt: true,
+            lessons: {
+              select: {
+                id: true,
+                title: true,
+                content: true,
+                mediaUrl: true,
+                contentType: true,
+                durationSec: true,
+                position: true,
+                createdAt: true,
+              },
+            },
+          },
+        },
+      },
+    });
 
-      return CourseEntity.rehydrate(raw);
-    } catch (err) {
-      console.warn(
-        "CourseRepository.findByLessonId: baseQuery select failed, retrying with safe select",
-        err.message
-      );
-      const raw = await this.prisma.course.findFirst({
-        where: {
-          modules: {
-            some: {
-              lessons: {
-                some: {
-                  id: lessonId,
-                },
-              },
-            },
-          },
-        },
-        select: {
-          id: true,
-          title: true,
-          shortDesc: true,
-          description: true,
-          language: true,
-          level: true,
-          price: true,
-          published: true,
-          publishDate: true,
-          coverImage: true,
-          createdAt: true,
-          updatedAt: true,
-          instructorId: true,
-          modules: {
-            select: {
-              id: true,
-              title: true,
-              position: true,
-              createdAt: true,
-              lessons: {
-                select: {
-                  id: true,
-                  title: true,
-                  content: true,
-                  mediaUrl: true,
-                  contentType: true,
-                  durationSec: true,
-                  position: true,
-                  createdAt: true,
-                },
-              },
-            },
-          },
-        },
-      });
-
-      return CourseEntity.rehydrate(raw);
+    if (!raw) {
+      return null;
     }
+
+    return CourseEntity.rehydrate(raw);
   }
 
   // CourseRepository.js
@@ -369,5 +410,85 @@ export class CourseRepository {
     });
   }
 
-  static baseQuery = buildQuery(courseSchema);
+  async getById(id) {
+    const raw = await this.prisma.course.findUnique({
+      where: { id },
+      select: CourseRepository.baseQuery,
+    });
+
+    return CourseEntity.rehydrate(raw);
+  }
+
+  async smartSave(course) {
+    const existingModules = await this.prisma.module.findMany({
+      where: { courseId: course.id },
+      select: { id: true },
+    });
+
+    const existingModuleIds = existingModules.map((m) => m.id);
+    const currentModuleIds = new Set(course.modules.map((m) => m.id).filter(Boolean));
+
+    const deleteModuleIds = existingModuleIds.filter((id) => !currentModuleIds.has(id));
+    const newModules = course.modules.filter((m) => !m.id);
+    const updatedModules = course.modules.filter((m) => m.id);
+
+    await this.prisma.$transaction([
+      this.prisma.course.update({
+        where: { id: course.id },
+        data: CourseMapper.toPersistence(course),
+      }),
+      this.prisma.module.deleteMany({
+        where: { id: { in: deleteModuleIds } },
+      }),
+      this.prisma.module.createMany({
+        data: newModules.map(ModuleMapper.toPersistence),
+      }),
+      ...updatedModules.map((m) =>
+        this.prisma.module.update({
+          where: { id: m.id },
+          data: ModuleMapper.toPersistence(m),
+        })
+      ),
+    ]);
+  }
+
+  async atomicSave(entity) {
+    const raw = await this.prisma.course.update({
+      where: { id: entity.id },
+      data: CourseMapper.toPersistence(entity),
+      select: CourseRepository.baseQuery,
+    });
+
+    return CourseMapper.toDomain(entity);
+  }
+
+  static baseQuery = {
+    id: true,
+    title: true,
+    shortDesc: true,
+    description: true,
+    language: true,
+    level: true,
+    price: true,
+    published: true,
+    publishDate: true,
+    coverImage: true,
+    category: true,
+    durationWeeks: true,
+    durationDays: true,
+    durationHours: true,
+    organization: true,
+    requirement: true,
+    createdAt: true,
+    updatedAt: true,
+    instructorId: true,
+    modules: {
+      select: {
+        id: true,
+        courseId: true,
+        title: true,
+        position: true,
+      },
+    },
+  };
 }

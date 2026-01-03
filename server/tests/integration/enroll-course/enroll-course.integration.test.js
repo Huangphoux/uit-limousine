@@ -1,4 +1,4 @@
-import { enrollCoursesUseCase as enrollCourseUseCase, prisma } from "../../../src/composition-root"
+import { enrollCoursesUseCase as enrollCourseUseCase, prisma } from "../../composition-root.js";
 import { course, student, input } from "./test-data"
 import { z } from "zod";
 

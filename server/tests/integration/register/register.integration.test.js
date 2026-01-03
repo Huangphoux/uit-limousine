@@ -1,4 +1,4 @@
-import { prisma, registerUseCase } from '../../../src/composition-root.js';
+import { prisma, registerUseCase } from "../../composition-root.js";
 import { input } from './test-data.js';
 import { Role } from '../../../src/domain_layer/role.entity.js';
 import z from "zod";

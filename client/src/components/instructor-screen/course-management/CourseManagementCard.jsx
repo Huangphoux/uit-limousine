@@ -6,7 +6,7 @@ import {
   FaTrash,
   FaUsers,
   FaClock,
-  FaStar,
+  FaDollarSign,
   FaExclamationCircle,
   FaPaperPlane,
   FaEyeSlash,
@@ -18,27 +18,78 @@ const CourseManagementCard = ({ courseData, onEdit, onPublish }) => {
     title,
     description,
     image,
+    coverImage,
+    avatar,
     enrolledStudents,
+    enrollmentCount,
+    students,
     duration,
     status,
     rating,
     durationWeeks,
     durationDays,
     durationHours,
+    price,
+    category,
   } = courseData;
 
-  // Helper function to get the longest duration unit
-  const getLongestDuration = () => {
+  // Normalize image source: prefer `image`, then `coverImage`, then `avatar`.
+  const API_BASE_URL = import.meta.env.VITE_API_URL || "";
+  let imageSrc = image || coverImage || avatar || null;
+  if (imageSrc && typeof imageSrc === "string" && imageSrc.startsWith("/")) {
+    imageSrc = `${API_BASE_URL}${imageSrc}`;
+  }
+  if (!imageSrc) imageSrc = "/images/course-placeholder.svg";
+
+  // Format enrolled students with fallbacks and localized formatting
+  const formatEnrolledStudents = () => {
+    const raw = enrolledStudents ?? enrollmentCount ?? students ?? 0;
+    if (!raw || Number(raw) === 0) return "N/A";
+    try {
+      return Number(raw).toLocaleString();
+    } catch (e) {
+      console.log(e);
+      return String(raw);
+    }
+  };
+
+  // Helper function to build a composite duration string (e.g. "2w 3d 4h")
+  const getLongestDuration = (full = false) => {
     const weeks = parseInt(durationWeeks) || 0;
     const days = parseInt(durationDays) || 0;
     const hours = parseInt(durationHours) || 0;
 
-    if (weeks > 0) return `${weeks} week${weeks !== 1 ? "s" : ""}`;
-    if (days > 0) return `${days} day${days !== 1 ? "s" : ""}`;
-    if (hours > 0) return `${hours} hour${hours !== 1 ? "s" : ""}`;
+    const parts = [];
+    if (weeks > 0) parts.push(`${weeks}w`);
+    if (days > 0) parts.push(`${days}d`);
+    if (hours > 0) parts.push(`${hours}h`);
 
-    // Fallback to original duration if individual fields are not available
-    return duration || "Duration not specified";
+    if (parts.length > 0) {
+      return full ? parts.join(" ") : parts[0];
+    }
+
+    // If individual fields absent, try to return the free-form duration string
+    if (duration) return duration;
+
+    // Calculate from lessons if modules are available
+    if (courseData.modules && Array.isArray(courseData.modules)) {
+      const totalSec = courseData.modules.reduce((sum, module) => {
+        if (!module.lessons) return sum;
+        return sum + module.lessons.reduce((lessonSum, lesson) => {
+          return lessonSum + (lesson.durationSec || 0);
+        }, 0);
+      }, 0);
+      
+      if (totalSec > 0) {
+        const totalHours = Math.floor(totalSec / 3600);
+        const totalMinutes = Math.floor((totalSec % 3600) / 60);
+        if (totalHours > 0 && totalMinutes > 0) return full ? `${totalHours}h ${totalMinutes}m` : `${totalHours}h`;
+        if (totalHours > 0) return `${totalHours}h`;
+        if (totalMinutes > 0) return `${totalMinutes}m`;
+      }
+    }
+
+    return "Duration not specified";
   };
 
   const getStatusBadge = () => {
@@ -107,15 +158,6 @@ const CourseManagementCard = ({ courseData, onEdit, onPublish }) => {
     );
   };
 
-  const getRatingStars = () => {
-    return (
-      <div className="d-flex align-items-center">
-        <FaStar className="text-warning me-1" size={14} />
-        <span className="text-black small">{rating}</span>
-      </div>
-    );
-  };
-
   return (
     <Card
       className="h-100 shadow-sm border-0"
@@ -134,13 +176,32 @@ const CourseManagementCard = ({ courseData, onEdit, onPublish }) => {
         {getStatusBadge()}
         <Card.Img
           variant="top"
-          src={image}
+          src={imageSrc}
+          onError={(e) => (e.currentTarget.src = "/images/course-placeholder.svg")}
           style={{
             height: "140px",
             objectFit: "cover",
             borderRadius: "12px 12px 0 0",
           }}
         />
+        {/* Category Badge */}
+        {category && (
+          <span
+            className="badge position-absolute"
+            style={{
+              left: "10px",
+              top: "10px",
+              fontSize: "11px",
+              fontWeight: "600",
+              backgroundColor: "rgba(0,0,0,0.6)",
+              color: "white",
+              padding: "4px 8px",
+              borderRadius: "12px",
+            }}
+          >
+            {category}
+          </span>
+        )}
       </div>
 
       <Card.Body className="p-2" style={{ display: "flex", flexDirection: "column", flex: 1 }}>
@@ -181,22 +242,43 @@ const CourseManagementCard = ({ courseData, onEdit, onPublish }) => {
         <div className="mb-2">
           <Row className="g-1">
             <Col xs={6}>
-              <div className="d-flex align-items-center" style={{ color: "#000" }}>
-                <FaUsers className=" me-1" size={12} />
-                <span className="small text-black">
-                  {enrolledStudents ? enrolledStudents : "N/A"}
+              <div className="d-flex flex-column" style={{ color: "#000" }}>
+                <div className="d-flex align-items-center">
+                  <FaUsers className=" me-1" size={12} />
+                  <span className="small text-black" title={formatEnrolledStudents()}>
+                    {formatEnrolledStudents()}
+                  </span>
+                </div>
+
+                {price != null && (
+                  <div className="mt-1 d-flex align-items-center">
+                    <FaDollarSign className="me-1" size={12} />
+                    <strong
+                      className="small text-black"
+                      style={{ color: "#495057", fontSize: "14px" }}
+                    >
+                      {Number(price) === 0
+                        ? "Free"
+                        : new Intl.NumberFormat(undefined, {
+                            style: "currency",
+                            currency: "USD",
+                            maximumFractionDigits: 2,
+                          }).format(Number(price))}
+                    </strong>
+                  </div>
+                )}
+              </div>
+            </Col>
+
+            <Col xs={6}>
+              <div className="d-flex align-items-center justify-content-end">
+                <FaClock className=" me-1 text-black" size={12} />
+                <span className="small text-black" title={getLongestDuration(true)}>
+                  {getLongestDuration(true)}
                 </span>
               </div>
             </Col>
-            <Col xs={6}>
-              <div className="d-flex align-items-center">
-                <FaClock className=" me-1 text-black" size={12} />
-                <span className="small text-black ">{getLongestDuration()}</span>
-              </div>
-            </Col>
           </Row>
-
-          <div className="mt-1">{getRatingStars()}</div>
         </div>
         {/* Denial Reason Box */}
         {status?.toLowerCase() === "denied" && courseData.denialReason && (

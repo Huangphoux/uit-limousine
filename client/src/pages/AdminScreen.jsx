@@ -35,26 +35,53 @@ const AdminScreen = () => {
 
       if (result.success) {
         // Transform instructor applications to match course format
-        const transformedCourses = result.data.map((application) => ({
-          id: application.id,
-          title: application.requestedCourseTitle,
-          description: application.requestedCourseSummary || "",
-          instructor: application.applicant?.fullname || application.applicant?.email || "Unknown",
-          submittedDate: new Date(application.appliedAt).toISOString().split("T")[0],
-          status:
-            application.status === "PENDING"
-              ? "Waiting"
-              : application.status === "APPROVED"
-                ? "Approved"
-                : "Rejected",
-          estimatedDuration: "",
-          category: "Uncategorized",
-          image: "https://via.placeholder.com/300x200",
-          portfolioUrl: application.portfolioUrl || "",
-          applicantId: application.applicantId,
-          modules: [], // Chưa có modules vì chỉ là đơn yêu cầu
-        }));
+        const transformedCourses = result.data.map((application) => {
+          // Normalize coverImage -> make absolute if server returns relative path like `/uploads/...`
+          const rawCover = application.coverImage || null;
+          const normalizedCover = rawCover
+            ? rawCover.startsWith("/")
+              ? `${API_BASE_URL}${rawCover}`
+              : rawCover
+            : null;
 
+          const imageUrl = normalizedCover || "/images/course-placeholder.svg";
+
+          return {
+            id: application.id,
+            title: application.requestedCourseTitle,
+            description: application.requestedCourseSummary || "",
+            instructor: application.applicant?.name || application.applicant?.email || "Unknown",
+            submittedDate: new Date(application.appliedAt).toISOString().split("T")[0],
+            status:
+              application.status === "PENDING"
+                ? "Waiting"
+                : application.status === "APPROVED"
+                  ? "Approved"
+                  : "Rejected",
+            estimatedDuration:
+              application.durationWeeks ||
+              application.durationDays ||
+              application.durationHours ||
+              "",
+            category: application.category || "Uncategorized",
+            // provide both `image` and `coverImage` as absolute URL when possible
+            image: imageUrl,
+            coverImage: normalizedCover,
+            portfolioUrl: application.portfolioUrl || "",
+            applicantId: application.applicantId,
+            organization: application.organization || "",
+            level: application.level || "",
+            language: application.language || "",
+            requirement: application.requirement || "",
+            durationWeeks: application.durationWeeks || null,
+            durationDays: application.durationDays || null,
+            durationHours: application.durationHours || null,
+            price: application.price || null,
+            modules: [], // Chưa có modules vì chỉ là đơn yêu cầu
+          };
+        });
+
+        console.log("[AdminScreen] transformedCourses:", transformedCourses);
         setCourses(transformedCourses);
       }
     } catch (err) {

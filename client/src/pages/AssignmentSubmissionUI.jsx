@@ -4,6 +4,8 @@ import { BsCloudUpload, BsDownload, BsFileEarmarkText, BsTrophy, BsTag } from "r
 import "./CourseContent.css";
 import { toast } from "sonner";
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 const AssignmentSubmissionUI = ({ lesson, onMarkAsFinished, isCompleted }) => {
   console.log("=== AssignmentSubmissionUI ===");
   console.log("Lesson data:", lesson);
@@ -19,6 +21,22 @@ const AssignmentSubmissionUI = ({ lesson, onMarkAsFinished, isCompleted }) => {
   const [error, setError] = useState(null);
   const [content, setContent] = useState("");
   const token = localStorage.getItem("accessToken"); // Assuming token is stored in localStorage
+
+  // Assignment due date & lock state
+  const dueDate = lesson?.assignment?.dueDate ? new Date(lesson.assignment.dueDate) : null;
+  const now = new Date();
+  const submissionClosed = dueDate ? dueDate < now : false;
+
+  const formatDueDate = (d) => {
+    if (!d) return null;
+    return d.toLocaleString(undefined, {
+      year: "numeric",
+      month: "short",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
 
   // Reset state when lesson changes
   useEffect(() => {
@@ -59,55 +77,56 @@ const AssignmentSubmissionUI = ({ lesson, onMarkAsFinished, isCompleted }) => {
     }
   }, [lesson]);
 
-  // Fetch submission status on component mount
-  useEffect(() => {
-    const fetchSubmissionStatus = async () => {
-      if (!lesson?.assignment?.id || !token) return;
+  // Fetch submission status function
+  const fetchSubmissionStatus = async () => {
+    if (!lesson?.assignment?.id || !token) return;
 
-      try {
-        const response = await fetch(
-          `http://localhost:3000/courses/assignments/${lesson.assignment.id}/submission`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-
-        if (response.ok) {
-          const data = await response.json();
-          if (data.success && data.data) {
-            // Đã có submission
-            setIsSubmitted(true);
-            setSubmissionResult({
-              files: data.data.fileUrl
-                ? [
-                    {
-                      name: data.data.fileUrl.split("/").pop(),
-                      url: data.data.fileUrl,
-                    },
-                  ]
-                : [],
-              score: data.data.grade,
-              maxScore: lesson.assignment?.maxScore || 100,
-              percentage: data.data.grade
-                ? Math.round((data.data.grade / (lesson.assignment?.maxScore || 100)) * 100)
-                : 0,
-              status: data.data.status,
-              scorer: data.data.gradedBy?.name || "Pending Review",
-              date: data.data.submittedAt
-                ? new Date(data.data.submittedAt).toLocaleString("en-GB")
-                : "N/A",
-              content: data.data.content,
-              feedback: data.data.feedback || null,
-            });
-          }
+    try {
+      const response = await fetch(
+        `${API_URL}/courses/assignments/${lesson.assignment.id}/submission`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         }
-      } catch (err) {
-        console.error("Error fetching submission status:", err);
-      }
-    };
+      );
 
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.data) {
+          // Đã có submission
+          setIsSubmitted(true);
+          setSubmissionResult({
+            files: data.data.fileUrl
+              ? [
+                  {
+                    name: data.data.fileUrl.split("/").pop(),
+                    url: data.data.fileUrl,
+                  },
+                ]
+              : [],
+            score: data.data.grade,
+            maxScore: lesson.assignment?.maxScore || 100,
+            percentage: data.data.grade
+              ? Math.round((data.data.grade / (lesson.assignment?.maxScore || 100)) * 100)
+              : 0,
+            status: data.data.status,
+            scorer: data.data.gradedBy?.name || "Pending Review",
+            date: data.data.submittedAt
+              ? new Date(data.data.submittedAt).toLocaleString("en-GB")
+              : "N/A",
+            content: data.data.content,
+            feedback: data.data.feedback || null,
+          });
+        }
+      }
+    } catch (err) {
+      console.error("Error fetching submission status:", err);
+    }
+  };
+
+  // Fetch submission status on component mount / when assignmentId changes
+  useEffect(() => {
     fetchSubmissionStatus();
   }, [lesson?.assignment?.id, token]);
   const handleFileSelect = (event) => {
@@ -144,6 +163,13 @@ const AssignmentSubmissionUI = ({ lesson, onMarkAsFinished, isCompleted }) => {
     console.log("[handleSubmit] Content:", content);
     console.log("[handleSubmit] Selected files:", selectedFiles);
 
+    if (submissionClosed && !isSubmitted) {
+      setError("Submission deadline has passed");
+      toast.error("Submission deadline has passed");
+      console.log("[handleSubmit] Error: deadline passed");
+      return;
+    }
+
     if (selectedFiles.length === 0 && !content.trim()) {
       setError("Please provide either content or upload a file");
       console.log("[handleSubmit] Error: No content or file provided");
@@ -156,19 +182,25 @@ const AssignmentSubmissionUI = ({ lesson, onMarkAsFinished, isCompleted }) => {
 
       let fileUrl = null;
 
-      // For now, using a placeholder URL if file is selected
-      // TODO: Implement actual file upload to server/cloud storage
-      if (selectedFiles.length > 0) {
-        console.log("[handleSubmit] File selected, using placeholder URL");
-        fileUrl = "Link: https://github.com/learner1/todo-app"; // Placeholder URL
-      }
-
       console.log("[handleSubmit] Calling API to submit assignment...");
 
-      // Submit assignment to API
-      const response = await fetch(
-        `http://localhost:3000/courses/assignments/${lesson.assignment?.id}/submit`,
-        {
+      let response;
+      // If a file is selected, use multipart/form-data with field name 'file'
+      if (selectedFiles.length > 0) {
+        const fd = new FormData();
+        fd.append("file", selectedFiles[0]);
+        if (content.trim()) fd.append("content", content.trim());
+
+        response = await fetch(`${API_URL}/courses/assignments/${lesson.assignment?.id}/submit`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          body: fd,
+        });
+      } else {
+        // No file: send JSON body
+        response = await fetch(`${API_URL}/courses/assignments/${lesson.assignment?.id}/submit`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -177,10 +209,9 @@ const AssignmentSubmissionUI = ({ lesson, onMarkAsFinished, isCompleted }) => {
           body: JSON.stringify({
             assignmentId: lesson.assignment?.id,
             content: content.trim() || null,
-            fileUrl: fileUrl,
           }),
-        }
-      );
+        });
+      }
 
       console.log("[handleSubmit] API response status:", response.status);
 
@@ -190,47 +221,55 @@ const AssignmentSubmissionUI = ({ lesson, onMarkAsFinished, isCompleted }) => {
         throw new Error(errorData.message || "Submission failed");
       }
 
-      const responseData = await response.json();
+      const responseData = await response.json().catch(() => ({}));
       console.log("[handleSubmit] API response data:", responseData);
 
-      // Format submission result from API response
-      const now = new Date();
-      const formattedDate = now.toLocaleString("en-GB", {
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit",
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-      });
+      // Extract submission DTO returned by server
+      const sub = responseData?.data || responseData || {};
+
+      // Build files array for UI
+      const files = sub.fileUrl
+        ? [
+            {
+              name: sub.fileName || selectedFiles[0]?.name || "Submission file",
+              size: sub.fileSize
+                ? `${Math.round(sub.fileSize / 1024)} KB`
+                : selectedFiles[0]
+                  ? `${Math.round(selectedFiles[0].size / 1024)} KB`
+                  : "N/A",
+              url: sub.fileUrl,
+            },
+          ]
+        : [];
 
       const result = {
-        files: fileUrl
-          ? [
-              {
-                name: selectedFiles[0]?.name || "Submission file",
-                size: selectedFiles[0] ? `${Math.round(selectedFiles[0].size / 1024)} KB` : "N/A",
-                url: fileUrl,
-              },
-            ]
-          : [],
-        score: responseData.data?.grade || null,
+        files,
+        score: sub?.grade || null,
         maxScore: lesson.assignment?.maxScore || 100,
-        percentage: responseData.data?.score
-          ? Math.round((responseData.data.score / (lesson.assignment?.maxScore || 100)) * 100)
+        percentage: sub?.grade
+          ? Math.round((sub.grade / (lesson.assignment?.maxScore || 100)) * 100)
           : 0,
-        status: responseData.data?.status || "Pending",
-        scorer: responseData.data?.gradedBy?.name || "Pending Review",
-        date: formattedDate,
-        content: content,
-        feedback: responseData.data?.feedback || null,
-        submissionId: responseData.data?.id,
+        status: sub?.status || "Pending",
+        scorer: sub?.gradedBy?.name || "Pending",
+        date: sub?.submittedAt
+          ? new Date(sub.submittedAt).toLocaleString("en-GB")
+          : new Date().toLocaleString("en-GB"),
+        content: sub?.content || content,
+        feedback: sub?.feedback || null,
+        submissionId: sub?.id,
       };
 
       console.log("[handleSubmit] Submission successful, result:", result);
       toast.success("Assignment submitted successfully!");
       setSubmissionResult(result);
       setIsSubmitted(true);
+
+      // Clear selected files and content input
+      setSelectedFiles([]);
+      setContent("");
+
+      // Refresh submission status so UI reflects persisted submission
+      fetchSubmissionStatus();
 
       // Mark lesson as finished after submission
       if (onMarkAsFinished) {
@@ -262,14 +301,50 @@ const AssignmentSubmissionUI = ({ lesson, onMarkAsFinished, isCompleted }) => {
         <div className="d-flex align-items-start gap-3 mb-4">
           <span style={{ fontSize: "1.5rem" }}>📖</span>
           <div>
-            <h2 className="h5 fw-bold mb-2">Description</h2>
+            <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+              <h2 className="h5 fw-bold mb-2">Description</h2>
+              {dueDate && (
+                <div
+                  style={{ fontSize: "0.9rem", color: submissionClosed ? "#dc2626" : "#0369a1" }}
+                >
+                  <strong>Due:</strong> {formatDueDate(dueDate)}{" "}
+                  {submissionClosed ? "• Closed" : ""}
+                </div>
+              )}
+            </div>
+
             <p style={{ whiteSpace: "pre-wrap" }}>
-              {lesson?.assignment?.description ? (
-                lesson.assignment.description
+              {lesson?.assignment?.description || lesson?.description ? (
+                lesson.assignment?.description || lesson.description
               ) : (
                 <em style={{ color: "#6c757d" }}>No description provided for this assignment.</em>
               )}
             </p>
+
+            {/* Lesson resources (visible to students) */}
+            {lesson?.lessonResources && lesson.lessonResources.length > 0 && (
+              <div style={{ marginTop: "0.75rem" }}>
+                <h6 className="fw-bold mb-2">Resources</h6>
+                <div>
+                  {lesson.lessonResources.map((r) => (
+                    <div key={r.id || r.fileId} style={{ marginBottom: "0.5rem" }}>
+                      {r.id ? (
+                        <a
+                          href={`${import.meta.env.VITE_API_URL}/lessons/${r.lessonId}/resources/${r.id}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{ color: "#0891b2" }}
+                        >
+                          {r.filename}
+                        </a>
+                      ) : (
+                        <span className="text-muted">{r.filename} (processing)</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -314,7 +389,7 @@ const AssignmentSubmissionUI = ({ lesson, onMarkAsFinished, isCompleted }) => {
                 onChange={handleFileSelect}
                 className="d-none"
                 id="file-upload"
-                disabled={isSubmitting}
+                disabled={isSubmitting || (submissionClosed && !isSubmitted)}
               />
               <div className="d-flex flex-column align-items-center gap-3">
                 <span style={{ fontSize: "4rem", color: "#06b6d4" }}>☁️</span>
@@ -360,6 +435,22 @@ const AssignmentSubmissionUI = ({ lesson, onMarkAsFinished, isCompleted }) => {
               </div>
             )}
 
+            {/* If submission closed and not submitted, show notice and hide upload controls */}
+            {submissionClosed && !isSubmitted && (
+              <div
+                style={{
+                  marginTop: "1rem",
+                  padding: "1rem",
+                  background: "#fff7ed",
+                  border: "1px solid #fed7aa",
+                  borderRadius: 6,
+                }}
+              >
+                <strong style={{ color: "#92400e" }}>Submission closed:</strong> The deadline has
+                passed and new submissions are not accepted.
+              </div>
+            )}
+
             <button
               type="button"
               style={{
@@ -379,7 +470,11 @@ const AssignmentSubmissionUI = ({ lesson, onMarkAsFinished, isCompleted }) => {
                 gap: "0.5rem",
               }}
               onClick={handleSubmit}
-              disabled={isSubmitting || (selectedFiles.length === 0 && !content.trim())}
+              disabled={
+                isSubmitting ||
+                (selectedFiles.length === 0 && !content.trim()) ||
+                (submissionClosed && !isSubmitted)
+              }
             >
               {isSubmitting ? (
                 <>

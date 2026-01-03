@@ -11,6 +11,9 @@ import {
   FaComment,
   FaAward,
 } from "react-icons/fa";
+import { toast } from "sonner";
+
+const API_URL = import.meta.env.VITE_API_URL;
 
 export default function ScoringModal({
   show,
@@ -36,6 +39,44 @@ export default function ScoringModal({
     const maxPoints = assignment?.maxPoints || 100;
     const score = Math.round((percent / 100) * maxPoints);
     setGradingData({ ...gradingData, grade: score.toString() });
+  };
+
+  const handleDownloadFile = async () => {
+    if (!submission?.fileUrl) {
+      toast.error("No file to download");
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem("accessToken");
+      const fullUrl = submission.fileUrl.startsWith("http")
+        ? submission.fileUrl
+        : `${API_URL}${submission.fileUrl}`;
+
+      const resp = await fetch(fullUrl, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+
+      if (!resp.ok) {
+        throw new Error(`Failed to download file: ${resp.status}`);
+      }
+
+      const blob = await resp.blob();
+      const filename = submission.fileName || submission.fileUrl.split("/").pop() || "download";
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      toast.success("File downloaded successfully");
+    } catch (err) {
+      console.error("Download error:", err);
+      toast.error("Failed to download file: " + (err.message || "Unknown error"));
+    }
   };
 
   if (!submission) return null;
@@ -344,21 +385,25 @@ export default function ScoringModal({
           </div>
 
           {/* File Download */}
-          <div style={styles.fileCard}>
-            <div style={styles.fileInfo}>
-              <div style={styles.fileIcon}>
-                <FaFileAlt />
+          {submission.fileUrl && (
+            <div style={styles.fileCard}>
+              <div style={styles.fileInfo}>
+                <div style={styles.fileIcon}>
+                  <FaFileAlt />
+                </div>
+                <div>
+                  <p style={styles.fileName}>
+                    {submission.fileName || submission.fileUrl.split("/").pop()}
+                  </p>
+                  <p style={styles.fileSize}>{submission.fileSize || "Unknown size"}</p>
+                </div>
               </div>
-              <div>
-                <p style={styles.fileName}>{submission.fileUrl}</p>
-                <p style={styles.fileSize}>{submission.fileSize}</p>
-              </div>
+              <button style={styles.downloadBtn} onClick={handleDownloadFile}>
+                <FaDownload />
+                Download
+              </button>
             </div>
-            <button style={styles.downloadBtn}>
-              <FaDownload />
-              Download
-            </button>
-          </div>
+          )}
 
           {/* Student Comment */}
           {submission.content && (
