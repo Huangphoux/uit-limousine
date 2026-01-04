@@ -140,7 +140,7 @@ Tất cả mục tiêu cốt lõi đều hoàn thành. Hệ thống vận hành 
   [*Tổng cộng*], [*35*], [*100%*],
 )
 
-== Các tính năng đã tiển khai 
+== Các tính năng đã triển khai 
 
 === Tính năng Learner (Học viên)
 
