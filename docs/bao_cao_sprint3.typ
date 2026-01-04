@@ -34,7 +34,7 @@ Dự án xây dựng *Hệ thống Quản lý Học tập (LMS - Learning Manage
 Thực hiện trong 3 sprint (tháng 10-12/2025):
 - *Sprint 1*: Thiết lập dự án, xác thực, đăng nhập/đăng xuất
 - *Sprint 2*: Tìm kiếm khóa học, đăng ký, luồng học tập
-- *Sprint 3*: Nộp bài tập, chấm điểm, công cụ giảng viên, thông báo, tích hợp thanh toán (một phần)
+- *Sprint 3*: Quản lý khóa học, công cụ giảng viên, quản lý người dùng, đặt lại mật khẩu
 
 Tất cả mục tiêu cốt lõi đều hoàn thành. Hệ thống vận hành ổn định với kiểm thử toàn diện, CI/CD tự động, và minh chứng đầy đủ.
 
@@ -55,14 +55,14 @@ Tất cả mục tiêu cốt lõi đều hoàn thành. Hệ thống vận hành 
 == Quy trình kiểm thử
 
 *Backend (Node.js/Jest):*
-- Kiểm thử đơn vị + Kiểm thử tích hợp
-- Tổng cộng 98 tests trên 15 test suites
+- Kiểm thử tích hợp
+- Tổng cộng 17 tests trên 7 test suites
 - 100% pass rate, thời gian phản hồi trung bình < 300ms
 - Frameworks: Jest, Supertest
 
 *Frontend (React/Vitest):*
 - Kiểm thử thành phần, kiểm thử hooks
-- Tổng cộng 23 tests trên 2 test suites
+- Tổng cộng 18 tests trên 2 test suites
 - 100% pass rate
 - Frameworks: Vitest, React Testing Library, jsdom
 
@@ -77,7 +77,7 @@ Tất cả mục tiêu cốt lõi đều hoàn thành. Hệ thống vận hành 
 
 - *Runtime:* Node.js 20
 - *Framework:* Express.js
-- *Database:* SQLite (phát triển)
+- *Database:* SQLite, Neon
 - *ORM:* Prisma
 - *Xác thực:* JWT + bcrypt
 - *Kiểm thử:* Jest, Supertest
@@ -96,7 +96,7 @@ Tất cả mục tiêu cốt lõi đều hoàn thành. Hệ thống vận hành 
 
 - *Quản lý mã nguồn:* Git, GitHub
 - *CI/CD:* GitHub Actions
-- *Container:* Docker (tuỳ chọn)
+- *Container:* Docker
 - *Logging:* Winston
 - *Email:* Nodemailer (đặt lại mật khẩu, thông báo)
 
@@ -141,23 +141,20 @@ Tất cả mục tiêu cốt lõi đều hoàn thành. Hệ thống vận hành 
   columns: (2fr, 1fr, 1fr),
   align: (left, center, center),
   [*Module*], [*Tests*], [*Trạng thái*],
-  [Backend - Xác thực], [5], [✓ Pass],
-  [Backend - Tìm kiếm & Lọc], [5], [✓ Pass],
-  [Backend - Đăng ký], [3], [✓ Pass],
-  [Backend - Tài liệu], [2], [✓ Pass],
-  [Backend - Tiến độ], [4], [✓ Pass],
-  [Backend - Đăng xuất], [2], [✓ Pass],
-  [Backend - Giảng viên], [15], [✓ Pass],
-  [Backend - Chấm điểm], [12], [✓ Pass],
-  [Backend - Thông báo], [8], [✓ Pass],
-  [Backend - Khác], [36], [✓ Pass],
-  [Frontend - CourseCard], [21], [✓ Pass],
+  [Backend - Create Course], [1], [✓ Pass],
+  [Backend - Login], [5], [✓ Pass],
+  [Backend - Get Course Materials], [1], [✓ Pass],
+  [Backend - Register], [1], [✓ Pass],
+  [Backend - Enroll Course], [2], [✓ Pass],
+  [Backend - Change Role], [4], [✓ Pass],
+  [Backend - Get Users], [3], [✓ Pass],
+  [Frontend - CourseCard], [16], [✓ Pass],
   [Frontend - App], [2], [✓ Pass],
   table.hline(),
-  [*Tổng cộng*], [*121*], [*100%*],
+  [*Tổng cộng*], [*35*], [*100%*],
 )
 
-== Features Implemented
+== Các tính năng đã tiển khai 
 
 === Tính năng Learner (Học viên)
 
@@ -168,9 +165,10 @@ Tất cả mục tiêu cốt lõi đều hoàn thành. Hệ thống vận hành 
 - ✓ Xem tài liệu, bài học, video
 - ✓ Đánh dấu bài học hoàn thành
 - ✓ Theo dõi tiến độ (%)
-- ✓ Nộp bài tập (text, file)
-- ✓ Xem kết quả chấm điểm
-- ✓ Nhận thông báo (email/in-app)
+- ✓ Nộp bài tập (văn bản, tệp đính kèm)
+- ✓ Xem kết quả chấm điểm và phản hồi
+- ✓ Nhận thông báo (in-app)
+- ✓ Đặt lại mật khẩu
 
 === Tính năng Instructor (Giảng viên)
 
@@ -180,46 +178,38 @@ Tất cả mục tiêu cốt lõi đều hoàn thành. Hệ thống vận hành 
 - ✓ Tạo modules & lessons
 - ✓ Upload video/tài liệu
 - ✓ Tạo bài tập
-- ✓ Xem danh sách bài nộp
-- ✓ Chấm điểm & feedback
-- ✓ Xem thống kê lớp (số học viên, tiến độ)
+- ✓ Xem danh sách bài nộp của học viên
+- ✓ Chấm điểm & phản hồi cho bài nộp
+- ✓ Quản lý nội dung khóa học
 
 === Tính năng Admin (Quản trị viên)
 
-- ✓ Duyệt yêu cầu giảng viên
-- ✓ Quản lý người dùng (xem, xóa, thay đổi vai trò)
-- ✓ Quản lý khóa học (duyệt, gỡ)
-- ✓ Xem báo cáo hệ thống
-- ✓ Audit log & system logs
+- ✓ Duyệt khóa học
+- ✓ Quản lý người dùng (tạo, xem, xóa, thay đổi vai trò)
+- ✓ Quản lý vai trò hệ thống
 
 === Tính năng chung
 
-- ✓ Xác thực JWT, bcrypt password hashing
-- ✓ Phân quyền role-based (Learner, Instructor, Admin)
-- ✓ Xử lý lỗi toàn diện (validation, authorization, exception)
-- ✓ Logging & audit trail
-- ✓ Email notifications (password reset, enrollment, grading)
-- ✓ Responsive UI (mobile, tablet, desktop)
+- ✓ Xác thực JWT, mã hóa mật khẩu bcrypt
+- ✓ Phân quyền dựa trên vai trò (Học viên, Giảng viên, Quản trị viên)
+- ✓ Xử lý lỗi toàn diện (xác thực, phân quyền, ngoại lệ)
+- ✓ Ghi nhật ký cơ bản
+- ✓ Thông báo qua email (đặt lại mật khẩu)
+- ✓ Hệ thống thông báo trong ứng dụng
+- ✓ Giao diện responsive (di động, máy tính bảng, máy tính để bàn)
 
 == Kiến trúc & Design Patterns
 
-*Layered Architecture:*
+*Kiến trúc Layered:*
 ```
-Presentation Layer (Controllers, REST API)
+Tầng Trình diễn (Controllers, REST API)
     ↓
-Application Layer (Use Cases, Business Logic)
+Tầng Ứng dụng (Use Cases, Business Logic)
     ↓
-Domain Layer (Entities, Value Objects, Domain Services)
+Tầng Miền (Entities, Value Objects, Domain Services)
     ↓
-Infrastructure Layer (Repositories, Mappers, External Services)
+Tầng Hạ tầng (Repositories, Mappers, External Services)
 ```
-
-*Design Patterns sử dụng:*
-- Repository Pattern: Abstraction for data access
-- Mapper Pattern: Transform DTOs ↔ Entities
-- Factory Pattern: Create use case instances
-- Middleware Pattern: Authentication, logging
-- Observer Pattern: Notifications
 
 = Chi tiết từng Sprint
 
@@ -231,23 +221,23 @@ Infrastructure Layer (Repositories, Mappers, External Services)
 - Thiết lập repo, CI/CD, schema cơ sở dữ liệu
 - Backend: User entity, auth repository, JWT middleware
 - Frontend: Trang đăng nhập, đăng ký, đăng xuất
-- Kiểm thử: 15 tests (15/15 pass)
+- Kiểm thử: Login (5 tests), Register (1 test)
 - Lỗi đã sửa: 8
 
-*Minh chứng:* Hình ảnh pair programming, git logs, báo cáo test
+*Minh chứng:* Hình ảnh pair programming, git logs
 
 == Sprint 2 – Tìm kiếm khóa học & Đăng ký
 
 *Thời gian:* 28/10–17/11/2025 (3 tuần)
 
 *Hoàn thành:*
-- Backend: Course entity, API tìm kiếm, đăng ký, truy vấn tài liệu, theo dõi tiến độ bài học
+- Backend: Course entity, API tìm kiếm, đăng ký, truy vấn tài liệu
 - Frontend: Trang tìm kiếm khóa học, thẻ khóa học, modal chi tiết, responsive design
-- Kiểm thử: 98 tests backend, 23 tests frontend (121/121 pass)
+- Kiểm thử: Get Course Materials (1 test), Enroll Course (2 tests), Create Course (1 test), Frontend CourseCard (16 tests)
 - Lỗi đã sửa: 15
 - CI/CD: GitHub Actions pipeline hoạt động
 
-*Minh chứng:* Kết quả test, CI logs, URL triển khai
+*Minh chứng:* CI logs, URL triển khai
 
 == Sprint 3 – Bài tập & Công cụ Giảng viên
 
@@ -255,20 +245,77 @@ Infrastructure Layer (Repositories, Mappers, External Services)
 
 *Hoàn thành:*
 - Backend: Nộp bài tập, chấm điểm, thông báo, ứng dụng giảng viên, quản lý vai trò
-- Frontend: Bảng điều khiển giảng viên, quản lý khóa học, xem chấm điểm, UI nộp bài tập
-- Kiểm thử: Tất cả 121 tests pass
-- Tính năng: ~18 use cases chính được triển khai
+- Frontend: Bảng điều khiển giảng viên, quản lý khóa học, giao diện nộp bài tập
+- Kiểm thử: Thay đổi vai trò (4 tests), Lấy danh sách người dùng (3 tests), Ứng dụng (2 tests)
+- Tính năng: 17 use cases chính được triển khai
 - Lỗi đã sửa: 12
 
-*Minh chứng:* Git commits, kết quả test, triển khai sản xuất
+*Minh chứng:* Git commits, triển khai sản xuất
+
+= Minh chứng
+
+== Hình ảnh Pair Programming
+
+=== Sprint 1 - Front-End
+#figure(
+  image("pair_programming_pics/fe_sprint1.png", width: 80%),
+  caption: [Pair Programming Front-End Sprint 1 - Huy & Hào làm màn hình đăng nhập]
+)
+
+=== Sprint 1 - Back-End
+#figure(
+  image("pair_programming_pics/be_sprint1_login.jpg", width: 80%),
+  caption: [Pair Programming Back-End Sprint 1 - Tùng & Hưng tạo API Login]
+)
+
+=== Sprint 2 - Front-End
+#figure(
+  image("pair_programming_pics/fe_sprint2.png", width: 80%),
+  caption: [Pair Programming Front-End Sprint 2 - Huy & Hào làm trang tìm kiếm khóa học]
+)
+
+=== Sprint 2 - Back-End
+#figure(
+  image("pair_programming_pics/be_sprint2_searchcourse.jpg", width: 80%),
+  caption: [Pair Programming Back-End Sprint 2 - Tùng & Hưng tạo API tìm kiếm khóa học]
+)
+
+== Minh chứng Giao tiếp & Họp với Giảng viên
+
+=== Các buổi hỏi đáp với giảng viên
+#figure(
+  image("minh_chung/hoi_thay_7_thang_10.jpg", width: 70%),
+  caption: [Buổi hỏi đáp với giảng viên ngày 7/10/2025]
+)
+
+#figure(
+  image("minh_chung/hoi_thay_11_thang_11.jpg", width: 70%),
+  caption: [Buổi hỏi đáp với giảng viên ngày 11/11/2025]
+)
+
+#figure(
+  image("minh_chung/hoi_thay_2_thang_12.jpg.jpg", width: 70%),
+  caption: [Buổi hỏi đáp với giảng viên ngày 2/12/2025]
+)
+
+=== Minh chứng Giao tiếp Nhóm
+#figure(
+  image("minh_chung/minh_chung_discord_7_thang_10.png", width: 80%),
+  caption: [Giao tiếp nhóm qua Discord - 7/10/2025]
+)
+
+#figure(
+  image("minh_chung/minh_chung_zalo_7_thang_10.png", width: 60%),
+  caption: [Giao tiếp nhóm qua Zalo - 7/10/2025]
+)
 
 = Điểm nổi bật của dự án
 
 == 1. Chất lượng Code & Kiến trúc
 
-- ✓ Layered architecture + Domain-Driven Design: Phân tách mối quan tâm rõ ràng, dễ kiểm thử và bảo trì
-- ✓ Kiểm thử toàn diện: 121 tests tự động, 0 lỗi nghiêm trọng
-- ✓ Code sạch: Đặt tên nhất quán, lặp lại code tối thiểu, xử lý lỗi thích hợp
+- ✓ Kiến trúc Layered + Domain-Driven Design: Phân tách mối quan tâm rõ ràng, dễ kiểm thử và bảo trì
+- ✓ Kiểm thử: 35 tests tự động (17 backend, 18 frontend), 0 lỗi nghiêm trọng
+- ✓ Code sạch: Đặt tên nhất quán, giảm thiểu lặp lại code, xử lý lỗi thích hợp
 - ✓ Nguyên tắc SOLID: Trách nhiệm đơn, mở/đóng, thay thế Liskov, tách biệt giao diện, đảo ngược phụ thuộc
 
 == 2. Quy trình Phát triển
@@ -304,8 +351,8 @@ Infrastructure Layer (Repositories, Mappers, External Services)
 
 Sprint 3 hoàn thành thành công vào ngày 30 tháng 12 năm 2025. Hệ thống LMS cơ bản đã sẵn sàng cho sử dụng thực tế:
 
-- *✓ Chức năng:* 18+ use cases triển khai, quy trình learner/instructor/admin đầy đủ
-- *✓ Chất lượng:* 121 tests pass (100%), CI/CD tự động, 0 lỗi nghiêm trọng
+- *✓ Chức năng:* 17 use cases triển khai, quy trình learner/instructor/admin cơ bản
+- *✓ Chất lượng:* 35 tests pass (100%), CI/CD tự động, 0 lỗi nghiêm trọng
 - *✓ Kiến trúc:* Layered + DDD, nguyên tắc SOLID, code sạch
 - *✓ Quy trình:* Agile scrum, pair programming, code review
 - *✓ Tài liệu:* API spec, domain model, SRS, hướng dẫn triển khai
