@@ -20,7 +20,7 @@
 - Áp dụng Kiến trúc Phân tầng + Thiết kế Hướng miền (DDD)
 - Thực hành Lập trình Cực hạn (XP): TDD, Pair Programming, CI/CD
 - Thực hiện trong 3 sprint (28/9 - 30/12/2025)
-- Kết quả: 35 tests đạt (100%), 17 use cases, 0 lỗi nghiêm trọng
+- Kết quả: 35 tests đạt (100%), 17 use cases
 
 == Quy trình phát triển
 
@@ -36,6 +36,12 @@
 *Git Workflow*
 - Feature branch → Pull Request → Code Review → Merge
 
+*Kiến trúc Phân tầng*
+- Tầng Trình diễn: Controllers, REST API
+- Tầng Ứng dụng: Use Cases, Business Logic
+- Tầng Miền: Entities, Domain Services
+- Tầng Hạ tầng: Repositories, Mappers
+
 == Công nghệ Backend & Frontend
 
 *Backend*
@@ -50,21 +56,6 @@
 - Quản lý State: Context API | Styling: CSS responsive
 - Kiểm thử: Vitest + React Testing Library (18 tests)
 - Triển khai: Netlify (tự động deploy)
-
-== Kiến trúc & Design Patterns
-
-*Kiến trúc Phân tầng*
-- Tầng Trình diễn: Controllers, REST API
-- Tầng Ứng dụng: Use Cases, Business Logic
-- Tầng Miền: Entities, Domain Services
-- Tầng Hạ tầng: Repositories, Mappers
-
-*Mẫu Thiết kế*
-- Repository Pattern: Trừu tượng hóa truy cập dữ liệu
-- Mapper Pattern: Chuyển đổi DTOs ↔ Entities
-- Factory Pattern: Composition root
-- Middleware Pattern: Xác thực, ghi nhật ký
-- Observer Pattern: Thông báo
 
 == Sprint 1 - Thiết lập & Xác thực
 
@@ -107,7 +98,7 @@
 
 *Công nghệ:* Prisma migrations, phân quyền theo vai trò
 
-== Tính năng Learner & Instructor
+== Tính năng 
 
 *Learner*
 - ✓ Đăng ký / Đăng nhập / Đăng xuất
@@ -118,7 +109,7 @@
 - ✓ Đánh dấu bài hoàn thành
 - ✓ Nộp bài tập (văn bản, tệp đính kèm)
 - ✓ Xem điểm và phản hồi, theo dõi tiến độ
-- ✓ Nhận thông báo, đặt lại mật khẩu
+- ✓ Nhận thông báo notifications
 
 *Instructor*
 - ✓ Yêu cầu làm giảng viên
@@ -128,8 +119,7 @@
 - ✓ Chấm điểm & phản hồi cho học viên
 - ✓ Quản lý nội dung khóa học
 
-== Tính năng Admin
-
+*Admin*
 - ✓ Duyệt khóa học
 - ✓ Quản lý người dùng
 - ✓ Quản lý vai trò hệ thống
@@ -174,8 +164,6 @@
 - ✓ Xác thực JWT + mã hóa bcrypt
 - ✓ Kiểm soát truy cập dựa trên vai trò (RBAC)
 - ✓ Xác thực đầu vào & Ngăn chặn SQL injection (Prisma)
-- ✓ Đặt lại mật khẩu bằng xác minh email
-- ✓ Hệ thống thông báo email
 
 *Hiệu suất*
 - ✓ Truy vấn cơ sở dữ liệu được tối ưu hóa
@@ -219,33 +207,18 @@
 - Áp dụng nguyên tắc SOLID
 
 *2. Agile & Lập trình Cực hạn*
-- 3 sprints, 107 tasks (100% hoàn thành)
+- 3 sprints (10 tuần)
 - 48+ giờ pair programming
 - CI/CD tự động hóa, 100% tests đạt
-
-== Thống kê & Công nghệ Stack
-
-*Thống kê hoàn thành*
-
-#table(
-  columns: (1.5fr, 1fr, 1fr),
-  align: (left, center, center),
-  [*Sprint*], [*Tasks*], [*Hoàn thành*],
-  [Sprint 1], [30], [30 (100%)],
-  [Sprint 2], [40], [40 (100%)],
-  [Sprint 3], [37], [37 (100%)],
-  [*TỔNG*], [*107*], [*107 (100%)*],
-)
 
 *Công nghệ chính:* Node.js 20, React 19, Express.js, Prisma, SQLite, Neon PostgreSQL, JWT, bcrypt, Jest, Vitest, GitHub Actions, Netlify
 
 == Kết quả & Bài học kinh nghiệm
 
 *Dự kiến vs Thực tế*
-- ✓ 107/107 tasks hoàn thành (100%)
-- ✓ 35/35 tests pass (100%)
+- ✓ 35/35 tests đạt (100%)
 - ✓ 17 use cases triển khai
-- ✓ 0 lỗi nghiêm trọng
+- ✓ 138+ GitHub issues/PRs được xử lý
 
 *Thành công*
 1. Kiến trúc phân tầng + DDD: Rõ ràng, dễ test
@@ -275,7 +248,7 @@
 
 ✓ *Hoàn thành* toàn bộ 3 sprint vào 30/12/2025
 
-✓ *Chất lượng:* 35/35 tests đạt, 0 lỗi nghiêm trọng
+✓ *Chất lượng:* 35/35 tests đạt
 
 ✓ *Kiến trúc:* Phân tầng + DDD, nguyên tắc SOLID
 

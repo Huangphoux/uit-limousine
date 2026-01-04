@@ -34,7 +34,7 @@ Dự án xây dựng *Hệ thống Quản lý Học tập (LMS - Learning Manage
 Thực hiện trong 3 sprint (tháng 10-12/2025):
 - *Sprint 1*: Thiết lập dự án, xác thực, đăng nhập/đăng xuất
 - *Sprint 2*: Tìm kiếm khóa học, đăng ký, luồng học tập
-- *Sprint 3*: Quản lý khóa học, công cụ giảng viên, quản lý người dùng, đặt lại mật khẩu
+- *Sprint 3*: Quản lý khóa học, công cụ giảng viên, quản lý người dùng
 
 Tất cả mục tiêu cốt lõi đều hoàn thành. Hệ thống vận hành ổn định với kiểm thử toàn diện, CI/CD tự động, và minh chứng đầy đủ.
 
@@ -97,8 +97,7 @@ Tất cả mục tiêu cốt lõi đều hoàn thành. Hệ thống vận hành 
 - *Quản lý mã nguồn:* Git, GitHub
 - *CI/CD:* GitHub Actions
 - *Container:* Docker
-- *Logging:* Winston
-- *Email:* Nodemailer (đặt lại mật khẩu, thông báo)
+- *Email:* Nodemailer
 
 = Phân công thành viên
 
@@ -121,19 +120,6 @@ Tất cả mục tiêu cốt lõi đều hoàn thành. Hệ thống vận hành 
 - Tổng cộng: 48+ giờ pair programming trong 3 sprint
 
 = Kết quả tổng hợp
-
-== Thống kê hoàn thành
-
-#table(
-  columns: (2fr, 1fr, 1fr),
-  align: (left, center, center),
-  [*Sprint*], [*Tasks*], [*Hoàn thành*],
-  [Sprint 1 (Thiết lập & Xác thực)], [30], [30 (100%)],
-  [Sprint 2 (Tìm kiếm & Đăng ký)], [40], [40 (100%)],
-  [Sprint 3 (Bài tập & Chấm điểm)], [37], [37 (100%)],
-  table.hline(),
-  [*Tổng cộng*], [*107*], [*107 (100%)*],
-)
 
 == Kết quả kiểm thử
 
@@ -168,7 +154,6 @@ Tất cả mục tiêu cốt lõi đều hoàn thành. Hệ thống vận hành 
 - ✓ Nộp bài tập (văn bản, tệp đính kèm)
 - ✓ Xem kết quả chấm điểm và phản hồi
 - ✓ Nhận thông báo (in-app)
-- ✓ Đặt lại mật khẩu
 
 === Tính năng Instructor (Giảng viên)
 
@@ -194,7 +179,6 @@ Tất cả mục tiêu cốt lõi đều hoàn thành. Hệ thống vận hành 
 - ✓ Phân quyền dựa trên vai trò (Học viên, Giảng viên, Quản trị viên)
 - ✓ Xử lý lỗi toàn diện (xác thực, phân quyền, ngoại lệ)
 - ✓ Ghi nhật ký cơ bản
-- ✓ Thông báo qua email (đặt lại mật khẩu)
 - ✓ Hệ thống thông báo trong ứng dụng
 - ✓ Giao diện responsive (di động, máy tính bảng, máy tính để bàn)
 
@@ -222,7 +206,6 @@ Tầng Hạ tầng (Repositories, Mappers, External Services)
 - Backend: User entity, auth repository, JWT middleware
 - Frontend: Trang đăng nhập, đăng ký, đăng xuất
 - Kiểm thử: Login (5 tests), Register (1 test)
-- Lỗi đã sửa: 8
 
 *Minh chứng:* Hình ảnh pair programming, git logs
 
@@ -248,7 +231,6 @@ Tầng Hạ tầng (Repositories, Mappers, External Services)
 - Frontend: Bảng điều khiển giảng viên, quản lý khóa học, giao diện nộp bài tập
 - Kiểm thử: Thay đổi vai trò (4 tests), Lấy danh sách người dùng (3 tests), Ứng dụng (2 tests)
 - Tính năng: 17 use cases chính được triển khai
-- Lỗi đã sửa: 12
 
 *Minh chứng:* Git commits, triển khai sản xuất
 
@@ -314,7 +296,7 @@ Tầng Hạ tầng (Repositories, Mappers, External Services)
 == 1. Chất lượng Code & Kiến trúc
 
 - ✓ Kiến trúc Layered + Domain-Driven Design: Phân tách mối quan tâm rõ ràng, dễ kiểm thử và bảo trì
-- ✓ Kiểm thử: 35 tests tự động (17 backend, 18 frontend), 0 lỗi nghiêm trọng
+- ✓ Kiểm thử: 35 tests tự động (17 backend, 18 frontend)
 - ✓ Code sạch: Đặt tên nhất quán, giảm thiểu lặp lại code, xử lý lỗi thích hợp
 - ✓ Nguyên tắc SOLID: Trách nhiệm đơn, mở/đóng, thay thế Liskov, tách biệt giao diện, đảo ngược phụ thuộc
 
@@ -338,21 +320,20 @@ Tầng Hạ tầng (Repositories, Mappers, External Services)
 - ✓ Giao diện trực quan: Điều hướng rõ ràng, hệ thống thiết kế nhất quán
 - ✓ Phản hồi thời gian thực: Trạng thái tải, thông báo lỗi, thông báo thành công
 - ✓ Mobile-first: Hoạt động liền mạch trên điện thoại & máy tính bảng
-- ✓ Khả năng truy cập: HTML ngữ nghĩa, nhãn ARIA, điều hướng bàn phím
 
 == 5. Hợp tác Nhóm
 
 - ✓ Pair programming: 48+ giờ trong 3 sprint
 - ✓ Giao tiếp thường xuyên: Daily standups, sprint reviews
 - ✓ Tài liệu hóa rõ ràng: Use cases, API specs, hướng dẫn triển khai
-- ✓ Chia sẻ kiến thức: Code reviews, cuộc họp nhóm, wiki
+- ✓ Chia sẻ kiến thức: Code reviews, cuộc họp nhóm
 
 = Kết luận
 
 Sprint 3 hoàn thành thành công vào ngày 30 tháng 12 năm 2025. Hệ thống LMS cơ bản đã sẵn sàng cho sử dụng thực tế:
 
 - *✓ Chức năng:* 17 use cases triển khai, quy trình learner/instructor/admin cơ bản
-- *✓ Chất lượng:* 35 tests pass (100%), CI/CD tự động, 0 lỗi nghiêm trọng
+- *✓ Chất lượng:* 35 tests pass (100%), CI/CD tự động
 - *✓ Kiến trúc:* Layered + DDD, nguyên tắc SOLID, code sạch
 - *✓ Quy trình:* Agile scrum, pair programming, code review
 - *✓ Tài liệu:* API spec, domain model, SRS, hướng dẫn triển khai
