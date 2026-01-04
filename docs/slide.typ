@@ -112,7 +112,6 @@
 - ✓ Nhận thông báo notifications
 
 *Instructor*
-- ✓ Yêu cầu làm giảng viên
 - ✓ Tạo & chỉnh sửa khóa học
 - ✓ Tạo modules, lessons, upload video
 - ✓ Tạo bài tập, xem danh sách bài nộp
@@ -123,7 +122,6 @@
 - ✓ Duyệt khóa học
 - ✓ Quản lý người dùng
 - ✓ Quản lý vai trò hệ thống
-- ✓ Quản lý thông báo hệ thống
 
 == Kết quả kiểm thử
 

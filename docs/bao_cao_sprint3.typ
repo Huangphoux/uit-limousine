@@ -157,7 +157,6 @@ Tất cả mục tiêu cốt lõi đều hoàn thành. Hệ thống vận hành 
 
 === Tính năng Instructor (Giảng viên)
 
-- ✓ Yêu cầu làm giảng viên
 - ✓ Tạo khóa học mới
 - ✓ Chỉnh sửa thông tin khóa học
 - ✓ Tạo modules & lessons
@@ -178,7 +177,6 @@ Tất cả mục tiêu cốt lõi đều hoàn thành. Hệ thống vận hành 
 - ✓ Xác thực JWT, mã hóa mật khẩu bcrypt
 - ✓ Phân quyền dựa trên vai trò (Học viên, Giảng viên, Quản trị viên)
 - ✓ Xử lý lỗi toàn diện (xác thực, phân quyền, ngoại lệ)
-- ✓ Ghi nhật ký cơ bản
 - ✓ Hệ thống thông báo trong ứng dụng
 - ✓ Giao diện responsive (di động, máy tính bảng, máy tính để bàn)
 
