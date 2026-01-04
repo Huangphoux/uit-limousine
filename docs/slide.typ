@@ -48,7 +48,7 @@
 - Runtime: Node.js 20 | Framework: Express.js
 - Cơ sở dữ liệu: SQLite (phát triển), Neon PostgreSQL (sản xuất)
 - ORM: Prisma | Xác thực: JWT + bcrypt
-- Email: Nodemailer | Ghi nhật ký: Winston
+- Email: Nodemailer
 - Kiểm thử: Jest + Supertest (17 tests)
 
 *Frontend*
