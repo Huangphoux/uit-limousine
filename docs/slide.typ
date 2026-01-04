@@ -17,10 +17,10 @@
 == Mục tiêu dự án
 
 - Xây dựng hệ thống quản lý học tập (LMS) hoàn chỉnh
-- Áp dụng Layered Architecture + Domain-Driven Design (DDD)
-- Thực hành Extreme Programming (XP): TDD, Pair Programming, CI/CD
+- Áp dụng Kiến trúc Phân tầng + Thiết kế Hướng miền (DDD)
+- Thực hành Lập trình Cực hạn (XP): TDD, Pair Programming, CI/CD
 - Thực hiện trong 3 sprint (28/9 - 30/12/2025)
-- Kết quả: 121 tests pass (100%), 18+ use cases, 0 lỗi nghiêm trọng
+- Kết quả: 35 tests đạt (100%), 17 use cases
 
 == Quy trình phát triển
 
@@ -36,45 +36,36 @@
 *Git Workflow*
 - Feature branch → Pull Request → Code Review → Merge
 
+*Kiến trúc Phân tầng*
+- Tầng Trình diễn: Controllers, REST API
+- Tầng Ứng dụng: Use Cases, Business Logic
+- Tầng Miền: Entities, Domain Services
+- Tầng Hạ tầng: Repositories, Mappers
+
 == Công nghệ Backend & Frontend
 
 *Backend*
 - Runtime: Node.js 20 | Framework: Express.js
-- Database: SQLite (phát triển), Neon PostgreSQL (sản xuất)
+- Cơ sở dữ liệu: SQLite (phát triển), Neon PostgreSQL (sản xuất)
 - ORM: Prisma | Xác thực: JWT + bcrypt
-- Email: Nodemailer | Logging: Winston
-- Kiểm thử: Jest + Supertest (98 tests)
+- Email: Nodemailer
+- Kiểm thử: Jest + Supertest (17 tests)
 
 *Frontend*
-- Framework: React 19 | Build Tool: Vite
+- Framework: React 19 | Công cụ Build: Vite
 - Quản lý State: Context API | Styling: CSS responsive
-- Kiểm thử: Vitest + React Testing Library (23 tests)
+- Kiểm thử: Vitest + React Testing Library (18 tests)
 - Triển khai: Netlify (tự động deploy)
-
-== Kiến trúc & Design Patterns
-
-*Kiến trúc Layered*
-- Presentation Layer: Controllers, REST API
-- Application Layer: Use Cases, Business Logic
-- Domain Layer: Entities, Domain Services
-- Infrastructure Layer: Repositories, Mappers
-
-*Design Patterns*
-- Repository Pattern: Abstraction cho data access
-- Mapper Pattern: Transform DTOs ↔ Entities
-- Factory Pattern: Composition root
-- Middleware Pattern: Auth, logging
-- Observer Pattern: Notifications
 
 == Sprint 1 - Thiết lập & Xác thực
 
 *Thời gian:* 28/9–17/10/2025 (2 tuần)
 
 *Hoàn thành:*
-- User entity, JWT authentication, bcrypt hashing
+- User entity, JWT authentication, mã hóa bcrypt
 - Trang Đăng nhập, Đăng ký, Đăng xuất
 - Thiết lập Git + CI/CD pipeline
-- 15/15 tests pass
+- Đăng nhập (5 tests), Đăng ký (1 test)
 
 *Công nghệ:* Node.js, React, Prisma, GitHub Actions
 
@@ -83,11 +74,11 @@
 *Thời gian:* 28/10–17/11/2025 (3 tuần)
 
 *Hoàn thành:*
-- Course entity, search API, enrollment
-- Course card, search page, course details modal
+- Course entity, API tìm kiếm, đăng ký khóa học
+- Thẻ khóa học, trang tìm kiếm, modal chi tiết
 - Tìm kiếm tài liệu & bài học, theo dõi tiến độ
-- 121 tests pass (98 BE + 23 FE)
-- Responsive design
+- Đăng ký (2 tests), Lấy tài liệu (1 test), Tạo khóa học (1 test), CourseCard (16 tests)
+- Thiết kế responsive
 - CI/CD tự động
 
 *Công nghệ:* Supertest, Vitest, React Testing Library
@@ -97,16 +88,17 @@
 *Thời gian:* 18/11–30/12/2025 (6 tuần)
 
 *Hoàn thành:*
-- Submission entity, grading system
-- Giảng viên dashboard, quản lý khóa học
-- Thông báo (email + in-app)
-- Quản lý vai trò (Learner, Instructor, Admin)
-- 121/121 tests pass
-- 18+ use cases triển khai
+- Hệ thống nộp bài tập và chấm điểm
+- Bảng điều khiển giảng viên, quản lý khóa học
+- Hệ thống thông báo trong ứng dụng
+- Quản lý vai trò (Học viên, Giảng viên, Quản trị viên)
+- Quản lý người dùng, duyệt khóa học
+- Thay đổi vai trò (4 tests), Lấy người dùng (3 tests), Ứng dụng (2 tests)
+- 17 use cases triển khai
 
-*Công nghệ:* Prisma migrations, email service, role-based access
+*Công nghệ:* Prisma migrations, phân quyền theo vai trò
 
-== Tính năng Learner & Instructor
+== Tính năng 
 
 *Learner*
 - ✓ Đăng ký / Đăng nhập / Đăng xuất
@@ -114,24 +106,22 @@
 - ✓ Xem chi tiết khóa học
 - ✓ Đăng ký khóa học (miễn phí / tính phí)
 - ✓ Xem tài liệu, video, bài học
-- ✓ Đánh dấu bài hoàn thành, nộp bài tập
-- ✓ Xem kết quả chấm điểm, theo dõi tiến độ
+- ✓ Đánh dấu bài hoàn thành
+- ✓ Nộp bài tập (văn bản, tệp đính kèm)
+- ✓ Xem điểm và phản hồi, theo dõi tiến độ
+- ✓ Nhận thông báo notifications
 
 *Instructor*
-- ✓ Yêu cầu làm giảng viên
 - ✓ Tạo & chỉnh sửa khóa học
 - ✓ Tạo modules, lessons, upload video
-- ✓ Tạo bài tập, chấm điểm & feedback
-- ✓ Xem danh sách bài nộp, thống kê lớp
+- ✓ Tạo bài tập, xem danh sách bài nộp
+- ✓ Chấm điểm & phản hồi cho học viên
+- ✓ Quản lý nội dung khóa học
 
-== Tính năng Admin
-
-- ✓ Duyệt yêu cầu giảng viên
-- ✓ Quản lý người dùng (xem, xóa, thay đổi vai trò)
-- ✓ Quản lý khóa học (duyệt, gỡ bỏ)
-- ✓ Xem báo cáo hệ thống
-- ✓ Audit log & system logs
-- ✓ Quản lý notifications
+*Admin*
+- ✓ Duyệt khóa học
+- ✓ Quản lý người dùng
+- ✓ Quản lý vai trò hệ thống
 
 == Kết quả kiểm thử
 
@@ -139,56 +129,51 @@
   columns: (1fr, 1fr, 1fr),
   align: (center, center, center),
   [*Module*], [*Tests*], [*Trạng thái*],
-  [Backend - Xác thực], [5], [✓ Pass],
-  [Backend - Tìm kiếm], [5], [✓ Pass],
-  [Backend - Đăng ký], [3], [✓ Pass],
-  [Backend - Tài liệu], [2], [✓ Pass],
-  [Backend - Tiến độ], [4], [✓ Pass],
-  [Backend - Chấm điểm], [12], [✓ Pass],
-  [Backend - Giảng viên], [15], [✓ Pass],
-  [Backend - Thông báo], [8], [✓ Pass],
-  [Backend - Khác], [36], [✓ Pass],
-  [Frontend - CourseCard], [21], [✓ Pass],
+  [Backend - Create Course], [1], [✓ Pass],
+  [Backend - Login], [5], [✓ Pass],
+  [Backend - Get Materials], [1], [✓ Pass],
+  [Backend - Register], [1], [✓ Pass],
+  [Backend - Enroll], [2], [✓ Pass],
+  [Backend - Change Role], [4], [✓ Pass],
+  [Backend - Get Users], [3], [✓ Pass],
+  [Frontend - CourseCard], [16], [✓ Pass],
   [Frontend - App], [2], [✓ Pass],
 )
 
 == Chất lượng Code
 
-*Layered Architecture + DDD*
+*Kiến trúc Phân tầng + DDD*
 - Phân tách mối quan tâm rõ ràng
 - Dễ kiểm thử & dễ bảo trì
 - Codebase có thể mở rộng
 
-*SOLID Principles*
-- Single Responsibility, Open/Closed
-- Liskov Substitution, Interface Segregation
-- Dependency Inversion
+*Nguyên tắc SOLID*
+- Trách nhiệm đơn, Mở/Đóng
+- Thay thế Liskov, Tách biệt giao diện
+- Đảo ngược phụ thuộc
 
-*Clean Code*
-- Đặt tên có ý nghĩa, không lặp lại code
-- Xử lý lỗi thích hợp, logging chi tiết
+*Code Sạch*
+- Đặt tên có ý nghĩa, giảm lặp lại code
+- Xử lý lỗi thích hợp
 
 == Bảo mật & Hiệu suất
 
 *Bảo mật*
-- ✓ JWT authentication + bcrypt hashing
+- ✓ Xác thực JWT + mã hóa bcrypt
 - ✓ Kiểm soát truy cập dựa trên vai trò (RBAC)
 - ✓ Xác thực đầu vào & Ngăn chặn SQL injection (Prisma)
-- ✓ Đặt lại mật khẩu bằng xác minh email
-- ✓ Thông báo email
 
 *Hiệu suất*
-- ✓ Thời gian phản hồi API < 300ms
 - ✓ Truy vấn cơ sở dữ liệu được tối ưu hóa
-- ✓ Responsive design (mobile-first)
+- ✓ Thiết kế responsive
 
 == CI/CD Pipeline & Pair Programming
 
 *CI/CD Pipeline*
 - GitHub Actions: Tự động test & build
 - Trigger: mỗi push, pull request
-- Backend: Jest test suite (98 tests)
-- Frontend: Vitest suite (23 tests)
+- Backend: Jest test suite (17 tests)
+- Frontend: Vitest suite (18 tests)
 - Netlify: Tự động deploy frontend
 - Trạng thái: ✓ Passing 100%
 
@@ -215,64 +200,88 @@
 == Điểm nổi bật (1/2)
 
 *1. Chất lượng Code & Kiến trúc*
-- Layered architecture + DDD
-- 121 tests, 100% pass rate
-- Áp dụng SOLID principles
+- Kiến trúc phân tầng + DDD
+- 35 tests, 100% đạt
+- Áp dụng nguyên tắc SOLID
 
-*2. Agile & Extreme Programming*
-- 3 sprints, 107 tasks (100% hoàn thành)
+*2. Agile & Lập trình Cực hạn*
+- 3 sprints (10 tuần)
 - 48+ giờ pair programming
-- Tiếp cận TDD, 100% tự động hóa CI/CD
-
-== Thống kê & Công nghệ Stack
-
-*Thống kê hoàn thành*
-
-#table(
-  columns: (1.5fr, 1fr, 1fr),
-  align: (left, center, center),
-  [*Sprint*], [*Tasks*], [*Hoàn thành*],
-  [Sprint 1], [30], [30 (100%)],
-  [Sprint 2], [40], [40 (100%)],
-  [Sprint 3], [37], [37 (100%)],
-  [*TỔNG*], [*107*], [*107 (100%)*],
-)
+- CI/CD tự động hóa, 100% tests đạt
 
 *Công nghệ chính:* Node.js 20, React 19, Express.js, Prisma, SQLite, Neon PostgreSQL, JWT, bcrypt, Jest, Vitest, GitHub Actions, Netlify
 
 == Kết quả & Bài học kinh nghiệm
 
 *Dự kiến vs Thực tế*
-- ✓ 107/107 tasks hoàn thành (100%)
-- ✓ 121/121 tests pass (100%)
-- ✓ 18+ use cases triển khai
-- ✓ 0 lỗi nghiêm trọng
+- ✓ 35/35 tests đạt (100%)
+- ✓ 17 use cases triển khai
+- ✓ 138+ GitHub issues/PRs được xử lý
 
 *Thành công*
-1. Layered + DDD: Rõ ràng, dễ test
+1. Kiến trúc phân tầng + DDD: Rõ ràng, dễ test
 2. TDD: Tự tin về chất lượng
 3. Pair programming: Chia sẻ kiến thức tốt
 4. CI/CD: Phát hiện lỗi sớm
 
 *Cải thiện*
-1. Database migration planning
+1. Lập kế hoạch migration cơ sở dữ liệu
 2. API versioning từ đầu
-3. Load testing (hiệu suất)
-4. Documentation automation
+3. Kiểm thử tải (hiệu suất)
+4. Tự động hóa tài liệu
+
+== Kết quả Test & Quality
+
+*Backend Tests (Jest):*
+- 17 tests, 7 test suites
+- 100% pass rate, < 300ms response time
+
+*Frontend Tests (Vitest):*
+- 18 tests, 2 test suites  
+- 100% pass rate, UI component coverage
+
+*Total: 35 tests - 100% success*
 
 == Kết luận
 
 ✓ *Hoàn thành* toàn bộ 3 sprint vào 30/12/2025
 
-✓ *Chất lượng:* 121/121 tests pass, 0 lỗi nghiêm trọng
+✓ *Chất lượng:* 35/35 tests đạt
 
-✓ *Kiến trúc:* Layered + DDD, SOLID principles
+✓ *Kiến trúc:* Phân tầng + DDD, nguyên tắc SOLID
 
-✓ *Quy trình:* Agile, XP, TDD, pair programming, CI/CD
+✓ *Quy trình:* Agile, XP, pair programming (48+ giờ), CI/CD
 
-✓ *Tính năng:* 18+ use cases, 3 vai trò (Learner, Instructor, Admin)
+✓ *Tính năng:* 17 use cases, 3 vai trò (Học viên, Giảng viên, Quản trị viên)
 
-✓ *Tài liệu:* API specs, domain model, SRS, hướng dẫn triển khai
+✓ *Tài liệu:* Thiết kế API, mô hình miền, SRS, hướng dẫn triển khai
+
+== Minh chứng - Pair Programming
+
+*Sprint 1 - Backend*
+#image("pair_programming_pics/be_sprint1_login.jpg", width: 60%)
+
+Tùng & Hưng - Tạo API Login
+
+== Minh chứng - Pair Programming (2)
+
+*Sprint 2 - Backend*
+#image("pair_programming_pics/be_sprint2_searchcourse.jpg", width: 60%)
+
+Tùng & Hưng - Tạo API tìm kiếm khóa học & seed database
+
+== Minh chứng - Giao tiếp
+
+*Họp với Giảng viên*
+
+#grid(
+  columns: 2,
+  gutter: 10pt,
+  image("minh_chung/hoi_thay_7_thang_10.jpg", width: 90%),
+  image("minh_chung/hoi_thay_11_thang_11.jpg", width: 90%),
+)
+
+Các buổi trao đổi và hỏi đáp (7/10, 11/11, 2/12/2025)
 
 == Cảm ơn!
 
