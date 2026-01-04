@@ -131,9 +131,8 @@
 == Tính năng Admin
 
 - ✓ Duyệt khóa học
-- ✓ Quản lý người dùng (tạo, xem, xóa, thay đổi vai trò)
+- ✓ Quản lý người dùng
 - ✓ Quản lý vai trò hệ thống
-- ✓ Ghi nhật ký cơ bản
 - ✓ Quản lý thông báo hệ thống
 
 == Kết quả kiểm thử
@@ -167,7 +166,7 @@
 
 *Code Sạch*
 - Đặt tên có ý nghĩa, giảm lặp lại code
-- Xử lý lỗi thích hợp, ghi nhật ký chi tiết
+- Xử lý lỗi thích hợp
 
 == Bảo mật & Hiệu suất
 
@@ -179,9 +178,8 @@
 - ✓ Hệ thống thông báo email
 
 *Hiệu suất*
-- ✓ Thời gian phản hồi API < 300ms
 - ✓ Truy vấn cơ sở dữ liệu được tối ưu hóa
-- ✓ Thiết kế responsive (mobile-first)
+- ✓ Thiết kế responsive
 
 == CI/CD Pipeline & Pair Programming
 
