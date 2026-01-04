@@ -19,5 +19,14 @@ export const config = {
     email: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS,
+    },
+    upload: {
+        maxFileSize: 20 * 1024 * 1024,
+        uploadDir: process.env.UPLOAD_DIR || 'uploads',
+    },
+    database: {
+        mongo: {
+            url: process.env.MONGO_URL,
+        }
     }
 }

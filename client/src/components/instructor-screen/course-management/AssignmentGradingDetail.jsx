@@ -15,6 +15,9 @@ import {
 } from "react-bootstrap";
 import { FaCheckSquare, FaFileAlt, FaRegClock, FaUsers, FaSearch } from "react-icons/fa";
 import ScoringModal from "../grade-assignment/ScoringModal";
+import { toast } from "sonner";
+
+const API_URL = import.meta.env.VITE_API_URL;
 
 const formatDate = (date) => {
   return new Date(date).toLocaleString("en-US", {
@@ -34,7 +37,115 @@ const AssignmentGradingDetail = ({ lessonForm, courseData }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
 
-  // Early return if no lessonForm
+  // Assignment metadata (fallback to lessonForm) and submissions state
+  const mockAssignment = {
+    id: lessonForm?.assignmentId || "1",
+    courseId: courseData?.id || "1",
+    courseName: courseData?.title || "Demo Course",
+    title: lessonForm?.title || "Assignment",
+    description: lessonForm?.description || "Complete the assignment requirements",
+    dueDate:
+      lessonForm?.dueDate && lessonForm?.dueTime
+        ? new Date(lessonForm.dueDate + " " + lessonForm.dueTime)
+        : new Date(),
+    maxPoints: lessonForm?.maxPoints || 100,
+    createdAt: new Date(),
+  };
+
+  const [submissions, setSubmissions] = useState([]);
+  const [loadingSubmissions, setLoadingSubmissions] = useState(false);
+  const [submissionsError, setSubmissionsError] = useState(null);
+
+  useEffect(() => {
+    console.log("=== AssignmentGradingDetail useEffect ===");
+    console.log("lessonForm:", lessonForm);
+    const assignmentId = lessonForm?.assignmentId;
+    console.log("Extracted assignmentId:", assignmentId);
+
+    if (!assignmentId) {
+      console.warn("No assignmentId found in lessonForm - cannot fetch submissions");
+      setSubmissions([]);
+      return;
+    }
+
+    let cancelled = false;
+
+    const fetchSubmissions = async () => {
+      setLoadingSubmissions(true);
+      setSubmissionsError(null);
+      try {
+        const token = localStorage.getItem("accessToken");
+        console.log("Fetching submissions for assignmentId:", assignmentId);
+        console.log("API URL:", `${API_URL}/assignments/${assignmentId}/submissions`);
+        const resp = await fetch(`${API_URL}/assignments/${assignmentId}/submissions`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: token ? `Bearer ${token}` : undefined,
+          },
+        });
+
+        const result = await resp.json();
+        console.log("Submissions API response:", result);
+        console.log("Response status:", resp.status, resp.ok);
+
+        if (!resp.ok) {
+          const err =
+            result?.data ||
+            result?.error?.message ||
+            result?.message ||
+            "Failed to fetch submissions";
+          console.error("Fetch submissions error:", err);
+          throw new Error(err);
+        }
+
+        // Expect result.data or result.submissions or result
+        const list =
+          result?.data?.submissions || result?.submissions || result?.data || result || [];
+        if (!cancelled) {
+          // normalize submissions array
+          const normalized = Array.isArray(list)
+            ? list.map((s) => ({
+                id: s.id,
+                assignmentId: s.assignmentId || s.assignment?.id || assignmentId,
+                studentId: s.studentId || s.userId || s.student?.id,
+                studentName:
+                  s.studentName || s.student?.name || s.student?.fullName || s.user?.name || "",
+                studentEmail: s.studentEmail || s.student?.email || s.user?.email || "",
+                content: s.content || s.text || "",
+                fileUrl: s.fileUrl || s.file || s.url || "",
+                fileName: s.fileName || s.filename || (s.fileUrl ? s.fileUrl.split("/").pop() : ""),
+                fileSize: s.fileSize || s.size || "",
+                status: s.status || s.state || "SUBMITTED",
+                grade: s.grade ?? s.score ?? null,
+                feedback: s.feedback || s.comment || null,
+                submittedAt: s.submittedAt
+                  ? new Date(s.submittedAt)
+                  : s.createdAt
+                    ? new Date(s.createdAt)
+                    : null,
+              }))
+            : [];
+
+          console.log("Normalized submissions:", normalized);
+          console.log("Submissions count:", normalized.length);
+          setSubmissions(normalized);
+        }
+      } catch (err) {
+        console.error("Fetch submissions exception:", err);
+        if (!cancelled) setSubmissionsError(err.message || String(err));
+      } finally {
+        if (!cancelled) setLoadingSubmissions(false);
+      }
+    };
+
+    fetchSubmissions();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [lessonForm?.assignmentId]);
+  // Early return if no lessonForm (render placeholder) — hooks above always run
   if (!lessonForm) {
     return (
       <div className="assignment-grading-detail">
@@ -48,66 +159,6 @@ const AssignmentGradingDetail = ({ lessonForm, courseData }) => {
       </div>
     );
   }
-
-  // Mock assignment data based on current lesson
-  const mockAssignment = {
-    id: "1",
-    courseId: courseData?.id || "1",
-    courseName: courseData?.title || "Demo Course",
-    title: lessonForm?.title || "Assignment",
-    description: lessonForm?.description || "Complete the assignment requirements",
-    dueDate:
-      lessonForm?.dueDate && lessonForm?.dueTime
-        ? new Date(lessonForm.dueDate + " " + lessonForm.dueTime)
-        : new Date(),
-    maxPoints: lessonForm?.maxPoints || 100,
-    createdAt: new Date(),
-    submissions: [
-      {
-        id: "sub1",
-        assignmentId: "1",
-        studentId: "student1",
-        studentName: "Nguyễn Văn A",
-        studentEmail: "nguyenvana@example.com",
-        content: "Hoàn thành tất cả yêu cầu của bài tập",
-        fileUrl: "assignment_submission.pdf",
-        fileSize: "1.2 MB",
-        status: "SUBMITTED",
-        grade: null,
-        feedback: null,
-        submittedAt: new Date("2024-12-15T14:30:00"),
-      },
-      {
-        id: "sub2",
-        assignmentId: "1",
-        studentId: "student2",
-        studentName: "Trần Thị B",
-        studentEmail: "tranthib@example.com",
-        content: "Đã làm xong bài tập, có một số thắc mắc về phần cuối",
-        fileUrl: "my_solution.docx",
-        fileSize: "850 KB",
-        status: "GRADED",
-        grade: 85,
-        feedback: "Bài làm tốt! Cần chú ý thêm về phần kết luận.",
-        submittedAt: new Date("2024-12-14T09:15:00"),
-      },
-      {
-        id: "sub3",
-        assignmentId: "1",
-        studentId: "student3",
-        studentName: "Lê Văn C",
-        studentEmail: "levanc@example.com",
-        content: "Bài nộp đầy đủ theo yêu cầu",
-        fileUrl: "assignment_final.pdf",
-        fileSize: "2.1 MB",
-        status: "SUBMITTED",
-        grade: null,
-        feedback: null,
-        submittedAt: new Date("2024-12-13T16:45:00"),
-      },
-    ],
-  };
-
   const handleGradeSubmission = (submission) => {
     setSelectedSubmission(submission);
     setGradingData({
@@ -124,34 +175,113 @@ const AssignmentGradingDetail = ({ lessonForm, courseData }) => {
   };
 
   const handleSaveGrade = () => {
-    setIsSaving(true);
-    setTimeout(() => {
-      console.log("Saving grade:", {
-        submissionId: selectedSubmission.id,
-        grade: gradingData.grade,
-        feedback: gradingData.feedback,
+    const performGrade = async () => {
+      setIsSaving(true);
+      try {
+        const token = localStorage.getItem("accessToken");
+        const user = localStorage.getItem("user");
+        const grader = user ? JSON.parse(user).id : null;
+        const resp = await fetch(`${API_URL}/grade/submissions/${selectedSubmission.id}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: token ? `Bearer ${token}` : undefined,
+          },
+          body: JSON.stringify({
+            graderId: grader,
+            grade: Number(gradingData.grade),
+            feedback: gradingData.feedback,
+          }),
+        });
+
+        const result = await resp.json();
+        if (!resp.ok) {
+          const err =
+            result?.data || result?.error?.message || result?.message || "Failed to save grade";
+          throw new Error(err);
+        }
+
+        // Show appropriate success message
+        const successMessage = result?.message || "This assignment is graded successfully!";
+        toast.success(successMessage);
+
+        // Update submission in local state
+        setSubmissions((prev) =>
+          prev.map((s) =>
+            s.id === selectedSubmission.id
+              ? {
+                  ...s,
+                  grade: Number(gradingData.grade),
+                  feedback: gradingData.feedback,
+                  status: "GRADED",
+                }
+              : s
+          )
+        );
+
+        setIsSaving(false);
+        handleCloseModal();
+      } catch (err) {
+        console.error("Grade save error", err);
+        setIsSaving(false);
+        toast?.error?.("Failed to save grade: " + (err.message || String(err)));
+      }
+    };
+
+    performGrade();
+  };
+
+  const triggerFileDownload = async (fileUrl, originalFileName = null) => {
+    if (!fileUrl) return;
+    try {
+      const token = localStorage.getItem("accessToken");
+      // Ensure fileUrl has full API URL
+      const fullUrl = fileUrl.startsWith("http") ? fileUrl : `${API_URL}${fileUrl}`;
+
+      console.log("Downloading file from:", fullUrl);
+
+      const resp = await fetch(fullUrl, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
 
-      // Update the submission in mock data
-      const submissionIndex = mockAssignment.submissions.findIndex(
-        (s) => s.id === selectedSubmission.id
-      );
-      if (submissionIndex !== -1) {
-        mockAssignment.submissions[submissionIndex] = {
-          ...mockAssignment.submissions[submissionIndex],
-          grade: parseInt(gradingData.grade),
-          feedback: gradingData.feedback,
-          status: "GRADED",
-        };
+      if (!resp.ok) {
+        const contentType = resp.headers.get("content-type");
+        // If response is HTML, it means the route doesn't exist
+        if (contentType && contentType.includes("text/html")) {
+          throw new Error("File not found on server. The URL may be incorrect.");
+        }
+        const text = await resp.text().catch(() => null);
+        throw new Error(`Failed to download file: ${resp.status} ${resp.statusText} ${text || ""}`);
       }
 
-      setIsSaving(false);
-      handleCloseModal();
-    }, 1000);
+      const blob = await resp.blob();
+      // Use original filename if provided, otherwise try to get from URL or headers
+      let filename = originalFileName || fileUrl.split("/").pop() || "download";
+      const cd = resp.headers.get("content-disposition");
+      if (!originalFileName && cd) {
+        const m = /filename\*?=(?:UTF-8'')?"?([^";]+)"?/i.exec(cd);
+        if (m && m[1]) filename = decodeURIComponent(m[1]);
+      }
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+
+      console.log("File downloaded successfully:", filename);
+    } catch (err) {
+      console.error("Download error", err);
+      toast.error("Không thể tải tập tin: " + (err.message || "Lỗi"));
+    }
   };
 
   // Filter submissions based on search term and status
-  const filteredSubmissions = mockAssignment.submissions.filter((submission) => {
+  const sourceSubmissions = submissions.length > 0 ? submissions : [];
+
+  const filteredSubmissions = sourceSubmissions.filter((submission) => {
     const matchesSearch =
       submission.studentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       submission.studentEmail.toLowerCase().includes(searchTerm.toLowerCase());
@@ -202,8 +332,7 @@ const AssignmentGradingDetail = ({ lessonForm, courseData }) => {
           <Row className="mt-2">
             <Col>
               <small className="text-muted">
-                Showing {filteredSubmissions.length} of {mockAssignment.submissions.length}{" "}
-                submissions
+                Showing {filteredSubmissions.length} of {submissions.length} submissions
               </small>
             </Col>
           </Row>
@@ -234,16 +363,31 @@ const AssignmentGradingDetail = ({ lessonForm, courseData }) => {
                     </div>
                   </td>
                   <td className="detail-p-3 detail-small detail-text-black">
-                    {formatDate(submission.submittedAt)}
+                    {submission.submittedAt ? formatDate(submission.submittedAt) : "-"}
                   </td>
                   <td className="detail-p-3">
-                    <div className="detail-d-flex detail-align-items-center detail-gap-2">
-                      <span className="detail-text-primary detail-fs-5">📄</span>
-                      <div>
-                        <div className="detail-small detail-text-black">{submission.fileUrl}</div>
-                        <div className="detail-small detail-text-black">{submission.fileSize}</div>
+                    {submission.fileUrl ? (
+                      <div className="detail-d-flex detail-align-items-center detail-gap-2">
+                        <span className="detail-text-primary detail-fs-5">📄</span>
+                        <div>
+                          <a
+                            href={submission.fileUrl}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              triggerFileDownload(submission.fileUrl, submission.fileName);
+                            }}
+                            style={{ color: "#0369a1", textDecoration: "none", cursor: "pointer" }}
+                          >
+                            {submission.fileName || submission.fileUrl.split("/").pop()}
+                          </a>
+                          <div className="detail-small detail-text-black">
+                            {submission.fileSize}
+                          </div>
+                        </div>
                       </div>
-                    </div>
+                    ) : (
+                      <span className="text-muted">-</span>
+                    )}
                   </td>
                   <td className="detail-p-3">
                     <Badge

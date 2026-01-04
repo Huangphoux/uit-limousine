@@ -31,7 +31,7 @@ export class CreateCourseUsecase {
       task: "Creating course",
       adminId: parsedInput.authId,
       instructorId: parsedInput.instructorId,
-    })
+    });
     log.info("Task started");
 
     const instructor = await this.userRepository.findById(parsedInput.instructorId);
@@ -43,6 +43,11 @@ export class CreateCourseUsecase {
       log.warn("Task failed: invalid instructor role");
       throw Error(`Unauthorized user, ${instructor.id}`);
     }
+
+    // Map duration inputs from strings (if present) to numbers
+    if (parsedInput.durationWeeks) parsedInput.durationWeeks = Number(parsedInput.durationWeeks);
+    if (parsedInput.durationDays) parsedInput.durationDays = Number(parsedInput.durationDays);
+    if (parsedInput.durationHours) parsedInput.durationHours = Number(parsedInput.durationHours);
 
     const course = CourseEntity.create(parsedInput);
 

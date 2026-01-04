@@ -3,10 +3,10 @@ import { LessonEntity, lessonSchema } from "./lesson.entity.js";
 
 export const moduleSchema = z.object({
     id: z.string().optional(),
+    courseId: z.string(),
     title: z.string(),
     position: z.number().int().default(0),
     createdAt: z.date().default(() => new Date()),
-    lessons: z.array(lessonSchema).optional(),
 });
 
 export class ModuleEntity {
@@ -23,12 +23,22 @@ export class ModuleEntity {
     static rehydrate(input) {
         const entity = new ModuleEntity();
 
-        if (input.lessons) {
-            entity.lessons = input.lessons.map(LessonEntity.rehydrate);
-        }
-
-        Object.assign(entity, { ...input, lessons: entity.lessons });
+        Object.assign(entity, input);
 
         return entity;
+    }
+
+    rename(title) {
+        if (!title)
+            throw Error("Invalid module title");
+
+        this.title = title;
+    }
+
+    reorder(position) {
+        if (!position && position !== 0)
+            throw Error("Invalid module position");
+
+        this.position = position;
     }
 }

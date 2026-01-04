@@ -9,7 +9,8 @@ const CourseApprovingScreen = ({
   statusFilter,
   setStatusFilter,
   courses,
-  setCourses,
+  onApproveCourse,
+  onRejectCourse,
   loading,
   filteredCourses,
   setFilteredCourses,
@@ -35,52 +36,6 @@ const CourseApprovingScreen = ({
 
     setFilteredCourses(filtered);
   }, [searchQuery, statusFilter, courses, setFilteredCourses]);
-
-  // Handle course approval
-  const handleApproveCourse = async (courseData) => {
-    console.log("Approving course:", courseData);
-
-    try {
-      // Update course status to approved/published
-      setCourses((prevCourses) =>
-        prevCourses.map((course) =>
-          course.id === courseData.id ? { ...course, status: "Approved" } : course
-        )
-      );
-
-      // TODO: Add API call here to update the course status on the backend
-      // await updateCourseStatus(courseData.id, 'Approved');
-
-      console.log(`Course "${courseData.title}" has been approved successfully`);
-    } catch (error) {
-      console.error("Error approving course:", error);
-      // TODO: Handle error (show toast, revert state, etc.)
-    }
-  };
-
-  // Handle course denial
-  const handleDenyCourse = async (courseData, reason = "") => {
-    console.log("Denying course:", courseData, "Reason:", reason);
-
-    try {
-      // Update course status to denied with reason
-      setCourses((prevCourses) =>
-        prevCourses.map((course) =>
-          course.id === courseData.id
-            ? { ...course, status: "Denied", denialReason: reason }
-            : course
-        )
-      );
-
-      // TODO: Add API call here to update the course status on the backend
-      // await updateCourseStatus(courseData.id, 'Denied', reason);
-
-      console.log(`Course "${courseData.title}" has been denied successfully`);
-    } catch (error) {
-      console.error("Error denying course:", error);
-      // TODO: Handle error (show toast, revert state, etc.)
-    }
-  };
 
   // Calculate Course Approval stats
   const calculateCourseApprovalStats = () => {
@@ -110,12 +65,6 @@ const CourseApprovingScreen = ({
       icon: <FaClock className="text-white" />,
       bgColor: "#FFA500",
     },
-    {
-      title: "Denied",
-      value: courseApprovalStats.deniedCourses.toString(),
-      icon: <FaTimes className="text-white" />,
-      bgColor: "#DC3545",
-    },
   ];
 
   return (
@@ -123,13 +72,14 @@ const CourseApprovingScreen = ({
       {/* Stats Cards */}
       <Row className="mb-2 stats-section">
         {courseApprovalStatsCards.map((card, index) => (
-          <Col md={4} key={index} className="mb-3">
+          <Col md={6} key={index} className="mb-3">
             <Card className="h-100 border-0 shadow-sm" style={{ backgroundColor: "#BBEDF9" }}>
               <Card.Body className="p-4">
                 <div className="d-flex justify-content-between align-items-start">
-                  <div>
+                  <div style={{ flex: 1 }}>
                     <h6 className="text-black mb-2">{card.title}</h6>
                     <h2 className="mb-0 fw-bold text-black">{card.value}</h2>
+                    <div className="text-muted mt-2" style={{ fontSize: "15px" }}>{card.description}</div>
                   </div>
                   <div
                     className="rounded p-3 d-flex align-items-center justify-content-center"
@@ -189,7 +139,7 @@ const CourseApprovingScreen = ({
         </Col>
         <Col md={4}>
           <div className="d-flex gap-2 justify-content-end">
-            {["All", "Waiting", "Denied"].map((filter) => (
+            {["All", "Waiting"].map((filter) => (
               <Button
                 key={filter}
                 variant={statusFilter === filter ? "dark" : "outline-secondary"}
@@ -248,8 +198,8 @@ const CourseApprovingScreen = ({
               <div className="course-management-card">
                 <ApprovalCourseCard
                   courseData={course}
-                  onApprove={handleApproveCourse}
-                  onDeny={handleDenyCourse}
+                  onApprove={onApproveCourse}
+                  onDeny={onRejectCourse}
                 />
               </div>
             </Col>

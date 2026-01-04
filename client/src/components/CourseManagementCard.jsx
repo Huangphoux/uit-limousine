@@ -2,8 +2,9 @@ import React from "react";
 import { Card, Button, Row, Col } from "react-bootstrap";
 import { FaEdit, FaEye, FaTrash, FaUsers, FaClock, FaStar } from "react-icons/fa";
 
-const CourseManagementCard = ({ courseData, onEdit, onPublish, onDelete }) => {
+const CourseManagementCard = ({ courseData, onEdit, onPublish }) => {
   const { title, description, image, enrolledStudents, duration, status, rating } = courseData;
+  const defaultImage = "images/course-placeholder.svg";
 
   const getStatusBadge = () => {
     return (
@@ -32,14 +33,19 @@ const CourseManagementCard = ({ courseData, onEdit, onPublish, onDelete }) => {
 
   return (
     <Card
-      className="h-100 shadow-sm border-0"
-      style={{ borderRadius: "12px solid black", backgroundColor: "#EFF6FF" }}
+      className="h-100 shadow-sm border-0 d-flex flex-column"
+      style={{
+        borderRadius: "12px",
+        backgroundColor: "#EFF6FF",
+        minHeight: "400px",
+        maxHeight: "400px",
+      }}
     >
-      <div className="position-relative">
+      <div className="position-relative" style={{ flexShrink: 0 }}>
         {getStatusBadge()}
         <Card.Img
           variant="top"
-          src={image}
+          src={image ? image : defaultImage}
           style={{
             height: "140px",
             objectFit: "cover",
@@ -48,17 +54,42 @@ const CourseManagementCard = ({ courseData, onEdit, onPublish, onDelete }) => {
         />
       </div>
 
-      <Card.Body className="p-2">
+      <Card.Body className="p-2 d-flex flex-column" style={{ flex: 1, overflow: "hidden" }}>
         <Card.Title
           className="fw-bold mb-1"
-          style={{ fontSize: "16px", color: "#000", fontWeight: "bold" }}
+          style={{
+            fontSize: "16px",
+            color: "#000",
+            fontWeight: "bold",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            display: "-webkit-box",
+            WebkitLineClamp: "2",
+            WebkitBoxOrient: "vertical",
+            height: "40px",
+            flexShrink: 0,
+          }}
         >
           {title}
         </Card.Title>
-        <Card.Text className=" mb-2" style={{ fontSize: "13px", lineHeight: "1.3", color: "#000" }}>
+        <Card.Text
+          className="mb-2"
+          style={{
+            fontSize: "13px",
+            lineHeight: "1.3",
+            color: "#000",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            display: "-webkit-box",
+            WebkitLineClamp: "2",
+            WebkitBoxOrient: "vertical",
+            height: "33px",
+            flexShrink: 0,
+          }}
+        >
           {description}
         </Card.Text>{" "}
-        <div className="mb-2">
+        <div className="mb-2" style={{ flexShrink: 0 }}>
           <Row className="g-1">
             <Col xs={6}>
               <div className="d-flex align-items-center" style={{ color: "#000" }}>
@@ -76,7 +107,7 @@ const CourseManagementCard = ({ courseData, onEdit, onPublish, onDelete }) => {
 
           <div className="mt-1">{getRatingStars()}</div>
         </div>
-        <div className="d-flex gap-1">
+        <div className="d-flex gap-1 mt-auto" style={{ flexShrink: 0 }}>
           <Button
             variant="outline-primary"
             size="sm"
@@ -97,7 +128,10 @@ const CourseManagementCard = ({ courseData, onEdit, onPublish, onDelete }) => {
             variant="outline-success"
             size="sm"
             className="flex-fill d-flex align-items-center justify-content-center"
-            onClick={() => onPublish && onPublish(courseData)}
+            onClick={() =>
+              onPublish &&
+              onPublish({ ...courseData, action: status === "Published" ? "hide" : "publish" })
+            }
             style={{
               borderRadius: "6px",
               fontSize: "11px",
@@ -106,10 +140,10 @@ const CourseManagementCard = ({ courseData, onEdit, onPublish, onDelete }) => {
             }}
           >
             <FaEye className="me-1" size={10} />
-            {status === "Published" ? "View" : "Publish"}
+            {status === "Published" ? "Hide" : "Publish"}
           </Button>
 
-          <Button
+          {/* <Button
             variant="outline-danger"
             size="sm"
             className="d-flex align-items-center justify-content-center"
@@ -123,7 +157,7 @@ const CourseManagementCard = ({ courseData, onEdit, onPublish, onDelete }) => {
             }}
           >
             <FaTrash size={10} />
-          </Button>
+          </Button> */}
         </div>
       </Card.Body>
     </Card>

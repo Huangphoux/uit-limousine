@@ -26,7 +26,7 @@ Tài liệu này mô tả thiết kế API RESTful cho hệ thống Learning Man
 
 == 2. Authentication & Authorization
 
-=== 2.1. Register (UC-01)
+=== 2.1. Register (UC-01) R
 
 - Lưu ý: Anyone can register an account. All new accounts default to LEARNER role. Email verification may be required before account becomes active.
 
@@ -55,7 +55,7 @@ Response 201 Created:
 }
 ```
 
-=== 2.2. Login (UC-01)
+=== 2.2. Login (UC-01) R
 
 ```http
 POST /auth/login
@@ -82,7 +82,7 @@ Response 200 OK:
 }
 ```
 
-=== 2.3. Logout (UC-01)
+=== 2.3. Logout (UC-01) R
 
 ```http
 POST /auth/logout
@@ -95,7 +95,7 @@ Response 200 OK:
 }
 ```
 
-=== 2.4. Reset Password (UC-01)
+=== 2.4. Reset Password (UC-01) R
 
 ```http
 POST /auth/reset-password
@@ -186,7 +186,7 @@ Content-Type: application/json
 
 == 4. Course Management
 
-=== 4.1. List Courses (UC-02)
+=== 4.1. List Courses (UC-02) R
 
 ```http
 GET /courses?search=nodejs&category=programming&page=1&limit=10
@@ -219,7 +219,7 @@ Response 200 OK:
 }
 ```
 
-=== 4.2. Get Course Details (UC-03)
+=== 4.2. Get Course Details (UC-03) R
 
 ```http
 GET /courses/:id
@@ -261,7 +261,7 @@ Response 200 OK:
 }
 ```
 
-=== 4.3. Request to Create Course & Instructor Approval (UC-08, UC-11)
+=== 4.3. Request to Create Course & Instructor Approval (UC-08, UC-11) R
 
 Quy trình: 
 1. Người dùng đã đăng ký muốn tạo khóa học → nộp "Request to Create Course" (InstructorApplication)
@@ -411,7 +411,7 @@ Response 201 Created:
 }
 ```
 
-=== 4.6. Update Course (UC-12)
+=== 4.6. Update Course (UC-12) R
 
 ```http
 PUT /courses/:id

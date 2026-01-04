@@ -17,6 +17,11 @@ export class LessonProgressEntity {
         this.completedAt = new Date();
     }
 
+    uncomplete() {
+        this.progress = 0;
+        this.completedAt = null;
+    }
+
     static create(input) {
         const parsedInput = LessonProgressEntity.schema.parse(input);
 

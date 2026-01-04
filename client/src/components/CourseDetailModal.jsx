@@ -9,7 +9,7 @@ const CourseDetailModal = ({ course, show, onHide, onEnroll, loading, error }) =
   const [isPaid, setIsPaid] = useState(course?.isPaid || false);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const navigate = useNavigate();
-
+  const [enrolledCourseIds, setEnrolledCourseIds] = useState([]);
   // Sync local state with course prop when course changes
   useEffect(() => {
     if (course) {
@@ -22,24 +22,51 @@ const CourseDetailModal = ({ course, show, onHide, onEnroll, loading, error }) =
 
   const handlePayment = async () => {
     setIsProcessingPayment(true);
+    try {
+      const API_URL = import.meta.env.VITE_API_URL;
+      const token = localStorage.getItem("accessToken");
+      const res = await fetch(`${API_URL}/payments/checkout`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: token ? `Bearer ${token}` : undefined,
+        },
+        body: JSON.stringify({
+          courseId: course.id,
+          amount: Number(course.price) || 0,
+          currency: "VND",
+        }),
+      });
 
-    // Simulate payment processing
-    setTimeout(() => {
+      if (!res.ok) {
+        let msg = res.statusText;
+        try {
+          const body = await res.json();
+          msg = body.message || body.error || JSON.stringify(body);
+        } catch {
+          // ignore
+        }
+        throw new Error(msg);
+      }
+
+      const payment = await res.json();
+      console.log("Payment checkout result:", payment);
+
       setIsPaid(true);
-      setIsProcessingPayment(false);
-
-      // TODO: Call API to update payment status
-      console.log("Payment confirmed for course:", course.id);
-
-      // Optionally notify parent component
+      // Notify parent that payment succeeded so it can update UI and optionally auto-enroll
       if (onEnroll) {
         onEnroll(course.id, { ...course, isPaid: true }, "payment");
       }
-    }, 1500);
+    } catch (err) {
+      console.error("Payment failed:", err);
+      // Could show notification via parent; for now console and leave modal state
+    } finally {
+      setIsProcessingPayment(false);
+    }
   };
 
   const handleEnroll = () => {
-    setIsEnrolled(true); // Update local state
+    // setIsEnrolled(true); // Update local state
     if (onEnroll) {
       onEnroll(course.id, course, "success"); // Call parent handler
     }
@@ -58,6 +85,42 @@ const CourseDetailModal = ({ course, show, onHide, onEnroll, loading, error }) =
         return "text-secondary";
     }
   };
+
+  const formatDuration = (c) => {
+    if (!c) return "N/A";
+    if (c.duration) return c.duration;
+    
+    // Try to use explicit duration fields
+    const parts = [];
+    if (c.durationWeeks) parts.push(`${c.durationWeeks}w`);
+    if (c.durationDays) parts.push(`${c.durationDays}d`);
+    if (c.durationHours) parts.push(`${c.durationHours}h`);
+    if (parts.length) return parts.join(" ");
+    
+    // Calculate from lessons if modules are available
+    if (c.modules && Array.isArray(c.modules)) {
+      const totalSec = c.modules.reduce((sum, module) => {
+        if (!module.lessons) return sum;
+        return sum + module.lessons.reduce((lessonSum, lesson) => {
+          return lessonSum + (lesson.durationSec || 0);
+        }, 0);
+      }, 0);
+      
+      if (totalSec > 0) {
+        const hours = Math.floor(totalSec / 3600);
+        const minutes = Math.floor((totalSec % 3600) / 60);
+        if (hours > 0 && minutes > 0) return `${hours}h ${minutes}m`;
+        if (hours > 0) return `${hours}h`;
+        if (minutes > 0) return `${minutes}m`;
+      }
+    }
+    
+    return "N/A";
+  };
+
+  const displayedDuration = formatDuration(course);
+  const displayedStudents =
+    course.enrolledStudents || course.enrollmentCount || course.students || 0;
 
   return (
     <>
@@ -146,6 +209,22 @@ const CourseDetailModal = ({ course, show, onHide, onEnroll, loading, error }) =
 
         {/* Body */}
         <Modal.Body style={{ padding: "1.5rem", maxHeight: "70vh", overflowY: "auto" }}>
+          {/* Cover image banner */}
+          {course.coverImage || course.image ? (
+            <div style={{ marginBottom: 12 }}>
+              <img
+                src={
+                  typeof course.coverImage === "string" && course.coverImage.startsWith("/")
+                    ? `${import.meta.env.VITE_API_URL}${course.coverImage}`
+                    : course.coverImage || course.image
+                }
+                alt="cover"
+                style={{ width: "100%", height: 220, objectFit: "cover", borderRadius: 12 }}
+                onError={(e) => (e.currentTarget.src = "/images/course-placeholder.svg")}
+              />
+            </div>
+          ) : null}
+
           {/* Loading State */}
           {loading && (
             <div className="text-center py-5">
@@ -213,20 +292,33 @@ const CourseDetailModal = ({ course, show, onHide, onEnroll, loading, error }) =
 
               {/* Lecturer */}
               <p className="mb-4" style={{ color: "#6c757d", fontSize: "1rem" }}>
-                Lecturer: {course.instructor || course.provider}
+                Lecturer:
+                <span
+                  style={{ display: "inline-flex", alignItems: "center", gap: 8, marginLeft: 8 }}
+                >
+                  {course.instructor?.avatar && (
+                    <img
+                      src={
+                        typeof course.instructor.avatar === "string" &&
+                        course.instructor.avatar.startsWith("/")
+                          ? `${import.meta.env.VITE_API_URL}${course.instructor.avatar}`
+                          : course.instructor.avatar
+                      }
+                      alt="instructor"
+                      style={{ width: 36, height: 36, borderRadius: "50%", objectFit: "cover" }}
+                      onError={(e) => (e.currentTarget.src = "/images/course-placeholder.svg")}
+                    />
+                  )}
+                  <span>
+                    {typeof course.instructor === "string"
+                      ? course.instructor
+                      : course.instructor?.name || course.instructor?.fullName || course.provider}
+                  </span>
+                </span>
               </p>
 
               {/* Stats Row */}
               <div className="d-flex flex-wrap gap-3 mb-4">
-                {/* Rating */}
-                <div className="d-flex align-items-center gap-1">
-                  <span style={{ color: "#ffc107", fontSize: "1.125rem" }}>★</span>
-                  <span style={{ fontWeight: "600", color: "#212529" }}>{course.rating}</span>
-                  <span style={{ color: "#6c757d", fontSize: "0.875rem" }}>
-                    ({course.students.toLocaleString()})
-                  </span>
-                </div>
-
                 {/* Students */}
                 <div className="d-flex align-items-center gap-1">
                   <svg
@@ -237,7 +329,7 @@ const CourseDetailModal = ({ course, show, onHide, onEnroll, loading, error }) =
                     <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
                   </svg>
                   <span style={{ fontWeight: "500", color: "#495057" }}>
-                    {course.students.toLocaleString()}
+                    {String(displayedStudents).toLocaleString()}
                   </span>
                 </div>
 
@@ -254,7 +346,7 @@ const CourseDetailModal = ({ course, show, onHide, onEnroll, loading, error }) =
                       clipRule="evenodd"
                     />
                   </svg>
-                  <span style={{ fontWeight: "500", color: "#495057" }}>{course.duration}</span>
+                  <span style={{ fontWeight: "500", color: "#495057" }}>{displayedDuration}</span>
                 </div>
 
                 {/* Level */}
@@ -298,6 +390,26 @@ const CourseDetailModal = ({ course, show, onHide, onEnroll, loading, error }) =
                 </p>
               </div>
 
+              {/* Organization */}
+              {course.organization && (
+                <div className="mb-3">
+                  <h5 style={{ fontWeight: "700", color: "#212529", fontSize: "1.125rem" }}>
+                    Organization
+                  </h5>
+                  <p style={{ color: "#6c757d", marginTop: 4 }}>{course.organization}</p>
+                </div>
+              )}
+
+              {/* Requirement */}
+              {course.requirement && (
+                <div className="mb-3">
+                  <h5 style={{ fontWeight: "700", color: "#212529", fontSize: "1.125rem" }}>
+                    Requirements
+                  </h5>
+                  <p style={{ color: "#6c757d", marginTop: 4 }}>{course.requirement}</p>
+                </div>
+              )}
+
               {/* Price Section */}
               {course.price !== undefined && course.price !== null && (
                 <div className="mb-4">
@@ -337,7 +449,13 @@ const CourseDetailModal = ({ course, show, onHide, onEnroll, loading, error }) =
                         color: course.price === 0 ? "#28a745" : "#007bff",
                       }}
                     >
-                      {course.price === 0 ? "FREE" : `${course.price.toLocaleString()}VNĐ`}
+                      {course.price === 0
+                        ? "FREE"
+                        : new Intl.NumberFormat(undefined, {
+                            style: "currency",
+                            currency: "USD",
+                            maximumFractionDigits: 2,
+                          }).format(course.price)}
                     </span>
                     {course.isPaid ? (
                       <span
@@ -597,10 +715,13 @@ CourseDetailModal.propTypes = {
     provider: PropTypes.string.isRequired,
     category: PropTypes.string.isRequired,
     description: PropTypes.string.isRequired,
-    rating: PropTypes.number.isRequired,
+
     students: PropTypes.number.isRequired,
     level: PropTypes.string.isRequired,
-    duration: PropTypes.string.isRequired,
+    duration: PropTypes.string,
+    durationWeeks: PropTypes.number,
+    durationDays: PropTypes.number,
+    durationHours: PropTypes.number,
     image: PropTypes.string,
     enrolled: PropTypes.bool.isRequired,
     instructor: PropTypes.string,

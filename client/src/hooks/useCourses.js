@@ -21,6 +21,26 @@ export const useCourses = (initialCourses = []) => {
       if (params.category) queryParams.append("category", params.category);
       if (params.page) queryParams.append("page", params.page);
       if (params.limit) queryParams.append("limit", params.limit);
+      // If caller provided instructorId explicitly, use it
+      if (params.instructorId) {
+        queryParams.append("instructorId", params.instructorId);
+      } else {
+        // Fallback: If requesting instructor's courses, include instructorId from localStorage
+        try {
+          const userStr = localStorage.getItem("user");
+          if (userStr && params.onlyMyCourses) {
+            const user = JSON.parse(userStr);
+            if (user && user.id) queryParams.append("instructorId", user.id);
+            else
+              console.warn(
+                "fetchCourses: onlyMyCourses requested but no user id found in localStorage"
+              );
+          }
+        } catch (e) {
+          // ignore parsing errors
+          console.log(e);
+        }
+      }
 
       const queryString = queryParams.toString();
       const url = `${API_URL}/courses${queryString ? `?${queryString}` : ""}`;
@@ -98,16 +118,25 @@ export const useCourses = (initialCourses = []) => {
 
     // Real API call
     try {
-      const response = await fetch(`${API_URL}/api/courses/${courseId}/enroll`, {
+      const response = await fetch(`${API_URL}/courses/${courseId}/enroll`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
         },
       });
 
       if (!response.ok) {
-        throw new Error(`Failed to enroll: ${response.statusText}`);
+        // Try to parse error body for a clearer message
+        let serverMsg = response.statusText;
+        try {
+          const errBody = await response.json();
+          serverMsg = errBody.message || errBody.error || JSON.stringify(errBody);
+        } catch {
+          // ignore parse errors
+        }
+        console.error("Enroll error response:", response.status, serverMsg);
+        throw new Error(`Failed to enroll: ${serverMsg}`);
       }
 
       // Update local state
@@ -142,11 +171,11 @@ export const useCourses = (initialCourses = []) => {
 
     // Real API call
     try {
-      const response = await fetch(`${API_URL}/api/courses/${courseId}/unsubscribe`, {
+      const response = await fetch(`${API_URL}/courses/${courseId}/unenroll`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
         },
       });
 

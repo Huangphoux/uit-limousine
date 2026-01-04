@@ -1,9 +1,8 @@
 import pino from "pino";
-import pretty from "pino-pretty";
 
 export class PinoLogger {
-    constructor(pino) {
-        this.logger = pino;
+    constructor(pinoInstance) { // Đổi tên tham số để tránh trùng với package pino
+        this.logger = pinoInstance;
     }
 
     debug(message, context) {
@@ -28,10 +27,17 @@ export class PinoLogger {
     }
 }
 
-export const logger = new PinoLogger(pino({
-    level: process.env.LOG_LEVEL || "debug",
-    transport: {
+
+const transportConfig = process.env.NODE_ENV === "test"
+    ? undefined
+    : {
         target: "pino-pretty",
         options: { colorize: true },
-    },
-}));
+    };
+
+export const logger = new PinoLogger(
+    pino({
+        level: process.env.LOG_LEVEL || "debug",
+        transport: transportConfig,
+    })
+);

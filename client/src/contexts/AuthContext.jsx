@@ -17,32 +17,10 @@ export const AuthProvider = ({ children }) => {
         try {
           // Parse stored user data
           const userData = JSON.parse(storedUser);
-
-          // Optionally verify token with API
-          const response = await fetch(`${API_URL}/auth/me`, {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
-          });
-
-          if (response.ok) {
-            const data = await response.json();
-            setUser(data.data || userData);
-          } else {
-            // Token invalid, use stored data but might need re-login
-            setUser(userData);
-          }
-        } catch (error) {
-          console.error("Error verifying token:", error);
-          // If API call fails, still use stored user data
-          try {
-            const userData = JSON.parse(storedUser);
-            setUser(userData);
-          } catch (parseError) {
-            console.error("Error parsing user data:", parseError);
-            clearAuth();
-          }
+          setUser(userData);
+        } catch (parseError) {
+          console.error("Error parsing user data:", parseError);
+          clearAuth();
         }
       }
       setLoading(false);

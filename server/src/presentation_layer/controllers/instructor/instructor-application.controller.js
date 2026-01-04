@@ -1,66 +1,119 @@
-import ApplyInstructorUseCase from '../../../application_layer/instructor/apply-instructor.usecase.js';
-import ReviewInstructorUseCase from '../../../application_layer/instructor/review-instructor.usecase.js';
-import InstructorApplicationMapper from '../../../infrastructure_layer/mapper/instructor-application.mapper.js';
-import InstructorApplicationEntity from '../../../domain_layer/instructor-application.entity.js';
+import ApplyInstructorUseCase from "../../../application_layer/instructor/apply-instructor.usecase.js";
+import ReviewInstructorUseCase from "../../../application_layer/instructor/review-instructor.usecase.js";
+import InstructorApplicationMapper from "../../../infrastructure_layer/mapper/instructor-application.mapper.js";
+import InstructorApplicationEntity from "../../../domain_layer/instructor-application.entity.js";
 
 const applyUseCase = new ApplyInstructorUseCase();
 const reviewUseCase = new ReviewInstructorUseCase();
 export const applyInstructor = async (req, res) => {
-
-
   try {
-    const { applicantId, requestedCourseTitle, requestedCourseSummary, portfolioUrl } = req.body;
-    if (!applicantId || applicantId.trim() === '') {
-      return res.status(400).json({
-        success: false,
-        message: 'Applicant ID is required',
-        field: 'applicantId'
-      });
-    }
-    if (!requestedCourseTitle || requestedCourseTitle.trim() === '') {
-      return res.status(400).json({
-        success: false,
-        message: 'Course title is required',
-        field: 'requestedCourseTitle'
-      });
-    }
-    if (!requestedCourseSummary || requestedCourseSummary.trim() === '') {
-      return res.status(400).json({
-        success: false,
-        message: 'Course summary is required',
-        field: 'requestedCourseSummary'
-      });
-    }
-    const result = await applyUseCase.execute(applicantId, {
+    const {
+      applicantId,
       requestedCourseTitle,
       requestedCourseSummary,
-      portfolioUrl
-    });
+      portfolioUrl,
+      coverImage,
+      meta,
+    } = req.body;
+
+    // meta may be a JSON string from client fallback; parse if necessary
+    let parsedMeta = {};
+    if (meta) {
+      try {
+        parsedMeta = typeof meta === "string" ? JSON.parse(meta) : meta;
+      } catch (e) {
+        parsedMeta = {};
+      }
+    }
+
+    // Debug: log incoming payload
+    console.log("[instructor-application.controller] incoming body:", req.body);
+
+    if (!applicantId || applicantId.trim() === "") {
+      return res.status(400).json({
+        success: false,
+        message: "Applicant ID is required",
+        field: "applicantId",
+      });
+    }
+    if (!requestedCourseTitle || requestedCourseTitle.trim() === "") {
+      return res.status(400).json({
+        success: false,
+        message: "Course title is required",
+        field: "requestedCourseTitle",
+      });
+    }
+    if (!requestedCourseSummary || requestedCourseSummary.trim() === "") {
+      return res.status(400).json({
+        success: false,
+        message: "Course summary is required",
+        field: "requestedCourseSummary",
+      });
+    }
+
+    const applicationData = {
+      requestedCourseTitle,
+      requestedCourseSummary,
+      portfolioUrl,
+      coverImage: coverImage || null,
+      category: parsedMeta.category || null,
+      level: parsedMeta.level || null,
+      durationWeeks: parsedMeta.durationWeeks ? Number(parsedMeta.durationWeeks) : null,
+      durationDays: parsedMeta.durationDays ? Number(parsedMeta.durationDays) : null,
+      durationHours: parsedMeta.durationHours ? Number(parsedMeta.durationHours) : null,
+      organization: parsedMeta.organization || null,
+      language: parsedMeta.language || null,
+      requirement: parsedMeta.requirement || null,
+      price: parsedMeta.price ? Number(parsedMeta.price) : null,
+    };
+
+    console.log("[instructor-application.controller] applicationData:", applicationData);
+
+    const result = await applyUseCase.execute(applicantId, applicationData);
     const dto = InstructorApplicationMapper.toDTO(result.entity, result.application);
     return res.status(201).json({
       success: true,
-      message: 'Application submitted successfully',
-      data: dto
+      message: "Application submitted successfully",
+      data: dto,
     });
-
   } catch (error) {
-    if (error.message === 'You already have a pending application') {
+    if (error.message === "You already have a pending application") {
       return res.status(409).json({
         success: false,
         message: error.message,
-        hint: 'Please wait for your current application to be reviewed'
+        hint: "Please wait for your current application to be reviewed",
       });
     }
-    if (error.message.includes('required') || error.message.includes('must be')) {
+    if (error.message.includes("required") || error.message.includes("must be")) {
       return res.status(400).json({
         success: false,
-        message: error.message
+        message: error.message,
       });
     }
+
+    // Detect Prisma schema / client mismatch and give a helpful instruction
+    if (error.name && error.name === "PrismaClientValidationError") {
+      console.error(
+        "[instructor-application.controller] Prisma validation error:",
+        error.stack || error
+      );
+      return res.status(500).json({
+        success: false,
+        message:
+          "Database schema change detected. Please run `npx prisma generate` and restart the server.",
+        error: process.env.NODE_ENV === "development" ? error.stack || error.message : undefined,
+      });
+    }
+
+    console.error(
+      "[instructor-application.controller] Error processing application:",
+      error.stack || error
+    );
+
     return res.status(500).json({
       success: false,
-      message: 'An error occurred while processing your application',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      message: "An error occurred while processing your application",
+      error: process.env.NODE_ENV === "development" ? error.stack || error.message : undefined,
     });
   }
 };
@@ -68,45 +121,44 @@ export const approveApplication = async (req, res) => {
   try {
     const { applicationId } = req.params;
     const { reviewerId, note } = req.body;
-    if (!applicationId || applicationId.trim() === '') {
+    if (!applicationId || applicationId.trim() === "") {
       return res.status(400).json({
         success: false,
-        message: 'Application ID is required'
+        message: "Application ID is required",
       });
     }
-    if (!reviewerId || reviewerId.trim() === '') {
+    if (!reviewerId || reviewerId.trim() === "") {
       return res.status(400).json({
         success: false,
-        message: 'Reviewer ID is required',
-        field: 'reviewerId'
+        message: "Reviewer ID is required",
+        field: "reviewerId",
       });
     }
     const result = await reviewUseCase.approve(applicationId, reviewerId, note);
     const dto = InstructorApplicationMapper.toDTO(result.entity, result.application);
     return res.status(200).json({
       success: true,
-      message: 'Application approved successfully',
-      data: dto
+      message: "Application approved successfully",
+      data: dto,
     });
-
   } catch (error) {
-    if (error.message === 'Application not found') {
+    if (error.message === "Application not found") {
       return res.status(404).json({
         success: false,
-        message: error.message
+        message: error.message,
       });
     }
-    if (error.message === 'Application has already been reviewed') {
+    if (error.message === "Application has already been reviewed") {
       return res.status(409).json({
         success: false,
         message: error.message,
-        hint: 'This application has already been approved or rejected'
+        hint: "This application has already been approved or rejected",
       });
     }
     return res.status(500).json({
       success: false,
-      message: 'An error occurred while approving the application',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      message: "An error occurred while approving the application",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   }
 };
@@ -114,53 +166,52 @@ export const rejectApplication = async (req, res) => {
   try {
     const { applicationId } = req.params;
     const { reviewerId, note } = req.body;
-    if (!applicationId || applicationId.trim() === '') {
+    if (!applicationId || applicationId.trim() === "") {
       return res.status(400).json({
         success: false,
-        message: 'Application ID is required'
+        message: "Application ID is required",
       });
     }
-    if (!reviewerId || reviewerId.trim() === '') {
+    if (!reviewerId || reviewerId.trim() === "") {
       return res.status(400).json({
         success: false,
-        message: 'Reviewer ID is required',
-        field: 'reviewerId'
+        message: "Reviewer ID is required",
+        field: "reviewerId",
       });
     }
-    if (!note || note.trim() === '') {
+    if (!note || note.trim() === "") {
       return res.status(400).json({
         success: false,
-        message: 'Rejection note is required',
-        field: 'note',
-        hint: 'Please provide a reason for rejection'
+        message: "Rejection note is required",
+        field: "note",
+        hint: "Please provide a reason for rejection",
       });
     }
     const result = await reviewUseCase.reject(applicationId, reviewerId, note);
     const dto = InstructorApplicationMapper.toDTO(result.entity, result.application);
     return res.status(200).json({
       success: true,
-      message: 'Application rejected successfully',
-      data: dto
+      message: "Application rejected successfully",
+      data: dto,
     });
-
   } catch (error) {
-    if (error.message === 'Application not found') {
+    if (error.message === "Application not found") {
       return res.status(404).json({
         success: false,
-        message: error.message
+        message: error.message,
       });
     }
-    if (error.message === 'Application has already been reviewed') {
+    if (error.message === "Application has already been reviewed") {
       return res.status(409).json({
         success: false,
         message: error.message,
-        hint: 'This application has already been approved or rejected'
+        hint: "This application has already been approved or rejected",
       });
     }
     return res.status(500).json({
       success: false,
-      message: 'An error occurred while rejecting the application',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      message: "An error occurred while rejecting the application",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   }
 };
@@ -168,12 +219,12 @@ export const getAllApplications = async (req, res) => {
   try {
     const { status, applicantId } = req.query;
     if (status) {
-      const validStatuses = ['PENDING', 'APPROVED', 'REJECTED'];
+      const validStatuses = ["PENDING", "APPROVED", "REJECTED"];
       if (!validStatuses.includes(status)) {
         return res.status(400).json({
           success: false,
-          message: 'Invalid status value',
-          validValues: validStatuses
+          message: "Invalid status value",
+          validValues: validStatuses,
         });
       }
     }
@@ -182,25 +233,24 @@ export const getAllApplications = async (req, res) => {
     return res.status(200).json({
       success: true,
       count: dto.length,
-      filters: { status: status || 'all', applicantId: applicantId || 'all' },
-      data: dto
+      filters: { status: status || "all", applicantId: applicantId || "all" },
+      data: dto,
     });
-
   } catch (error) {
     return res.status(500).json({
       success: false,
-      message: 'An error occurred while fetching applications',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      message: "An error occurred while fetching applications",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   }
 };
 export const getApplicationById = async (req, res) => {
   try {
     const { applicationId } = req.params;
-    if (!applicationId || applicationId.trim() === '') {
+    if (!applicationId || applicationId.trim() === "") {
       return res.status(400).json({
         success: false,
-        message: 'Application ID is required'
+        message: "Application ID is required",
       });
     }
     const application = await reviewUseCase.getById(applicationId);
@@ -208,21 +258,20 @@ export const getApplicationById = async (req, res) => {
     const dto = InstructorApplicationMapper.toDTO(entity, application);
     return res.status(200).json({
       success: true,
-      data: dto
+      data: dto,
     });
-
   } catch (error) {
-    if (error.message === 'Application not found') {
+    if (error.message === "Application not found") {
       return res.status(404).json({
         success: false,
         message: error.message,
-        applicationId: req.params.applicationId
+        applicationId: req.params.applicationId,
       });
     }
     return res.status(500).json({
       success: false,
-      message: 'An error occurred while fetching the application',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      message: "An error occurred while fetching the application",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   }
 };

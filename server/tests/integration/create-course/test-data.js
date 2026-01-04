@@ -1,3 +1,14 @@
+export const getInstructor = (roleId) => ({
+  id: "create course",
+  username: "create course",
+  email: "create course",
+  roles: {
+    create: {
+      roleId: roleId,
+    },
+  },
+});
+
 export const instructor = {
     id: "create course",
     username: "create course",
@@ -14,7 +25,7 @@ export const instructor = {
 }
 
 export const input = {
-    authId: "create course",
-    title: "create course",
-    instructorId: instructor.id,
-}
+  authId: "create course",
+  title: "create course",
+  instructorId: "create course",
+};

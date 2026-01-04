@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Container, Row, Col, Button, Form } from "react-bootstrap";
+import { Container, Row, Col, Button, Form, Modal } from "react-bootstrap";
 import { useNavigate, useLocation } from "react-router-dom";
 import { FiFolderPlus } from "react-icons/fi";
 import { MdDeleteOutline } from "react-icons/md";
@@ -9,34 +9,322 @@ import ReadingLessonContent from "./ReadingLessonContent";
 import AssignmentLessonContent from "./AssignmentLessonContent";
 import AssignmentGradingDetail from "./AssignmentGradingDetail";
 
-// import Header from "../../Header";
 import "./EditCourseView.css";
+import { toast } from "sonner";
+const API_URL = import.meta.env.VITE_API_URL;
 
 const EditCourseView = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const mainContentRef = useRef(null);
   const [assignmentActiveTab, setAssignmentActiveTab] = useState("edit");
+  const [showCourseSettingsModal, setShowCourseSettingsModal] = useState(false);
+
+  // Local form state for Course Settings modal
+  const [settingsForm, setSettingsForm] = useState({
+    title: "",
+    description: "",
+    category: "",
+    level: "",
+    durationWeeks: "",
+    durationDays: "",
+    durationHours: "",
+    organization: "",
+    language: "",
+    requirement: "",
+    avatar: null, // File object
+    thumbnail: "",
+    price: 0,
+  });
+  const [settingsPreviewUrl, setSettingsPreviewUrl] = useState(null);
+  const [settingsErrors, setSettingsErrors] = useState({});
+
+  // Helper lists (same as CreateCourseModal)
+  const categories = [
+    "Programming",
+    "Web Development",
+    "Mobile Development",
+    "Data Science",
+    "Machine Learning",
+    "Design",
+    "Business",
+    "Marketing",
+    "Language Learning",
+    "Photography",
+    "Music",
+    "Health & Fitness",
+  ];
+
+  const levels = ["Beginner", "Intermediate", "Advanced", "All Levels"];
+
+  const organizations = [
+    "Stanford University",
+    "MIT",
+    "Harvard University",
+    "University of California",
+    "Google",
+    "Microsoft",
+    "Amazon",
+    "Meta",
+    "IBM",
+    "Coursera",
+    "Udacity",
+    "edX",
+  ];
+
+  const languages = [
+    "Tiếng Việt",
+    "English",
+    "Spanish",
+    "French",
+    "German",
+    "Chinese",
+    "Japanese",
+    "Korean",
+  ];
+
+  // Helper to normalize media URLs from server (relative '/uploads/..' => absolute)
+  const normalizeMediaUrl = (url) => {
+    if (!url) return null;
+    try {
+      if (typeof url === "string" && url.startsWith("/")) {
+        const API_BASE_URL = import.meta.env.VITE_API_URL || "";
+        return `${API_BASE_URL}${url}`;
+      }
+      return url;
+    } catch (e) {
+      console.warn("normalizeMediaUrl failed", e);
+      return url;
+    }
+  };
 
   const [courseData, setCourseData] = useState({
     title: "Demo Course",
     instructor: "Instructor Name",
     modules: [],
   });
+  const [loading, setLoading] = useState(false);
 
-  // Load course data from navigation state
+  const handleCloseSettings = () => {
+    if (settingsPreviewUrl && settingsPreviewUrl.startsWith("blob:")) {
+      URL.revokeObjectURL(settingsPreviewUrl);
+    }
+    setSettingsPreviewUrl(null);
+    setSettingsErrors({});
+    setShowCourseSettingsModal(false);
+  };
+
+  const fetchCourseDetails = async (courseId) => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem("accessToken");
+      const userStr = localStorage.getItem("user");
+      const user = JSON.parse(userStr);
+
+      // Initialize settings form when we have course data (when called from fetch)
+      const initSettingsFromCourse = (course) => {
+        // Prepare a snapshot to set and log for debugging
+        const snapshot = {
+          title: course.title || "",
+          description: course.description || "",
+          category: course.category || "",
+          level: course.level || "",
+          durationWeeks: course.durationWeeks || course.duration?.weeks || "",
+          durationDays: course.durationDays || course.duration?.days || "",
+          durationHours: course.durationHours || course.duration?.hours || "",
+          organization: course.organization || "",
+          language: course.language || "",
+          requirement: course.requirement || "",
+          thumbnail: course.thumbnail || course.image || course.coverImage || "",
+          price: course.price || 0,
+        };
+
+        console.log("[EditCourseView] initSettingsFromCourse - course: ", course);
+        console.log("[EditCourseView] initSettingsFromCourse - snapshot: ", snapshot);
+
+        setSettingsForm(snapshot);
+
+        // set preview if thumbnail available (normalize remote path)
+        const thumb = snapshot.thumbnail || null;
+        if (thumb) {
+          const norm = normalizeMediaUrl(thumb);
+          console.log("[EditCourseView] initSettingsFromCourse - preview url:", norm);
+          setSettingsPreviewUrl(norm);
+        } else {
+          setSettingsPreviewUrl(null);
+        }
+      };
+
+      // Fetch course materials
+      const materialsResponse = await fetch(`${API_URL}/courses/${courseId}/materials`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const materialsResult = await materialsResponse.json();
+
+      console.log("========== RAW MATERIALS RESPONSE (EditCourseView) ==========");
+      console.log("Full response:", JSON.stringify(materialsResult, null, 2));
+      console.log("=============================================================");
+
+      if (!materialsResponse.ok) {
+        throw new Error(materialsResult.message || "Failed to load course materials");
+      }
+
+      // Fetch course details
+      const courseResponse = await fetch(`${API_URL}/courses/${courseId}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const courseResult = await courseResponse.json();
+
+      if (!courseResponse.ok) {
+        throw new Error("Failed to load course details");
+      }
+
+      const course = courseResult.data || courseResult;
+      const materials = materialsResult.data;
+
+      // Normalize modules and lessons
+      const normalizedModules = (materials.modules || []).map((m) => ({
+        id: m.id,
+        title: m.title,
+        position: m.order ?? m.position,
+        lessons: (m.lessons || []).map((l) => {
+          // Map content type
+          const lessonType = mapContentTypeToUI(l.type || l.contentType);
+
+          // Convert duration to MM:SS format
+          const durationSec = l.duration || l.durationSec || 600;
+          const duration = `${Math.floor(durationSec / 60)}:${String(durationSec % 60).padStart(2, "0")}`;
+
+          const lesson = {
+            id: l.id,
+            title: l.title,
+            type: lessonType,
+            // Start with sensible defaults; for Reading we will parse content into description + readingContent
+            description: "",
+            duration: duration,
+            isCompleted: l.isCompleted || false,
+          };
+
+          // Handle VIDEO type
+          if (lessonType === "Video") {
+            if (l.mediaUrl) {
+              lesson.videoUrl = l.mediaUrl;
+            }
+            // ✅ FIX: Load description from content field for video lessons
+            if (l.content) {
+              lesson.description = l.content;
+            }
+          }
+
+          // Handle READING type - split persisted content into short description (first paragraph) and body
+          if (lessonType === "Reading") {
+            if (l.content) {
+              // split on double newlines (paragraph break)
+              const parts = String(l.content).split(/\n{2,}/);
+              lesson.description = l.description || parts[0] || "";
+              lesson.readingContent =
+                parts.length > 1 ? parts.slice(1).join("\n\n") : parts[0] || "";
+            } else {
+              // fallback to explicit description field if present
+              lesson.description = l.description || "";
+              lesson.readingContent = "";
+            }
+          }
+
+          // Handle ASSIGNMENT type - use nested assignment data if available
+          if (lessonType === "Assignment") {
+            lesson.assignmentId = l.assignmentId;
+
+            // Use nested assignment data from API response
+            if (l.assignment) {
+              const assignment = l.assignment;
+              lesson.description = assignment.description || "";
+              lesson.maxPoints = assignment.maxPoints || 100;
+              lesson.maxScore = assignment.maxPoints || 100;
+
+              // Map dueDate
+              if (assignment.dueDate) {
+                const dueDateTime = new Date(assignment.dueDate);
+                lesson.dueDate = dueDateTime.toISOString().split("T")[0]; // YYYY-MM-DD
+                lesson.dueTime = dueDateTime.toTimeString().slice(0, 5); // HH:MM
+              }
+            }
+          }
+
+          // Include persisted lesson resources returned by /courses/:id/materials
+          lesson.lessonResources = (l.lessonResources || []).map((r) => ({
+            id: r.id,
+            lessonId: r.lessonId,
+            filename: r.filename,
+            mimeType: r.mimeType,
+          }));
+
+          return lesson;
+        }),
+      }));
+
+      setCourseData({
+        id: course.id,
+        title: course.title || "Untitled Course",
+        description: course.description || course.shortDesc || "",
+        instructor: course.instructor?.name || course.instructor?.fullName || "Instructor Name",
+        image: course.coverImage || course.thumbnail || course.image || "",
+        coverImage: course.coverImage || course.thumbnail || course.image || "",
+        thumbnail: course.thumbnail || course.image || course.coverImage || "",
+        status: course.published ? "published" : "draft",
+        modules: normalizedModules,
+        level: course.level || "",
+        language: course.language,
+        price: course.price,
+        rating: course.rating,
+        category: course.category || null,
+        organization: course.organization || null,
+        requirement: course.requirement || null,
+        durationWeeks: course.durationWeeks ?? course.duration?.weeks ?? null,
+        durationDays: course.durationDays ?? course.duration?.days ?? null,
+        durationHours: course.durationHours ?? course.duration?.hours ?? null,
+        enrollmentCount: course.enrolledStudents || course.enrollmentCount || course.students || 0,
+      });
+
+      // initialize settings form from fetched course so modal shows full info
+      initSettingsFromCourse(course);
+    } catch (error) {
+      console.error("Error fetching course:", error);
+      toast.error("Failed to load course details: " + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+  // Load course data from navigation state or fetch from API
   useEffect(() => {
     if (location.state?.courseData) {
       const course = location.state.courseData;
-      setCourseData({
-        id: course.id,
-        title: course.title,
-        description: course.description,
-        instructor: "Instructor Name", // You can get this from context/auth
-        image: course.image,
-        status: course.status,
-        modules: course.modules || [],
-      });
+
+      // If we have a course ID, fetch full details from API
+      if (course.id) {
+        fetchCourseDetails(course.id);
+      } else {
+        // Fallback: use data from navigation state
+        setCourseData({
+          id: course.id,
+          title: course.title,
+          description: course.description,
+          instructor: "Instructor Name",
+          image: course.image,
+          status: course.status,
+          modules: course.modules || [],
+        });
+      }
     }
   }, [location.state]);
 
@@ -51,6 +339,24 @@ const EditCourseView = () => {
     description: "",
     files: [],
   });
+
+  // Map between backend contentType values and UI labels
+  const mapContentTypeToUI = (contentType) => {
+    if (!contentType) return "Video";
+    const ct = String(contentType).toLowerCase();
+    if (ct === "video") return "Video";
+    if (ct === "article") return "Reading";
+    if (ct === "file" || ct === "assignment") return "Assignment";
+    return ct.charAt(0).toUpperCase() + ct.slice(1);
+  };
+
+  const mapUIToContentType = (uiType) => {
+    if (!uiType) return "video";
+    if (uiType === "Video") return "video";
+    if (uiType === "Reading") return "article";
+    if (uiType === "Assignment") return "assignment";
+    return String(uiType).toLowerCase();
+  };
 
   // Add new module
   const handleAddModule = () => {
@@ -97,6 +403,14 @@ const EditCourseView = () => {
     const module = courseData.modules.find((m) => m.id === moduleId);
     const lesson = module?.lessons.find((l) => l.id === lessonId);
     if (lesson) {
+      console.log(
+        "Selecting lesson:",
+        lesson.title,
+        "videoUrl:",
+        lesson.videoUrl,
+        "mediaUrl:",
+        lesson.mediaUrl
+      );
       setSelectedLesson({ moduleId, lessonId });
       setLessonForm(lesson);
       if (lesson.type === "Assignment") {
@@ -107,6 +421,32 @@ const EditCourseView = () => {
 
   // Update lesson form
   const handleLessonFormChange = (field, value) => {
+    // Validate dueDate for Assignment lessons - must be in the future
+    if (field === "dueDate" && value) {
+      const selectedDate = new Date(value);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      if (selectedDate < today) {
+        toast.error("Due date must be in the future");
+        return;
+      }
+    }
+
+    // Validate combined dueDate and dueTime
+    if (field === "dueTime" && value) {
+      const dueDate = lessonForm.dueDate;
+      if (dueDate) {
+        const selectedDateTime = new Date(dueDate + "T" + value);
+        const now = new Date();
+
+        if (selectedDateTime <= now) {
+          toast.error("Due date and time must be in the future");
+          return;
+        }
+      }
+    }
+
     setLessonForm((prev) => {
       let updatedForm = { ...prev, [field]: value };
 
@@ -217,19 +557,49 @@ const EditCourseView = () => {
 
   // Delete module
   const handleDeleteModule = (moduleId) => {
+    // Find the module to check if it contains any assignments
+    const module = courseData.modules.find((m) => m.id === moduleId);
+    const hasAssignment = module?.lessons?.some(
+      (lesson) => lesson.type === "Assignment" || lesson.assignmentId
+    );
+
+    // Prevent deletion of modules containing assignment lessons
+    if (hasAssignment) {
+      toast.error(
+        "Cannot delete module containing assignment lessons. Assignment lessons are protected and may have student submissions."
+      );
+      return;
+    }
+
+    // Check if this is a persisted module (has a real UUID from DB, not temp ID)
+    const isPersistedModule = moduleId && !moduleId.startsWith("module-");
+
+    if (isPersistedModule) {
+      // Prevent deletion of any persisted module to avoid foreign key constraints
+      toast.error(
+        "Cannot delete saved modules. Saved modules may have student enrollments or progress tracking and cannot be deleted."
+      );
+      return;
+    }
+
+    // Check if module has any persisted lessons
+    const hasPersistedLessons = module?.lessons?.some(
+      (lesson) => lesson.id && !lesson.id.startsWith("lesson-")
+    );
+
+    if (hasPersistedLessons) {
+      if (
+        !confirm(
+          `Are you sure you want to delete module "${module.title}" and all its lessons? This action cannot be undone.`
+        )
+      ) {
+        return;
+      }
+    }
+
     setCourseData((prev) => {
-      const updatedModules = prev.modules
-        .filter((m) => m.id !== moduleId)
-        .map((module, index) => {
-          // Reorder only if not custom named
-          if (!module.isCustomName) {
-            return {
-              ...module,
-              title: `New Module ${index + 1}`,
-            };
-          }
-          return module;
-        });
+      // Simply filter out the deleted module without renaming others
+      const updatedModules = prev.modules.filter((m) => m.id !== moduleId);
 
       return {
         ...prev,
@@ -251,24 +621,38 @@ const EditCourseView = () => {
 
   // Delete lesson
   const handleDeleteLesson = (moduleId, lessonId) => {
+    // Find the lesson to check if it's an assignment
+    const module = courseData.modules.find((m) => m.id === moduleId);
+    const lesson = module?.lessons.find((l) => l.id === lessonId);
+
+    // Prevent deletion of assignment lessons or lessons with assignmentId
+    if (lesson?.type === "Assignment" || lesson?.assignmentId) {
+      toast.error(
+        "Cannot delete assignment lessons. Assignment lessons are protected and may have student submissions."
+      );
+      return;
+    }
+
+    // Check if this is a persisted lesson (has a real UUID from DB)
+    // New lessons have temp IDs like "lesson-1234567890"
+    const isPersistedLesson = lesson?.id && !lesson.id.startsWith("lesson-");
+
+    if (isPersistedLesson) {
+      // Prevent deletion of any persisted lesson to avoid foreign key constraints
+      toast.error(
+        "Cannot delete saved lessons. Saved lessons may have student progress tracking and cannot be deleted."
+      );
+      return;
+    }
+
     setCourseData((prev) => ({
       ...prev,
       modules: prev.modules.map((module) =>
         module.id === moduleId
           ? {
               ...module,
-              lessons: module.lessons
-                .filter((l) => l.id !== lessonId)
-                .map((lesson, index) => {
-                  // Reorder only if not custom named
-                  if (!lesson.isCustomName) {
-                    return {
-                      ...lesson,
-                      title: `New Lesson ${index + 1}`,
-                    };
-                  }
-                  return lesson;
-                }),
+              // Simply filter out the deleted lesson without renaming others
+              lessons: module.lessons.filter((l) => l.id !== lessonId),
             }
           : module
       ),
@@ -334,15 +718,65 @@ const EditCourseView = () => {
   };
 
   // Handle file upload
+  const lessonFilesRef = useRef({}); // key = lessonId, value = array of File objects
+
   const handleFileUpload = (e) => {
     const files = Array.from(e.target.files);
-    handleLessonFormChange("files", [...lessonForm.files, ...files]);
+    if (!lessonFilesRef.current[selectedLesson.lessonId]) {
+      lessonFilesRef.current[selectedLesson.lessonId] = [];
+    }
+    lessonFilesRef.current[selectedLesson.lessonId].push(...files);
+
+    // Update state with metadata only (for UI)
+    handleLessonFormChange("files", [
+      ...(lessonForm.files || []),
+      ...files.map((file) => ({
+        filename: file.name,
+        mimeType: file.type,
+        id: undefined,
+        lessonId: selectedLesson.lessonId,
+      })),
+    ]);
   };
 
   // Remove file
   const handleRemoveFile = (index) => {
     const newFiles = lessonForm.files.filter((_, i) => i !== index);
     handleLessonFormChange("files", newFiles);
+  };
+
+  const uploadLessonFiles = async (lessonId, files) => {
+    const token = localStorage.getItem("accessToken");
+    const formData = new FormData();
+
+    files.forEach((file) => {
+      formData.append("files", file, file.name);
+    });
+
+    const response = await fetch(`${API_URL}/lessons/${lessonId}/resources`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: formData,
+    });
+
+    const json = await response.json().catch(() => ({}));
+
+    console.log("[uploadLessonFiles] server response:", json);
+
+    if (!response.ok) {
+      const msg = json.data || json.message || json.error || "Failed to upload files";
+      throw new Error(msg);
+    }
+
+    // JSend success wrapper: { status: 'success', data: [resources...] }
+    // Normalize to return the array of created resources
+    const resources = json?.data || json || [];
+    console.log(
+      `[uploadLessonFiles] uploaded ${resources.length} resources for lesson ${lessonId}`
+    );
+    return resources; // ensure an array
   };
 
   // Get current module and lesson info for navigation
@@ -403,7 +837,7 @@ const EditCourseView = () => {
   const hasPreviousLesson = () => {
     if (!selectedLesson) return false;
     const info = getCurrentModuleLesson();
-    if (!info) return false;
+    if (!info || !info.module) return false;
     const { lessonIndex } = info;
     const moduleIndex = courseData.modules.findIndex((m) => m.id === selectedLesson.moduleId);
     return lessonIndex > 0 || moduleIndex > 0;
@@ -412,15 +846,578 @@ const EditCourseView = () => {
   const hasNextLesson = () => {
     if (!selectedLesson) return false;
     const info = getCurrentModuleLesson();
-    if (!info) return false;
+    if (!info || !info.module || !info.module.lessons) return false;
     const { module, lessonIndex } = info;
     const moduleIndex = courseData.modules.findIndex((m) => m.id === selectedLesson.moduleId);
     return lessonIndex < module.lessons.length - 1 || moduleIndex < courseData.modules.length - 1;
   };
 
+  const handleSaveCourse = async (e) => {
+    e.preventDefault();
+    try {
+      const token = localStorage.getItem("accessToken");
+      const userStr = localStorage.getItem("user");
+
+      if (!token || !userStr) {
+        toast.error("Please login first to update course.");
+        return;
+      }
+
+      const user = JSON.parse(userStr);
+      const authId = user.id;
+
+      // Deep snapshot for logging
+      const course = JSON.parse(JSON.stringify(courseData));
+
+      // ✅ Validate assignment lessons have required deadline
+      const assignmentLessonsWithoutDeadline = [];
+      course.modules.forEach((module) => {
+        (module.lessons || []).forEach((lesson) => {
+          if (
+            (lesson.type === "Assignment" || lesson.contentType === "assignment") &&
+            (!lesson.dueDate || !lesson.dueTime)
+          ) {
+            assignmentLessonsWithoutDeadline.push({
+              moduleTitle: module.title,
+              lessonTitle: lesson.title,
+            });
+          }
+        });
+      });
+
+      if (assignmentLessonsWithoutDeadline.length > 0) {
+        const errorMessages = assignmentLessonsWithoutDeadline
+          .map((item) => `"${item.lessonTitle}" in module "${item.moduleTitle}"`)
+          .join(", ");
+        toast.error(`Assignment lessons must have a deadline: ${errorMessages}`);
+        return;
+      }
+
+      // ✅ CRITICAL FIX: Fetch current course materials from server to ensure we don't accidentally delete assignment lessons
+      // This prevents foreign key constraint errors when backend tries to delete lessons with assignments
+      try {
+        console.log("[PROTECTION] Fetching current course materials from server...");
+        console.log("[PROTECTION] Course ID:", courseData.id);
+        console.log("[PROTECTION] API URL:", `${API_URL}/courses/${courseData.id}/materials`);
+
+        const serverCourseResp = await fetch(`${API_URL}/courses/${courseData.id}/materials`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        console.log(
+          "[PROTECTION] Fetch response status:",
+          serverCourseResp.status,
+          serverCourseResp.ok
+        );
+
+        if (serverCourseResp.ok) {
+          const serverResult = await serverCourseResp.json();
+          console.log("[PROTECTION] Server result:", serverResult);
+
+          const serverModules = serverResult.data?.modules || serverResult.modules || [];
+
+          console.log("[PROTECTION] Server modules count:", serverModules.length);
+          console.log("[PROTECTION] Current course modules count:", course.modules.length);
+
+          // Find all assignment lessons in server data
+          const assignmentLessonsInServer = [];
+          serverModules.forEach((sModule) => {
+            (sModule.lessons || []).forEach((sLesson) => {
+              if (
+                sLesson.assignmentId ||
+                sLesson.type === "Assignment" ||
+                sLesson.contentType === "assignment"
+              ) {
+                assignmentLessonsInServer.push({
+                  moduleId: sModule.id,
+                  moduleTitle: sModule.title,
+                  lesson: sLesson,
+                });
+              }
+            });
+          });
+
+          console.log(
+            "[PROTECTION] Found assignment lessons in server:",
+            assignmentLessonsInServer.length
+          );
+          assignmentLessonsInServer.forEach((item) => {
+            console.log(
+              `  - ${item.lesson.title} (ID: ${item.lesson.id}) in module ${item.moduleTitle}`
+            );
+          });
+
+          // Count assignment lessons in current course
+          let assignmentLessonsInCurrent = 0;
+          course.modules.forEach((m) => {
+            (m.lessons || []).forEach((l) => {
+              if (l.assignmentId || l.type === "Assignment" || l.contentType === "assignment") {
+                assignmentLessonsInCurrent++;
+              }
+            });
+          });
+          console.log(
+            "[PROTECTION] Assignment lessons in current course:",
+            assignmentLessonsInCurrent
+          );
+
+          // Merge missing assignment lessons back into course payload
+          let restoredModules = 0;
+          let restoredLessons = 0;
+
+          assignmentLessonsInServer.forEach(({ moduleId, moduleTitle, lesson: serverLesson }) => {
+            // Find if this assignment lesson exists in current course data
+            const moduleInCourse = course.modules.find((m) => m.id === moduleId);
+            if (!moduleInCourse) {
+              // Module was deleted - restore it with the assignment lesson
+              console.warn(
+                `[PROTECTION] ⚠️ Restoring deleted module "${moduleTitle}" (${moduleId}) because it contains assignment lesson "${serverLesson.title}"`
+              );
+              const serverModule = serverModules.find((m) => m.id === moduleId);
+              if (serverModule) {
+                course.modules.push(JSON.parse(JSON.stringify(serverModule)));
+                restoredModules++;
+                toast.warning(
+                  `Module "${moduleTitle}" contains assignment and cannot be deleted. It has been restored.`
+                );
+              }
+            } else {
+              // Module exists - check if lesson exists
+              const lessonInModule = moduleInCourse.lessons.find((l) => l.id === serverLesson.id);
+              if (!lessonInModule) {
+                // Assignment lesson was deleted - restore it
+                console.warn(
+                  `[PROTECTION] ⚠️ Restoring deleted assignment lesson "${serverLesson.title}" (${serverLesson.id}) in module "${moduleTitle}"`
+                );
+                moduleInCourse.lessons.push(JSON.parse(JSON.stringify(serverLesson)));
+                restoredLessons++;
+                toast.warning(
+                  `Assignment lesson "${serverLesson.title}" cannot be deleted. It has been restored.`
+                );
+              }
+            }
+          });
+
+          console.log(
+            `[PROTECTION] ✅ Restored ${restoredModules} modules and ${restoredLessons} lessons`
+          );
+          console.log("[PROTECTION] ✅ Course payload validated and assignment lessons preserved");
+        } else {
+          const errorText = await serverCourseResp.text().catch(() => "");
+          console.warn(
+            "[PROTECTION] ⚠️ Failed to fetch server course materials:",
+            serverCourseResp.status,
+            errorText
+          );
+        }
+      } catch (err) {
+        console.error("[PROTECTION] ❌ Failed to validate course data:", err);
+        console.error("[PROTECTION] Error stack:", err.stack);
+        // Continue anyway - better to try save than to fail completely
+      }
+
+      // Upload any pending lesson files to temporary storage and attach fileIds to lessonResources
+      // This ensures lessonResources are present in the course payload so server can link files to real lesson IDs
+      for (const module of course.modules || []) {
+        for (const lesson of module.lessons || []) {
+          const realFiles = lessonFilesRef.current[lesson.id] || [];
+          if (realFiles.length > 0) {
+            try {
+              const fd = new FormData();
+              realFiles.forEach((f) => fd.append("files", f, f.name));
+
+              const uploadResp = await fetch(`${API_URL}/uploads/files`, {
+                method: "POST",
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                },
+                body: fd,
+              });
+
+              const uploadJson = await uploadResp.json().catch(() => ({}));
+              if (!uploadResp.ok) {
+                throw new Error(
+                  uploadJson.data || uploadJson.message || "Failed to upload temp files"
+                );
+              }
+
+              const uploadedFiles = uploadJson.data || uploadJson;
+              console.log(
+                "[handleSaveCourse] temp uploaded files for lesson",
+                lesson.id,
+                uploadedFiles
+              );
+
+              // Merge uploaded file metadata into lesson.lessonResources so PUT includes them
+              lesson.lessonResources = [
+                ...(lesson.lessonResources || []),
+                ...(uploadedFiles || []).map((u) => ({
+                  // No DB id yet — staged upload referenced by fileId
+                  id: null,
+                  lessonId: lesson.id,
+                  filename: u.filename,
+                  mimeType: u.mimeType,
+                  fileId: u.fileId,
+                })),
+              ];
+
+              // Update UI immediately so staged uploads show in the editor
+              setCourseData((prev) => ({
+                ...prev,
+                modules: prev.modules.map((m) =>
+                  m.id === module.id
+                    ? {
+                        ...m,
+                        lessons: m.lessons.map((l) =>
+                          l.id === lesson.id
+                            ? {
+                                ...l,
+                                lessonResources: [
+                                  ...(l.lessonResources || []),
+                                  ...(uploadedFiles || []).map((u) => ({
+                                    id: null,
+                                    lessonId: lesson.id,
+                                    filename: u.filename,
+                                    mimeType: u.mimeType,
+                                    fileId: u.fileId,
+                                  })),
+                                ],
+                              }
+                            : l
+                        ),
+                      }
+                    : m
+                ),
+              }));
+
+              // ✅ Update lessonForm to show staged uploads immediately
+              if (selectedLesson && selectedLesson.lessonId === lesson.id) {
+                setLessonForm((prev) => ({
+                  ...prev,
+                  lessonResources: [
+                    ...(prev.lessonResources || []),
+                    ...(uploadedFiles || []).map((u) => ({
+                      id: null,
+                      lessonId: lesson.id,
+                      filename: u.filename,
+                      mimeType: u.mimeType,
+                      fileId: u.fileId,
+                    })),
+                  ],
+                  files: [], // Clear pending files since they're now staged
+                }));
+              }
+
+              // ✅ KHÔNG clear lessonFilesRef ở đây - đợi đến khi PUT thành công
+              // lessonFilesRef.current[lesson.id] = [];
+            } catch (err) {
+              console.error("Failed to upload temp files for lesson", lesson.id, err);
+              toast.error("Failed to upload lesson files: " + (err.message || err));
+            }
+          }
+        }
+      }
+
+      // Create Assignment resources for NEW assignment lessons only
+      // Existing assignments will be updated via the course update endpoint
+      for (const module of course.modules || []) {
+        for (const lesson of module.lessons || []) {
+          if (lesson.type === "Assignment" && !lesson.assignmentId) {
+            // build assignment payload
+            const assignmentPayload = {
+              courseId: course.id,
+              title: lesson.title || "Assignment",
+              description: lesson.description || lesson.content || "",
+              maxPoints: lesson.maxScore || lesson.maxPoints || 100,
+            };
+
+            // ✅ Only add dueDate if it exists (avoid sending undefined)
+            if (lesson.dueDate && lesson.dueTime) {
+              assignmentPayload.dueDate = new Date(
+                lesson.dueDate + "T" + lesson.dueTime
+              ).toISOString();
+            } else if (lesson.dueDate) {
+              assignmentPayload.dueDate = new Date(lesson.dueDate + "T23:59:59").toISOString();
+            }
+
+            // Create new assignment
+            console.log(
+              "Creating assignment for lesson",
+              lesson.id || lesson.title,
+              assignmentPayload
+            );
+
+            const resp = await fetch(`${API_URL}/assignments`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify(assignmentPayload),
+            });
+
+            const created = await resp.json();
+            if (!resp.ok) {
+              const err =
+                created?.data ||
+                created?.error?.message ||
+                created?.message ||
+                "Failed to create assignment";
+              throw new Error(err);
+            }
+
+            // Try to extract assignment id from common response shapes
+            const assignmentId =
+              created?.data?.id ||
+              created?.id ||
+              created?.assignment?.id ||
+              (created?.data?.assignment && created.data.assignment.id);
+            if (!assignmentId) {
+              console.warn("Assignment created but id not found in response:", created);
+            } else {
+              lesson.assignmentId = assignmentId;
+              // ensure lesson contentType set to 'assignment'
+              lesson.contentType = "assignment";
+            }
+          }
+        }
+      }
+
+      console.log("Save Course Debug:");
+      console.log("- User ID (authId):", authId);
+      console.log("- Course ID:", course.id);
+      console.log("- Full courseData snapshot:", course);
+
+      // Prepare modules data for backend - transform to match backend schema
+      const modulesData = course.modules.map((module, moduleIndex) => ({
+        id: module.id,
+        title: module.title,
+        position: moduleIndex,
+        lessons: (module.lessons || []).map((lesson, lessonIndex) => {
+          console.log("Processing lesson for save:", lesson.title, "Type:", lesson.type);
+          console.log("- videoUrl:", lesson.videoUrl);
+          console.log("- description:", lesson.description);
+          console.log("- readingContent:", lesson.readingContent);
+
+          // Determine mediaUrl based on lesson type
+          let mediaUrl = null;
+          if (lesson.type === "Video") {
+            // ✅ FIX: Always set mediaUrl for Video lessons (null to clear, URL to set)
+            mediaUrl = lesson.videoUrl || null;
+            console.log("- Setting mediaUrl for Video:", mediaUrl);
+          }
+
+          // ✅ FIX: Handle content for different lesson types
+          let content = "";
+
+          if (lesson.type === "Reading") {
+            // For reading lessons, combine short description and reading body into content so both persist
+            const desc = lesson.description ? String(lesson.description).trim() : "";
+            const body = lesson.readingContent ? String(lesson.readingContent).trim() : "";
+            if (desc && body) content = `${desc}\n\n${body}`;
+            else content = body || desc || "";
+            console.log(
+              "- Setting content for Reading (combined):",
+              (content || "").substring(0, 50)
+            );
+          } else if (lesson.type === "Video") {
+            // For video lessons, content is the description
+            content = lesson.description ? String(lesson.description).trim() : "";
+            console.log("- Setting content for Video:", (content || "").substring(0, 50));
+          } else {
+            // For other lesson types (Assignment, etc.)
+            content = lesson.description || lesson.content || "";
+          }
+
+          const lessonData = {
+            id: lesson.id,
+            title: lesson.title,
+            content: content,
+            mediaUrl: mediaUrl !== undefined ? mediaUrl : null, // ✅ Always send mediaUrl (null to clear)
+            contentType: mapUIToContentType(lesson.type) || "video",
+            assignmentId: lesson.assignmentId ? lesson.assignmentId : undefined,
+            durationSec: lesson.duration ? parseDurationToSeconds(lesson.duration) : null,
+            position: lessonIndex,
+            // ✅ CRITICAL FIX: Send ALL resources (existing + new) to prevent data loss
+            // Backend will merge/update accordingly
+            lessonResources: (lesson.lessonResources || []).map((r) => {
+              // Existing resource (already in DB)
+              if (r.id) {
+                return {
+                  id: r.id,
+                  filename: r.filename,
+                  mimeType: r.mimeType,
+                };
+              }
+              // New staged upload (has fileId but no id yet)
+              else if (r.fileId) {
+                return {
+                  id: null,
+                  filename: r.filename,
+                  mimeType: r.mimeType,
+                  fileId: r.fileId,
+                };
+              }
+              // Fallback
+              return r;
+            }),
+          };
+
+          // ✅ THÊM: Luôn gửi assignment fields cho lesson type Assignment
+          if (lesson.type === "Assignment") {
+            // ✅ CRITICAL: Send assignmentId so backend updates existing assignment instead of creating new
+            // This prevents loss of student submissions and instructor grades
+            if (lesson.assignmentId) {
+              lessonData.assignmentId = lesson.assignmentId;
+            }
+
+            // DueDate - only add if exists
+            if (lesson.dueDate) {
+              const dueTimeStr = lesson.dueTime || "23:59";
+              lessonData.dueDate = new Date(lesson.dueDate + "T" + dueTimeStr).toISOString();
+            }
+
+            // MaxPoints
+            lessonData.maxPoints = lesson.maxScore || lesson.maxPoints || 100;
+
+            // Include assignment description (so UpdateAssignmentUsecase receives it)
+            if (lesson.description) {
+              lessonData.description = lesson.description;
+            }
+          }
+
+          console.log("- Final lesson data:", lessonData);
+          return lessonData;
+        }),
+      }));
+
+      // Backend now accepts: authId, id, title, description, price, level, language, coverImage, modules
+      const payload = {
+        authId,
+        id: course.id,
+        title: course.title || "Untitled Course",
+        description: course.description || "",
+        price: typeof course.price === "number" ? course.price : Number(course.price) || 0,
+        level: course.level || null,
+        language: course.language || null,
+        coverImage: course.thumbnail || course.image || course.coverImage || null,
+        category: course.category || null,
+        organization: course.organization || null,
+        requirement: course.requirement || null,
+        durationWeeks: course.durationWeeks || course.duration?.weeks || null,
+        durationDays: course.durationDays || course.duration?.days || null,
+        durationHours: course.durationHours || course.duration?.hours || null,
+        modules: modulesData,
+      };
+
+      console.log("Sending payload:", payload);
+
+      const response = await fetch(`${API_URL}/courses/${courseData.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await response.json();
+      console.log("Save response:", data);
+
+      if (!response.ok) {
+        const errorMessage =
+          data.data || data.error?.message || data.message || "Update course failed";
+        throw new Error(errorMessage);
+      }
+
+      // ✅ Files already uploaded via temp upload and linked in PUT request
+      // No need to upload again - just clear the refs
+      for (const module of course.modules || []) {
+        for (const lesson of module.lessons || []) {
+          lessonFilesRef.current[lesson.id] = [];
+        }
+      }
+
+      // ✅ Clear lessonForm files if any lesson is selected
+      if (selectedLesson) {
+        setLessonForm((prev) => ({ ...prev, files: [] }));
+      }
+
+      toast.success("Course updated successfully!");
+
+      // ✅ Fetch lại course data để cập nhật UI với resources mới được persist
+      await fetchCourseDetails(course.id);
+
+      // signal parent page to refresh course list
+      try {
+        localStorage.setItem("courses_needs_refresh", "1");
+      } catch (e) {
+        /* ignore */
+        console.log(e);
+      }
+      // ✅ KHÔNG navigate(-1) ngay - để user thấy files đã được lưu
+      // Nếu muốn tự động quay lại, có thể bật dòng dưới:
+      // navigate(-1);
+    } catch (error) {
+      console.error("Error saving course:", error);
+      toast.error("Failed to update course: " + error.message);
+    }
+  };
+
+  // Helper function to parse duration string to seconds
+  const parseDurationToSeconds = (duration) => {
+    if (typeof duration === "number") return duration;
+    if (!duration || typeof duration !== "string") return null;
+
+    const parts = duration.split(":");
+    if (parts.length === 2) {
+      // Format: MM:SS
+      return parseInt(parts[0]) * 60 + parseInt(parts[1]);
+    } else if (parts.length === 3) {
+      // Format: HH:MM:SS
+      return parseInt(parts[0]) * 3600 + parseInt(parts[1]) * 60 + parseInt(parts[2]);
+    }
+    return null;
+  };
+
   return (
     <>
       <div style={{ minHeight: "100vh", background: "#f8f9fa" }}>
+        {/* Loading State */}
+        {loading && (
+          <div
+            style={{
+              position: "fixed",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: "rgba(255, 255, 255, 0.9)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: 9999,
+            }}
+          >
+            <div className="text-center">
+              <div
+                className="spinner-border text-primary"
+                role="status"
+                style={{ width: "3rem", height: "3rem" }}
+              >
+                <span className="visually-hidden">Loading...</span>
+              </div>
+              <div className="mt-3">
+                <h5 style={{ color: "#6c757d" }}>Loading course details...</h5>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Header */}
         <div className="edit-course-header">
           <Container fluid>
@@ -437,54 +1434,57 @@ const EditCourseView = () => {
                 </div>
               </Col>
               <Col md={6}>
-                {/* <div
+                <div
                   className="d-flex justify-content-end align-items-center"
                   style={{ gap: "0.75rem" }}
                 >
-                  <span style={{ fontSize: "0.9rem", color: "#333" }}>Progress</span>
-                  <span style={{ fontSize: "0.9rem", color: "#333" }}>
-                    {Math.round(
-                      (courseData.modules.reduce(
-                        (acc, mod) => acc + mod.lessons.filter((l) => l.isCompleted).length,
-                        0
-                      ) /
-                        Math.max(
-                          courseData.modules.reduce((acc, mod) => acc + mod.lessons.length, 0),
-                          1
-                        )) *
-                        100
-                    )}
-                    %
-                  </span>
-                  <div
+                  <button
+                    className="btn btn-outline-primary"
+                    onClick={() => {
+                      // initialize settings with latest course data
+                      const snapshot = {
+                        title: courseData.title || "",
+                        description: courseData.description || "",
+                        category: courseData.category || "",
+                        level: courseData.level || "",
+                        durationWeeks: courseData.durationWeeks || courseData.duration?.weeks || "",
+                        durationDays: courseData.durationDays || courseData.duration?.days || "",
+                        durationHours: courseData.durationHours || courseData.duration?.hours || "",
+                        organization: courseData.organization || "",
+                        language: courseData.language || "",
+                        requirement: courseData.requirement || "",
+                        thumbnail:
+                          courseData.thumbnail || courseData.image || courseData.coverImage || "",
+                        price: courseData.price || 0,
+                      };
+
+                      console.log(
+                        "[EditCourseView] Opening Course Settings - courseData:",
+                        courseData
+                      );
+                      console.log("[EditCourseView] Opening Course Settings - snapshot:", snapshot);
+
+                      setSettingsForm(snapshot);
+
+                      const preview = normalizeMediaUrl(snapshot.thumbnail || null);
+                      console.log("[EditCourseView] Opening Course Settings - preview:", preview);
+                      setSettingsPreviewUrl(preview || null);
+
+                      setShowCourseSettingsModal(true);
+                    }}
                     style={{
-                      width: "120px",
-                      height: "8px",
-                      backgroundColor: "#e0e0e0",
-                      borderRadius: "10px",
-                      overflow: "hidden",
+                      padding: "0.5rem 1rem",
+                      borderRadius: "0.375rem",
+                      fontWeight: "500",
                     }}
                   >
-                    <div
-                      style={{
-                        height: "100%",
-                        backgroundColor: "#2196f3",
-                        transition: "width 0.3s ease",
-                        width: `${Math.round(
-                          (courseData.modules.reduce(
-                            (acc, mod) => acc + mod.lessons.filter((l) => l.isCompleted).length,
-                            0
-                          ) /
-                            Math.max(
-                              courseData.modules.reduce((acc, mod) => acc + mod.lessons.length, 0),
-                              1
-                            )) *
-                            100
-                        )}%`,
-                      }}
-                    />
-                  </div>
-                </div> */}
+                    <i className="bi bi-gear me-1"></i>
+                    Course Settings
+                  </button>
+                  <button className="edit-save-btn" onClick={(e) => handleSaveCourse(e)}>
+                    Save
+                  </button>
+                </div>
               </Col>
             </Row>
           </Container>
@@ -541,7 +1541,31 @@ const EditCourseView = () => {
                       <button
                         className="edit-delete-icon"
                         onClick={() => handleDeleteModule(module.id)}
-                        title="Delete module"
+                        title={
+                          module.lessons?.some((l) => l.type === "Assignment" || l.assignmentId)
+                            ? "Cannot delete module containing assignments"
+                            : !module.id.startsWith("module-")
+                              ? "Cannot delete saved modules"
+                              : "Delete module"
+                        }
+                        disabled={
+                          module.lessons?.some((l) => l.type === "Assignment" || l.assignmentId) ||
+                          !module.id.startsWith("module-")
+                        }
+                        style={{
+                          opacity:
+                            module.lessons?.some(
+                              (l) => l.type === "Assignment" || l.assignmentId
+                            ) || !module.id.startsWith("module-")
+                              ? 0.5
+                              : 1,
+                          cursor:
+                            module.lessons?.some(
+                              (l) => l.type === "Assignment" || l.assignmentId
+                            ) || !module.id.startsWith("module-")
+                              ? "not-allowed"
+                              : "pointer",
+                        }}
                       >
                         <MdDeleteOutline />
                       </button>
@@ -613,7 +1637,32 @@ const EditCourseView = () => {
                             e.stopPropagation();
                             handleDeleteLesson(module.id, lesson.id);
                           }}
-                          title="Delete lesson"
+                          title={
+                            lesson.type === "Assignment" || lesson.assignmentId
+                              ? "Cannot delete assignment lessons"
+                              : !lesson.id.startsWith("lesson-")
+                                ? "Cannot delete saved lessons"
+                                : "Delete lesson"
+                          }
+                          disabled={
+                            lesson.type === "Assignment" ||
+                            lesson.assignmentId ||
+                            !lesson.id.startsWith("lesson-")
+                          }
+                          style={{
+                            opacity:
+                              lesson.type === "Assignment" ||
+                              lesson.assignmentId ||
+                              !lesson.id.startsWith("lesson-")
+                                ? 0.5
+                                : 1,
+                            cursor:
+                              lesson.type === "Assignment" ||
+                              lesson.assignmentId ||
+                              !lesson.id.startsWith("lesson-")
+                                ? "not-allowed"
+                                : "pointer",
+                          }}
                         >
                           <MdDeleteOutline />
                         </button>
@@ -940,6 +1989,501 @@ const EditCourseView = () => {
           </Col>
         </Row>
       </div>
+
+      {/* Course Settings Modal */}
+      <Modal show={showCourseSettingsModal} onHide={handleCloseSettings} size="lg" centered>
+        <Modal.Header closeButton>
+          <Modal.Title>Course Settings</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Form>
+            {/* Top cover preview and edit controls */}
+            <div className="mb-4 text-center">
+              <div
+                className="position-relative"
+                style={{
+                  height: 180,
+                  borderRadius: 8,
+                  overflow: "hidden",
+                  backgroundColor: "#f6f8fa",
+                }}
+              >
+                {settingsPreviewUrl ? (
+                  <img
+                    src={settingsPreviewUrl}
+                    alt="cover preview"
+                    style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+                  />
+                ) : (
+                  <div
+                    className="d-flex flex-column align-items-center justify-content-center text-muted"
+                    style={{ height: "100%" }}
+                    onClick={() => document.getElementById("settings-avatar-upload").click()}
+                  >
+                    <div style={{ marginTop: 8 }}>Course cover image</div>
+                  </div>
+                )}
+
+                <div style={{ position: "absolute", top: 10, right: 10, display: "flex", gap: 8 }}>
+                  {settingsPreviewUrl && (
+                    <Button
+                      variant="light"
+                      size="sm"
+                      onClick={() => {
+                        if (settingsPreviewUrl && settingsPreviewUrl.startsWith("blob:")) {
+                          URL.revokeObjectURL(settingsPreviewUrl);
+                        }
+                        setSettingsPreviewUrl(null);
+                        setSettingsForm((prev) => ({ ...prev, avatar: null, thumbnail: "" }));
+                      }}
+                    >
+                      Remove
+                    </Button>
+                  )}
+                  <Button
+                    variant="light"
+                    size="sm"
+                    onClick={() => document.getElementById("settings-avatar-upload").click()}
+                  >
+                    Edit
+                  </Button>
+                </div>
+
+                <input
+                  id="settings-avatar-upload"
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                      if (settingsPreviewUrl && settingsPreviewUrl.startsWith("blob:")) {
+                        URL.revokeObjectURL(settingsPreviewUrl);
+                      }
+                      const u = URL.createObjectURL(file);
+                      setSettingsPreviewUrl(u);
+                      setSettingsForm((prev) => ({ ...prev, avatar: file, thumbnail: "" }));
+                    }
+                  }}
+                  style={{ display: "none" }}
+                />
+              </div>
+            </div>
+
+            <Form.Group className="mb-3">
+              <Form.Label>Course Title *</Form.Label>
+              <Form.Control
+                className="edit-course-modal-form-control"
+                type="text"
+                placeholder="Enter course title"
+                value={settingsForm.title || ""}
+                onChange={(e) => setSettingsForm({ ...settingsForm, title: e.target.value })}
+                isInvalid={!!settingsErrors.title}
+              />
+              <Form.Control.Feedback type="invalid">{settingsErrors.title}</Form.Control.Feedback>
+            </Form.Group>
+
+            <Form.Group className="mb-3">
+              <Form.Label>Description</Form.Label>
+              <Form.Control
+                className="edit-course-modal-form-control"
+                as="textarea"
+                rows={4}
+                placeholder="Enter course description"
+                value={settingsForm.description || ""}
+                onChange={(e) => setSettingsForm({ ...settingsForm, description: e.target.value })}
+              />
+            </Form.Group>
+
+            <Row>
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Category</Form.Label>
+                  <Form.Select
+                    value={settingsForm.category || ""}
+                    onChange={(e) => setSettingsForm({ ...settingsForm, category: e.target.value })}
+                    className="edit-course-modal-form-control"
+                  >
+                    <option value="">Choose category</option>
+                    {categories.map((c) => (
+                      <option key={c} value={c}>
+                        {c}
+                      </option>
+                    ))}
+                  </Form.Select>
+                </Form.Group>
+
+                <Form.Group className="mb-3">
+                  <Form.Label>Duration</Form.Label>
+                  <Row>
+                    <Col xs={4}>
+                      <Form.Control
+                        className="edit-course-modal-form-control"
+                        type="number"
+                        placeholder="weeks"
+                        min="0"
+                        value={settingsForm.durationWeeks || ""}
+                        onChange={(e) =>
+                          setSettingsForm({ ...settingsForm, durationWeeks: e.target.value })
+                        }
+                      />
+                    </Col>
+                    <Col xs={4}>
+                      <Form.Control
+                        className="edit-course-modal-form-control"
+                        type="number"
+                        placeholder="days"
+                        min="0"
+                        value={settingsForm.durationDays || ""}
+                        onChange={(e) =>
+                          setSettingsForm({ ...settingsForm, durationDays: e.target.value })
+                        }
+                      />
+                    </Col>
+                    <Col xs={4}>
+                      <Form.Control
+                        className="edit-course-modal-form-control"
+                        type="number"
+                        placeholder="hours"
+                        min="0"
+                        value={settingsForm.durationHours || ""}
+                        onChange={(e) =>
+                          setSettingsForm({ ...settingsForm, durationHours: e.target.value })
+                        }
+                      />
+                    </Col>
+                  </Row>
+                </Form.Group>
+              </Col>
+
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Price ($)</Form.Label>
+                  <Form.Control
+                    className="edit-course-modal-form-control"
+                    type="number"
+                    placeholder="0"
+                    min="0"
+                    step="0.01"
+                    value={settingsForm.price || 0}
+                    onChange={(e) =>
+                      setSettingsForm({ ...settingsForm, price: parseFloat(e.target.value) || 0 })
+                    }
+                    disabled={courseData.status === "published"}
+                  />
+                  {courseData.status === "published" ? (
+                    <Form.Text className="text-warning">
+                      Price cannot be changed while the course is published. Unpublish the course to
+                      change the price.
+                    </Form.Text>
+                  ) : (
+                    <Form.Text className="text-muted">Set to 0 for free course</Form.Text>
+                  )}
+                </Form.Group>
+
+                <Form.Group className="mb-3">
+                  <Form.Label>Level</Form.Label>
+                  <Form.Select
+                    className="edit-course-modal-form-control"
+                    value={settingsForm.level || "Beginner"}
+                    onChange={(e) => setSettingsForm({ ...settingsForm, level: e.target.value })}
+                  >
+                    {levels.map((lvl) => (
+                      <option key={lvl} value={lvl}>
+                        {lvl}
+                      </option>
+                    ))}
+                  </Form.Select>
+                </Form.Group>
+              </Col>
+            </Row>
+
+            <Row>
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Organization</Form.Label>
+                  <Form.Select
+                    value={settingsForm.organization || ""}
+                    onChange={(e) =>
+                      setSettingsForm({ ...settingsForm, organization: e.target.value })
+                    }
+                    className="edit-course-modal-form-control"
+                  >
+                    <option value="">Ex: Stanford University</option>
+                    {organizations.map((org) => (
+                      <option key={org} value={org}>
+                        {org}
+                      </option>
+                    ))}
+                  </Form.Select>
+                </Form.Group>
+
+                <Form.Group className="mb-3">
+                  <Form.Label>Language</Form.Label>
+                  <Form.Select
+                    value={settingsForm.language || "Tiếng Việt"}
+                    onChange={(e) => setSettingsForm({ ...settingsForm, language: e.target.value })}
+                    className="edit-course-modal-form-control"
+                  >
+                    {languages.map((lang) => (
+                      <option key={lang} value={lang}>
+                        {lang}
+                      </option>
+                    ))}
+                  </Form.Select>
+                </Form.Group>
+              </Col>
+
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Requirement</Form.Label>
+                  <Form.Control
+                    className="edit-course-modal-form-control"
+                    as="textarea"
+                    rows={3}
+                    placeholder="Ex: Have learned Python before"
+                    value={settingsForm.requirement || ""}
+                    onChange={(e) =>
+                      setSettingsForm({ ...settingsForm, requirement: e.target.value })
+                    }
+                  />
+                </Form.Group>
+
+                {/* <Form.Group className="mb-3">
+                  <Form.Label>Cover Image</Form.Label>
+                  <div
+                    className="mb-2 position-relative"
+                    style={{
+                      height: 160,
+                      borderRadius: 8,
+                      overflow: "hidden",
+                      backgroundColor: "#f6f8fa",
+                    }}
+                  >
+                    <div
+                      className="d-flex flex-column align-items-center justify-content-center text-muted"
+                      style={{ height: "100%" }}
+                      onClick={() => document.getElementById("settings-avatar-upload").click()}
+                    >
+                      <div style={{ marginTop: 8 }}>Add / Replace course cover image</div>
+                    </div>
+
+                    <div
+                      style={{ position: "absolute", top: 10, right: 10, display: "flex", gap: 8 }}
+                    >
+                      {settingsPreviewUrl && (
+                        <Button
+                          variant="light"
+                          size="sm"
+                          onClick={() => {
+                            // remove avatar
+                            if (settingsPreviewUrl && settingsPreviewUrl.startsWith("blob:")) {
+                              URL.revokeObjectURL(settingsPreviewUrl);
+                            }
+                            setSettingsPreviewUrl(null);
+                            setSettingsForm((prev) => ({ ...prev, avatar: null, thumbnail: "" }));
+                          }}
+                        >
+                          Remove
+                        </Button>
+                      )}
+                      <Button
+                        variant="light"
+                        size="sm"
+                        onClick={() => document.getElementById("settings-avatar-upload").click()}
+                      >
+                        {settingsPreviewUrl ? "Replace" : "Add"}
+                      </Button>
+                    </div>
+
+                    <input
+                      id="settings-avatar-upload"
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files[0];
+                        if (file) {
+                          if (settingsPreviewUrl && settingsPreviewUrl.startsWith("blob:")) {
+                            URL.revokeObjectURL(settingsPreviewUrl);
+                          }
+                          const u = URL.createObjectURL(file);
+                          setSettingsPreviewUrl(u);
+                          setSettingsForm((prev) => ({ ...prev, avatar: file, thumbnail: "" }));
+                        }
+                      }}
+                      style={{ display: "none" }}
+                    />
+                  </div>
+                </Form.Group> */}
+              </Col>
+            </Row>
+          </Form>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowCourseSettingsModal(false)}>
+            Cancel
+          </Button>
+          <Button
+            variant="primary"
+            onClick={async () => {
+              try {
+                // Basic validation
+                if (!settingsForm.title || !settingsForm.title.trim()) {
+                  setSettingsErrors({ title: "Course title is required" });
+                  return;
+                }
+
+                const token = localStorage.getItem("accessToken");
+                const userStr = localStorage.getItem("user");
+                const user = userStr ? JSON.parse(userStr) : {};
+
+                // Upload avatar if provided as File
+                let coverImageUrl = settingsForm.thumbnail || null;
+                if (settingsForm.avatar && settingsForm.avatar instanceof File) {
+                  const uploadFd = new FormData();
+                  uploadFd.append("file", settingsForm.avatar);
+                  const uploadRes = await fetch(`${API_URL}/media/upload`, {
+                    method: "POST",
+                    body: uploadFd,
+                  });
+
+                  if (!uploadRes.ok) {
+                    const u = await uploadRes.json().catch(() => ({}));
+                    throw new Error(u.data || u.message || "Image upload failed");
+                  }
+
+                  const uploadJson = await uploadRes.json();
+                  coverImageUrl = uploadJson?.data?.fileUrl || uploadJson?.fileUrl || coverImageUrl;
+                }
+
+                // Ensure numeric duration fields are numbers (or null) to satisfy backend validation
+                const parseNumberOrNull = (v) => {
+                  if (v === null || v === undefined || v === "") return null;
+                  const n = Number(v);
+                  return Number.isFinite(n) ? n : null;
+                };
+
+                // Basic validation for negative values
+                const dw = parseNumberOrNull(
+                  settingsForm.durationWeeks ?? courseData.durationWeeks
+                );
+                const dd = parseNumberOrNull(settingsForm.durationDays ?? courseData.durationDays);
+                const dh = parseNumberOrNull(
+                  settingsForm.durationHours ?? courseData.durationHours
+                );
+
+                if ((dw !== null && dw < 0) || (dd !== null && dd < 0) || (dh !== null && dh < 0)) {
+                  setSettingsErrors({ duration: "Duration values must be 0 or greater" });
+                  return;
+                }
+
+                const includePrice = courseData.status !== "published";
+
+                const payload = {
+                  authId: user.id,
+                  id: courseData.id,
+                  title: settingsForm.title || courseData.title,
+                  description: settingsForm.description || courseData.description || "",
+                  // Always send a number for price; when published, keep existing price
+                  price: includePrice
+                    ? Number(settingsForm.price) || 0
+                    : Number(courseData.price) || 0,
+                  level: settingsForm.level || courseData.level || null,
+                  language: settingsForm.language || courseData.language || null,
+                  coverImage: coverImageUrl,
+                  category: settingsForm.category || courseData.category || null,
+                  durationWeeks: dw,
+                  durationDays: dd,
+                  durationHours: dh,
+                  organization: settingsForm.organization || courseData.organization || null,
+                  requirement: settingsForm.requirement || courseData.requirement || null,
+                };
+
+                console.log("[EditCourseView] Applying Course Settings - payload:", payload);
+
+                const res = await fetch(`${API_URL}/courses/${courseData.id}`, {
+                  method: "PUT",
+                  headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                  },
+                  body: JSON.stringify(payload),
+                });
+
+                const resJson = await res.json();
+                console.log("[EditCourseView] PUT /courses/:id response:", res.status, resJson);
+
+                if (!res.ok) {
+                  const msg =
+                    resJson.data || resJson.error?.message || resJson.message || "Update failed";
+                  throw new Error(msg);
+                }
+
+                const updated = resJson.data || resJson;
+
+                console.log("[EditCourseView] Server response data:", updated);
+                console.log(
+                  "[EditCourseView] Updating courseData with settingsForm:",
+                  settingsForm
+                );
+
+                // ✅ FIX: Update courseData with values from settingsForm (local state)
+                // Don't rely on server response which might not include all fields
+                setCourseData((prev) => ({
+                  ...prev,
+                  ...updated, // Server response (might have computed fields)
+                  // Override with local settingsForm values to ensure they persist
+                  title: settingsForm.title || prev.title,
+                  description: settingsForm.description || prev.description,
+                  category: settingsForm.category || prev.category,
+                  level: settingsForm.level || prev.level,
+                  language: settingsForm.language || prev.language,
+                  organization: settingsForm.organization || prev.organization,
+                  requirement: settingsForm.requirement || prev.requirement,
+                  durationWeeks: dw,
+                  durationDays: dd,
+                  durationHours: dh,
+                  price: includePrice ? Number(settingsForm.price) || 0 : prev.price,
+                  thumbnail: updated.coverImage || coverImageUrl || prev.thumbnail || null,
+                  image: updated.coverImage || coverImageUrl || prev.image || null,
+                  coverImage: updated.coverImage || coverImageUrl || prev.coverImage || null,
+                }));
+
+                // cleanup object URL preview
+                if (settingsPreviewUrl && settingsPreviewUrl.startsWith("blob:")) {
+                  URL.revokeObjectURL(settingsPreviewUrl);
+                }
+
+                const normCover = normalizeMediaUrl(coverImageUrl || null);
+                console.log(
+                  "[EditCourseView] Uploaded coverImageUrl:",
+                  coverImageUrl,
+                  "normalized:",
+                  normCover
+                );
+                setSettingsPreviewUrl(normCover || null);
+                setSettingsForm((prev) => ({
+                  ...prev,
+                  avatar: null,
+                  thumbnail: coverImageUrl || "",
+                }));
+
+                setShowCourseSettingsModal(false);
+                toast.success("Course settings updated!");
+                try {
+                  localStorage.setItem("courses_needs_refresh", "1");
+                } catch (e) {
+                  console.log(e);
+                }
+              } catch (error) {
+                console.error("Failed to update course settings:", error);
+                toast.error("Failed to update course settings: " + (error.message || ""));
+              }
+            }}
+          >
+            Apply Changes
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </>
   );
 };

@@ -2,8 +2,8 @@
 
 export class NotificationMapper {
   static toDTO(notificationEntity) {
-    console.log('[NotificationMapper] Converting entity to DTO:', notificationEntity.id);
-    
+    console.log("[NotificationMapper] Converting entity to DTO:", notificationEntity.id);
+
     return {
       id: notificationEntity.id,
       userId: notificationEntity.userId,
@@ -12,13 +12,17 @@ export class NotificationMapper {
       body: notificationEntity.body,
       data: notificationEntity.data,
       read: notificationEntity.read,
-      createdAt: notificationEntity.createdAt
+      createdAt: notificationEntity.createdAt,
+      type: notificationEntity.type || "NORMAL",
     };
   }
 
   static toDTOList(notificationEntities) {
-    console.log('[NotificationMapper] Converting entity list to DTO list:', notificationEntities.length);
-    
-    return notificationEntities.map(entity => this.toDTO(entity));
+    console.log(
+      "[NotificationMapper] Converting entity list to DTO list:",
+      notificationEntities.length
+    );
+
+    return notificationEntities.map((entity) => this.toDTO(entity));
   }
 }

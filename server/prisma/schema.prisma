@@ -33,6 +33,7 @@ model User {
   roles                 UserRole[]
   LessonProgress        LessonProgress[]
   resetTokens           ResetToken[]
+  status                UserStatus              @default(ACTIVE)
 }
 
 model Token {
@@ -60,23 +61,29 @@ model UserRole {
 }
 
 model Course {
-  id          String    @id @default(uuid())
-  title       String
-  shortDesc   String?
-  description String?
-  language    String?   @default("en")
-  level       String? // e.g., Beginner / Intermediate / Advanced
-  price       Float?    @default(0)
-  published   Boolean   @default(false)
-  publishDate DateTime?
-  coverImage  String?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id           String    @id @default(uuid())
+  title        String
+  shortDesc    String?
+  description  String?
+  language     String?   @default("en")
+  level        String? // e.g., Beginner / Intermediate / Advanced
+  price        Float?    @default(0)
+  published    Boolean   @default(false)
+  publishDate  DateTime?
+  coverImage   String?
+  category     String?
+  durationWeeks Int?
+  durationDays  Int?
+  durationHours Int?
+  organization  String?
+  requirement   String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  denialReason String?
 
   // relations
   instructor   User?         @relation("InstructorCourses", fields: [instructorId], references: [id], onDelete: SetNull)
   instructorId String?
-  category     String?
   assignments  Assignment[]
   certificates Certificate[]
   enrollments  Enrollment[]
@@ -101,19 +108,33 @@ model Module {
 }
 
 model Lesson {
-  id             String           @id @default(uuid())
-  moduleId       String
-  title          String
-  content        String? // markdown or rich text
-  mediaUrl       String? // optional video/file url
-  contentType    String? // "video" | "article" | "file"
-  durationSec    Int? // for video lessons
-  position       Int              @default(0)
-  createdAt      DateTime         @default(now())
-  module         Module           @relation(fields: [moduleId], references: [id], onDelete: Cascade)
-  LessonProgress LessonProgress[]
+  id              String           @id @default(uuid())
+  moduleId        String
+  title           String
+  content         String? // markdown or rich text
+  mediaUrl        String? // optional video/file url
+  contentType     String? // "video" | "article" | "file" | "assignment"
+  assignmentId    String?
+  assignment      Assignment?      @relation(fields: [assignmentId], references: [id], onDelete: SetNull)
+  durationSec     Int? // for video lessons
+  position        Int              @default(0)
+  createdAt       DateTime         @default(now())
+  module          Module           @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  LessonProgress  LessonProgress[]
+  lessonResources LessonResource[]
 
   @@index([moduleId, position])
+}
+
+model LessonResource {
+  id        String   @id @default(uuid())
+  lessonId  String
+  fileId    String
+  filename  String
+  mimeType  String
+  createdAt DateTime @default(now())
+
+  lesson Lesson @relation(fields: [lessonId], references: [id])
 }
 
 model LessonProgress {
@@ -155,6 +176,7 @@ model Assignment {
   createdAt   DateTime     @default(now())
   course      Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
   submissions Submission[]
+  lessons     Lesson[]
 }
 
 model Submission {
@@ -163,6 +185,8 @@ model Submission {
   studentId    String
   content      String? // comments or text
   fileUrl      String?
+  fileName     String? // original filename
+  fileSize     Int? // file size in bytes
   status       SubmissionStatus @default(SUBMITTED)
   grade        Float?
   feedback     String?
@@ -184,6 +208,7 @@ model Notification {
   body      String
   data      Json?
   read      Boolean             @default(false)
+  type      String              @default("NORMAL") // NORMAL, URGENT, INFO, WARNING
   createdAt DateTime            @default(now())
   user      User                @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -257,6 +282,16 @@ model InstructorApplication {
   requestedCourseTitle   String?
   requestedCourseSummary String?
   portfolioUrl           String?
+  coverImage             String?
+  category               String?
+  level                  String?
+  durationWeeks          Int?
+  durationDays           Int?
+  durationHours          Int?
+  organization           String?
+  language               String?
+  requirement            String?
+  price                  Float?
   status                 InstructorApplicationStatus @default(PENDING)
   note                   String?
   appliedAt              DateTime                    @default(now())
@@ -328,4 +363,9 @@ enum InstructorApplicationStatus {
   PENDING
   APPROVED
   REJECTED
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
 }

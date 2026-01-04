@@ -394,6 +394,54 @@
     color: #1565c0;
 }
 
+/* Adjusted styles for better readability and layout */
+.article-content-container {
+    width: 100%;
+    margin: 0 0 2rem 0;
+}
+
+.reading-description {
+    background-color: #fff;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.reading-content {
+    background-color: #fff;
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.reading-box {
+    background: #f5f5f5;
+    border-radius: 8px;
+    padding: 1.25rem;
+    min-height: 100px;
+    color: #1f2937;
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+    line-height: 1.6;
+    font-size: 1rem;
+}
+
+.reading-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+    font-size: 1.125rem;
+    margin: 0 0 12px 0;
+    color: #111827;
+}
+
+.content-container:has(.article-content-container) {
+    background: transparent;
+    min-height: auto;
+}
+
 .lesson-actions {
     display: flex;
     gap: 1rem;
@@ -478,4 +526,105 @@
 .lesson-progress {
     font-size: 0.9rem;
     color: #666;
+}
+
+/* Sidebar deadline style for assignments */
+.sidebar-deadline {
+    font-size: 0.85rem;
+    color: #0369a1;
+    font-weight: 600;
+}
+
+/* Prominent deadline badge in lesson header */
+.deadline-badge {
+    background: #f0f9ff;
+    border: 1px solid #dbeafe;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    display: inline-block;
+    margin-left: 6px;
+}
+
+/* Resources styling */
+.lesson-resources {
+    background: #ffffff;
+    border: 1px solid #e6eef3;
+    padding: 12px;
+    border-radius: 8px;
+    box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+    width: 100%;
+    margin: 0 0 2rem 0;
+    /* align with article content */
+}
+
+.lesson-resources h5 {
+    margin: 0 0 8px 0;
+    font-size: 0.95rem;
+    color: #0f172a;
+    font-weight: 700;
+}
+
+.resource-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.resource-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px;
+    border-radius: 6px;
+    background: linear-gradient(180deg, #f8fafc, #ffffff);
+    border: 1px solid #e6eef3;
+}
+
+.resource-item .resource-icon {
+    width: 34px;
+    height: 34px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    background: #e6f3f7;
+    border-radius: 6px;
+    color: #0369a1;
+}
+
+.resource-link {
+    color: #0369a1;
+    text-decoration: none;
+}
+
+.resource-link:hover {
+    text-decoration: underline;
+}
+
+.resource-item.processing {
+    background: linear-gradient(90deg, #fff7ed, #fffbeb);
+    border: 1px dashed #f59e0b;
+}
+
+.processing-badge {
+    display: inline-block;
+    margin-left: 8px;
+    background: #ffedd5;
+    color: #b45309;
+    padding: 2px 6px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+}
+
+/* Editor staged resource highlight */
+.edit-files-list .edit-file-item.staged {
+    background: linear-gradient(180deg, #fff7ed, #fffaf0);
+    border: 1px dashed #f59e0b;
+    padding: 8px;
+    border-radius: 6px;
+}
+
+.edit-files-list .edit-file-item.staged .edit-file-name {
+    font-weight: 700;
 }
