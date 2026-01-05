@@ -265,13 +265,7 @@ export default function Login() {
                 )}
               </Button>
             </div>
-
-            <div className="text-center mt-3">
-              <Link to="/forgot-password" className="auth-link">
-                Forgot password?
-              </Link>
-            </div>
-
+            
             <div className="text-center mt-4 auth-divider">
               Don't have an account?{" "}
               <Link to="/sign-up" className="auth-link">
