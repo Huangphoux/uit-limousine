@@ -8,6 +8,7 @@ export default function Signup() {
   const navigate = useNavigate();
 
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
@@ -19,6 +20,7 @@ export default function Signup() {
       ...formData,
       [e.target.name]: e.target.value,
     });
+    setError(""); // Xóa lỗi khi user nhập
   };
 
   const handleSubmit = async (e) => {
@@ -26,6 +28,7 @@ export default function Signup() {
     console.log("Form submitted with data:", formData);
     console.log("API_URL:", API_URL);
     setIsLoading(true);
+    setError("");
 
     try {
       const response = await fetch(`${API_URL}/auth/register`, {
@@ -39,7 +42,22 @@ export default function Signup() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error?.message || data.message || "Signup failed");
+        // Hiển thị lỗi chi tiết từ backend
+        let errorMessage = "Đăng ký thất bại!";
+        
+        if (data.error?.message) {
+          errorMessage = data.error.message;
+        } else if (data.message) {
+          errorMessage = data.message;
+        }
+        
+        // Thêm thông tin chi tiết nếu có
+        if (data.error?.details) {
+          errorMessage += `: ${data.error.details}`;
+        }
+        
+        setError(errorMessage);
+        return;
       }
 
       // Show success message if available
@@ -49,7 +67,7 @@ export default function Signup() {
       navigate("/login");
     } catch (error) {
       console.error("Error:", error);
-      // You might want to show this error to the user in the UI
+      setError("Lỗi kết nối. Vui lòng thử lại!");
     } finally {
       setIsLoading(false);
     }
@@ -178,6 +196,20 @@ export default function Signup() {
         <div className="auth-card">
           <h1 className="auth-title">Create Account</h1>
           <p className="auth-subtitle">Sign up to get started</p>
+
+          {error && (
+            <div style={{
+              padding: "12px 16px",
+              marginBottom: "20px",
+              backgroundColor: "#fee",
+              color: "#c00",
+              border: "1px solid #fcc",
+              borderRadius: "0.75rem",
+              fontSize: "0.95rem"
+            }}>
+              {error}
+            </div>
+          )}
 
           <Form onSubmit={handleSubmit}>
             <Form.Group className="mb-3" controlId="formName">
